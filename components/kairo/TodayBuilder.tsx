@@ -10,7 +10,7 @@ import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { SoftGlassCard } from "@/components/ui/SoftGlassCard";
 import { Chip } from "@/components/ui/Chip";
 import { SectionLabel } from "./PageHeader";
-import { cn, makeId, formatClock } from "@/lib/utils";
+import { cn, makeId, formatDuration } from "@/lib/utils";
 
 interface LiveBlock {
   id: string; title: string; reason: string; startTime: string | null;
@@ -87,7 +87,7 @@ export function TodayBuilder({ goals }: { goals: GoalWithNodes[] }) {
           <SoftGlassCard className="rounded-xl px-4 py-10 text-center text-sm text-muted">No blocks fit today. Add time or raise your energy.</SoftGlassCard>
         ) : (
           <div className="space-y-2.5">
-            {blocks.map((b) => <PlanBlock key={b.id} block={b} act={act} />)}
+            {blocks.map((b, i) => <PlanBlock key={b.id} order={i + 1} block={b} act={act} />)}
           </div>
         )}
 
@@ -99,7 +99,7 @@ export function TodayBuilder({ goals }: { goals: GoalWithNodes[] }) {
   );
 }
 
-function PlanBlock({ block: b, act }: { block: LiveBlock; act: Record<string, (id: string) => void> }) {
+function PlanBlock({ block: b, order, act }: { block: LiveBlock; order: number; act: Record<string, (id: string) => void> }) {
   const [open, setOpen] = React.useState(false);
   const done = b.status === "completed";
   const pushed = b.status === "pushed";
@@ -107,7 +107,10 @@ function PlanBlock({ block: b, act }: { block: LiveBlock; act: Record<string, (i
   return (
     <SoftGlassCard className="rounded-xl">
       <button onClick={() => setOpen((o) => !o)} className="flex w-full items-center gap-4 px-4 py-3.5 text-left">
-        <span className="w-12 shrink-0 font-mono text-[12px] text-faint">{formatClock(b.startTime) || `${b.durationMinutes}m`}</span>
+        <span className="flex w-9 shrink-0 flex-col items-center leading-tight">
+          <span className={cn("font-mono text-[13px]", done ? "text-faint" : "text-ink")}>{order}</span>
+          <span className="font-mono text-[11px] text-faint">{formatDuration(b.durationMinutes)}</span>
+        </span>
         <span className="min-w-0 flex-1">
           <span className={cn("block truncate text-[15px]", done ? "text-faint line-through" : "text-ink")}>{b.title}</span>
           <span className="truncate text-[12px] text-muted">{b.reason}</span>

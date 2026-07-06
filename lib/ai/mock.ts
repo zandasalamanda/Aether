@@ -16,6 +16,7 @@ import type {
   ReviewResult,
 } from "./types";
 import type { Difficulty, GoalNode, InboxCategory } from "@/types";
+import { parseDeadline } from "@/lib/kairo/deadline";
 
 // ---------- helpers ----------
 
@@ -138,10 +139,13 @@ export function mockGoalMap(input: GoalMapInput): GoalMapResult {
     priority: Math.min(5, i + 1),
     aiReason: n.reason,
   }));
+  // Honor a deadline written in plain English ("by September", "in 6 weeks");
+  // otherwise fall back to the template's suggested horizon.
+  const deadline = parseDeadline(input.prompt);
   return {
     title,
     description: tpl.description(title),
-    suggestedTargetDate: isoDaysFromNow(tpl.weeks * 7),
+    suggestedTargetDate: deadline ? deadline.iso : isoDaysFromNow(tpl.weeks * 7),
     nodes,
     firstNextAction: `Spend 25 minutes to ${tpl.nodes[0].title.toLowerCase()}`,
     weeklyRhythm: tpl.rhythm,
@@ -174,23 +178,14 @@ function candidateNodes(input: DailyPlanInput): { node: GoalNode; goalId: string
   });
 }
 
-function roundToNextHalfHour(d: Date): Date {
-  const out = new Date(d);
-  out.setSeconds(0, 0);
-  const m = out.getMinutes();
-  out.setMinutes(m <= 30 ? 30 : 60);
-  if (out.getTime() < d.getTime()) out.setHours(out.getHours() + 1);
-  return out;
-}
-
 export function mockDailyPlan(input: DailyPlanInput): DailyPlanResult {
   const candidates = candidateNodes(input);
   const budget = input.availableMinutes;
   const cap = input.energy === "low" ? 30 : input.energy === "high" ? 120 : 60;
 
+  // No clock times — the plan is an ordered list for today (order = array index).
   const blocks: PlannedBlock[] = [];
   let used = 0;
-  const cursor = roundToNextHalfHour(new Date());
 
   for (const c of candidates) {
     if (used >= budget) break;
@@ -198,9 +193,6 @@ export function mockDailyPlan(input: DailyPlanInput): DailyPlanResult {
     let minutes = Math.min(c.node.estimatedMinutes, cap, remaining);
     if (minutes < 15) continue;
     minutes = Math.round(minutes / 5) * 5;
-
-    const start = new Date(cursor.getTime() + used * 60_000 + blocks.length * 5 * 60_000);
-    const startTime = start.toTimeString().slice(0, 5);
 
     blocks.push({
       title:
@@ -211,7 +203,7 @@ export function mockDailyPlan(input: DailyPlanInput): DailyPlanResult {
       goalId: c.goalId,
       nodeId: c.node.id,
       durationMinutes: minutes,
-      startTime,
+      startTime: null,
       difficulty: difficultyFor(minutes, input.energy),
       reason: `${c.goalTitle} · ${c.node.aiReason ?? "keeps the goal moving"}`,
     });

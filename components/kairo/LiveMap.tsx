@@ -5,8 +5,9 @@ import Link from "next/link";
 import { ArrowUp, Check, Play, CalendarPlus, X, ChevronDown, Locate } from "lucide-react";
 import type { GoalWithNodes, GoalNode, NodeStatus } from "@/types";
 import { nodeStatusMeta } from "@/lib/kairo/status";
+import { parseDeadline } from "@/lib/kairo/deadline";
 import { Chip } from "@/components/ui/Chip";
-import { cn, formatDuration, makeId } from "@/lib/utils";
+import { cn, formatDuration, makeId, relativeDays } from "@/lib/utils";
 
 interface Placed {
   node: GoalNode;
@@ -53,6 +54,7 @@ export function LiveMap({ goals: initialGoals, initialGoalId }: { goals: GoalWit
   const [menu, setMenu] = React.useState(false);
   const [sent, setSent] = React.useState(false);
   const [poppedId, setPoppedId] = React.useState<string | null>(null);
+  const [toast, setToast] = React.useState<string | null>(null);
 
   const viewportRef = React.useRef<HTMLDivElement>(null);
   const pointers = React.useRef<Map<number, { x: number; y: number }>>(new Map());
@@ -131,9 +133,27 @@ export function LiveMap({ goals: initialGoals, initialGoalId }: { goals: GoalWit
     patch(id, p);
   };
 
+  const showToast = (msg: string) => {
+    setToast(msg);
+    window.setTimeout(() => setToast((c) => (c === msg ? null : c)), 2800);
+  };
+
   const submit = async () => {
     const text = prompt.trim();
     if (!text || thinking) return;
+
+    // Deadline intent → set the goal's deadline (plain English) instead of a task.
+    const deadlineIntent = /\b(deadline|due|target date|finish by|done by|wrap up by)\b/i.test(text) || /^(by|before|due|target)\b/i.test(text);
+    if (deadlineIntent) {
+      const parsed = parseDeadline(text);
+      if (parsed) {
+        setPrompt("");
+        setGoals((prev) => prev.map((g, i) => (i === gi ? { ...g, targetDate: parsed.iso } : g)));
+        showToast(`Deadline set · ${parsed.label}`);
+        return;
+      }
+    }
+
     setPrompt("");
     setThinking(true);
     await new Promise((r) => setTimeout(r, 780));
@@ -250,8 +270,8 @@ export function LiveMap({ goals: initialGoals, initialGoalId }: { goals: GoalWit
         )}
       </div>
 
-      {/* top: project switcher */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex justify-center p-3 md:p-5">
+      {/* top: project switcher + deadline */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 flex flex-col items-center p-3 md:p-5">
         <button
           onClick={() => goals.length > 1 && setMenu((m) => !m)}
           className="pointer-events-auto inline-flex items-center gap-1.5 rounded-full border border-line bg-canvas/70 px-4 py-1.5 text-sm font-medium text-ink backdrop-blur-md"
@@ -259,6 +279,9 @@ export function LiveMap({ goals: initialGoals, initialGoalId }: { goals: GoalWit
           {goal.title}
           {goals.length > 1 && <ChevronDown size={14} className="text-faint" />}
         </button>
+        {goal.targetDate && (
+          <div className="mt-1.5 font-mono text-[11px] text-faint">Due {relativeDays(goal.targetDate)}</div>
+        )}
         {menu && (
           <div className="pointer-events-auto absolute top-14 z-20 w-64 animate-fade-in rounded-2xl border border-line bg-canvas-2/90 p-1.5 backdrop-blur-xl md:top-16">
             {goals.map((g, i) => (
@@ -289,6 +312,11 @@ export function LiveMap({ goals: initialGoals, initialGoalId }: { goals: GoalWit
       {/* bottom: detail sheet OR prompt bar */}
       <div className="absolute inset-x-0 bottom-0 z-10 px-3 pb-[calc(88px+env(safe-area-inset-bottom))] md:pb-6">
         <div className="mx-auto max-w-md">
+          {toast && (
+            <div className="mb-2 animate-fade-in rounded-xl border border-accent/25 bg-canvas-2/90 px-4 py-2 text-center text-[13px] text-accent backdrop-blur-xl">
+              {toast}
+            </div>
+          )}
           {selected ? (
             <NodeSheet
               node={selected}
@@ -306,7 +334,7 @@ export function LiveMap({ goals: initialGoals, initialGoalId }: { goals: GoalWit
               <input
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder={thinking ? "Kairo is mapping…" : "Add a task or ask Kairo…"}
+                placeholder={thinking ? "Kairo is mapping…" : "Add a task or set a deadline…"}
                 disabled={thinking}
                 className="h-9 flex-1 bg-transparent text-[15px] text-ink placeholder:text-faint focus:outline-none"
               />

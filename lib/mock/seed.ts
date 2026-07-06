@@ -14,10 +14,6 @@ function daysFromNow(days: number): string {
   d.setHours(12, 0, 0, 0);
   return d.toISOString();
 }
-function todayAt(hhmm: string): string {
-  return hhmm;
-}
-
 const DEMO_USER_ID = "demo-user";
 
 function node(partial: Partial<GoalNode> & Pick<GoalNode, "id" | "goalId" | "title">): GoalNode {
@@ -118,14 +114,14 @@ export function buildSeed(): SeedData {
     planDate: new Date().toISOString().slice(0, 10),
     availableMinutes: 120,
     energyLevel: "normal",
-    context: "Call at 2pm — lighter afternoon.",
+    context: "Lighter load today.",
     summary: "3 focus blocks · ~1.5h planned · normal energy",
     createdAt: now(),
     updatedAt: now(),
     blocks: [
-      block("b1", { title: "Design the core flows", goalId: "g_launch", nodeId: "n2", startTime: todayAt("15:30"), durationMinutes: 45, difficulty: "moderate", reason: "Launch my app · unblocks the build", sortOrder: 0 }),
-      block("b2", { title: "Build the foundation", goalId: "g_launch", nodeId: "n3", startTime: todayAt("16:30"), durationMinutes: 45, difficulty: "deep", reason: "Launch my app · the load-bearing work", sortOrder: 1 }),
-      block("b3", { title: "Make a start: craft the landing page", goalId: "g_launch", nodeId: "n5", startTime: todayAt("19:00"), durationMinutes: 20, difficulty: "light", reason: "Recovery block — pulls an at-risk step back", sortOrder: 2 }),
+      block("b1", { title: "Design the core flows", goalId: "g_launch", nodeId: "n2", durationMinutes: 45, difficulty: "moderate", reason: "Launch my app · unblocks the build", sortOrder: 0 }),
+      block("b2", { title: "Build the foundation", goalId: "g_launch", nodeId: "n3", durationMinutes: 45, difficulty: "deep", reason: "Launch my app · the load-bearing work", sortOrder: 1 }),
+      block("b3", { title: "Make a start: craft the landing page", goalId: "g_launch", nodeId: "n5", durationMinutes: 20, difficulty: "light", reason: "Recovery block — pulls an at-risk step back", sortOrder: 2 }),
     ],
   };
 
