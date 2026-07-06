@@ -1,5 +1,7 @@
+import { redirect } from "next/navigation";
 import type { Plan } from "@/types";
 import { buildSeed } from "@/lib/mock/seed";
+import { features } from "@/lib/config";
 
 export interface SessionUser {
   id: string;
@@ -9,17 +11,37 @@ export interface SessionUser {
   initials: string;
 }
 
+function initialsOf(name: string): string {
+  return (
+    name
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((w) => w[0]?.toUpperCase() ?? "")
+      .join("") || "U"
+  );
+}
+
 /**
- * Returns the current user. Clerk integration point: when Clerk is configured,
- * resolve the signed-in user here. In demo mode we return the seeded user so
- * every protected route is reachable and the preview is fully explorable.
+ * The current user. Uses Clerk when configured (redirecting anonymous visitors
+ * to sign-in); otherwise returns the seeded demo user so the app is explorable.
  */
 export async function getSessionUser(): Promise<SessionUser> {
+  if (features.clerk) {
+    const { auth, currentUser } = await import("@clerk/nextjs/server");
+    const { userId } = await auth();
+    if (!userId) redirect("/sign-in");
+    const u = await currentUser();
+    const name = u?.fullName || u?.firstName || u?.username || "You";
+    return {
+      id: userId,
+      name,
+      email: u?.primaryEmailAddress?.emailAddress ?? "",
+      plan: "free", // upgraded from the Supabase profile once wired
+      initials: initialsOf(name),
+    };
+  }
+
   const p = buildSeed().profile;
-  const initials = p.displayName
-    .split(/\s+/)
-    .slice(0, 2)
-    .map((w) => w[0]?.toUpperCase() ?? "")
-    .join("");
-  return { id: p.id, name: p.displayName, email: p.email, plan: p.plan, initials };
+  return { id: p.id, name: p.displayName, email: p.email, plan: p.plan, initials: initialsOf(p.displayName) };
 }

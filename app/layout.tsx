@@ -2,6 +2,8 @@ import type { Metadata, Viewport } from "next";
 import { Sora } from "next/font/google";
 import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
+import { ClerkProvider } from "@clerk/nextjs";
+import { features } from "@/lib/config";
 import "./globals.css";
 
 const sora = Sora({
@@ -34,7 +36,7 @@ export const viewport: Viewport = {
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  return (
+  const tree = (
     <html
       lang="en"
       className={`${sora.variable} ${GeistSans.variable} ${GeistMono.variable} h-full antialiased`}
@@ -42,4 +44,6 @@ export default function RootLayout({
       <body className="min-h-full">{children}</body>
     </html>
   );
+  // Wrap in ClerkProvider only when Clerk is configured; demo mode runs bare.
+  return features.clerk ? <ClerkProvider>{tree}</ClerkProvider> : tree;
 }
