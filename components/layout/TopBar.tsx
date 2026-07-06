@@ -1,6 +1,8 @@
 import Link from "next/link";
+import { UserButton } from "@clerk/nextjs";
 import { Logo } from "@/components/kairo/Logo";
 import { cn } from "@/lib/utils";
+import { clerkPublic } from "@/lib/config";
 import type { SessionUser } from "@/lib/auth";
 
 export function TopBar({ user, className }: { user: SessionUser; className?: string }) {
@@ -9,13 +11,17 @@ export function TopBar({ user, className }: { user: SessionUser; className?: str
       <Link href="/app/today" aria-label="Kairo home">
         <Logo size={24} />
       </Link>
-      <Link
-        href="/app/settings"
-        className="grid h-9 w-9 place-items-center rounded-full border border-line bg-white/[0.06] text-[13px] font-semibold text-ink"
-        aria-label="Settings"
-      >
-        {user.initials}
-      </Link>
+      {clerkPublic ? (
+        <UserButton appearance={{ elements: { userButtonAvatarBox: "h-9 w-9" } }} />
+      ) : (
+        <Link
+          href="/app/settings"
+          className="grid h-9 w-9 place-items-center rounded-full border border-line bg-white/[0.06] text-[13px] font-semibold text-ink"
+          aria-label="Settings"
+        >
+          {user.initials}
+        </Link>
+      )}
     </header>
   );
 }

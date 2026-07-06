@@ -19,6 +19,9 @@ export const features = {
 /** True when nothing external is wired — the app runs on seeded demo data. */
 export const isDemoMode = !features.clerk && !features.supabase;
 
+/** Client-safe Clerk check (the secret key isn't exposed to the browser). */
+export const clerkPublic = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
+
 export const pricing = {
   currency: "usd",
   monthly: { amount: 8, priceId: process.env.STRIPE_PRICE_MONTHLY ?? "price_monthly_test" },

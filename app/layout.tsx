@@ -36,14 +36,15 @@ export const viewport: Viewport = {
 export default function RootLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
-  const tree = (
+  return (
     <html
       lang="en"
       className={`${sora.variable} ${GeistSans.variable} ${GeistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full">{children}</body>
+      <body className="min-h-full">
+        {/* ClerkProvider only when Clerk is configured; demo mode runs bare. */}
+        {features.clerk ? <ClerkProvider>{children}</ClerkProvider> : children}
+      </body>
     </html>
   );
-  // Wrap in ClerkProvider only when Clerk is configured; demo mode runs bare.
-  return features.clerk ? <ClerkProvider>{tree}</ClerkProvider> : tree;
 }

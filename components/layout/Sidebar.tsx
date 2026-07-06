@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Settings, ArrowUpRight } from "lucide-react";
+import { UserButton } from "@clerk/nextjs";
 import { NAV } from "./nav";
 import { Logo } from "@/components/kairo/Logo";
 import { cn } from "@/lib/utils";
+import { clerkPublic } from "@/lib/config";
 import type { SessionUser } from "@/lib/auth";
 import type { NextMove } from "@/lib/kairo/next-move";
 
@@ -69,9 +71,13 @@ export function Sidebar({ user, nextMove, className }: { user: SessionUser; next
           </Link>
         )}
         <div className="flex items-center gap-3 rounded-lg px-2 py-1.5">
-          <div className="grid h-9 w-9 place-items-center rounded-full border border-line bg-white/[0.06] text-[13px] font-semibold text-ink">
-            {user.initials}
-          </div>
+          {clerkPublic ? (
+            <UserButton appearance={{ elements: { userButtonAvatarBox: "h-9 w-9" } }} />
+          ) : (
+            <div className="grid h-9 w-9 place-items-center rounded-full border border-line bg-white/[0.06] text-[13px] font-semibold text-ink">
+              {user.initials}
+            </div>
+          )}
           <div className="min-w-0 flex-1">
             <div className="truncate text-sm font-medium text-ink">{user.name}</div>
             <div className="text-[11px] capitalize text-faint">{user.plan} plan</div>
