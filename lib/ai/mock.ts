@@ -27,12 +27,20 @@ function cleanTitle(prompt: string): string {
   return capped.length > 80 ? capped.slice(0, 77) + "…" : capped;
 }
 
+interface TemplateNode {
+  title: string;
+  est: number;
+  reason: string;
+  /** Concrete do-this-now sub-steps that branch off this phase. */
+  sub?: { title: string; est: number; reason: string }[];
+}
+
 interface Template {
   match: RegExp;
   description: (title: string) => string;
   rhythm: string;
   weeks: number;
-  nodes: { title: string; est: number; reason: string }[];
+  nodes: TemplateNode[];
 }
 
 const TEMPLATES: Template[] = [
@@ -43,10 +51,21 @@ const TEMPLATES: Template[] = [
     rhythm: "3 focus blocks / week · ~90 min each",
     weeks: 9,
     nodes: [
-      { title: "Define the MVP", est: 60, reason: "Scope tightly so you can move" },
-      { title: "Design the core flows", est: 90, reason: "Know what you're building before you build it" },
-      { title: "Build the foundation", est: 120, reason: "The load-bearing work everything sits on" },
-      { title: "Test with real users", est: 60, reason: "Reality checks the plan early" },
+      { title: "Define the MVP", est: 60, reason: "Scope tightly so you can move", sub: [
+        { title: "List every feature you imagine", est: 20, reason: "Get it all out of your head" },
+        { title: "Circle the 3 that prove the idea", est: 20, reason: "Everything else is later" },
+      ] },
+      { title: "Design the core flows", est: 90, reason: "Know what you're building before you build it", sub: [
+        { title: "Sketch the 3 key screens", est: 45, reason: "Paper is faster than code" },
+        { title: "Pick colors and type", est: 30, reason: "One look, decided once" },
+      ] },
+      { title: "Build the foundation", est: 120, reason: "The load-bearing work everything sits on", sub: [
+        { title: "Set up auth + database", est: 90, reason: "Every feature leans on this" },
+        { title: "Ship one flow end to end", est: 90, reason: "Prove the stack works" },
+      ] },
+      { title: "Test with real users", est: 60, reason: "Reality checks the plan early", sub: [
+        { title: "Watch 3 people use it", est: 45, reason: "You'll see what to fix instantly" },
+      ] },
       { title: "Craft the landing page", est: 75, reason: "You need a front door before launch" },
       { title: "Launch", est: 90, reason: "Ship it — done beats perfect" },
       { title: "Win first customers", est: 60, reason: "Proof the thing matters" },
@@ -59,9 +78,14 @@ const TEMPLATES: Template[] = [
     rhythm: "5 study blocks / week · ~45 min each",
     weeks: 6,
     nodes: [
-      { title: "Map the syllabus", est: 45, reason: "See the whole terrain first" },
+      { title: "Map the syllabus", est: 45, reason: "See the whole terrain first", sub: [
+        { title: "List every topic to cover", est: 25, reason: "Nothing hides until exam day" },
+        { title: "Mark the 5 you're shakiest on", est: 15, reason: "That's where the points are" },
+      ] },
       { title: "Gather your materials", est: 30, reason: "Remove friction before it starts" },
-      { title: "Build a study rhythm", est: 45, reason: "Consistency beats cramming" },
+      { title: "Build a study rhythm", est: 45, reason: "Consistency beats cramming", sub: [
+        { title: "Block 5 study slots this week", est: 15, reason: "A time on the calendar is a promise" },
+      ] },
       { title: "Drill the weak spots", est: 60, reason: "Spend time where it moves the grade" },
       { title: "Take a mock test", est: 90, reason: "Practice under real conditions" },
       { title: "Final review pass", est: 60, reason: "Consolidate before the day" },
@@ -106,8 +130,13 @@ const DEFAULT_TEMPLATE: Template = {
   rhythm: "3 focus blocks / week · ~60 min each",
   weeks: 8,
   nodes: [
-    { title: "Clarify the outcome", est: 45, reason: "Define what done looks like" },
-    { title: "Break it into parts", est: 45, reason: "Big goals move as small pieces" },
+    { title: "Clarify the outcome", est: 45, reason: "Define what done looks like", sub: [
+      { title: "Write the goal in one sentence", est: 20, reason: "If you can't, it's not clear yet" },
+      { title: "Name how you'll know it's done", est: 25, reason: "A finish line you can see" },
+    ] },
+    { title: "Break it into parts", est: 45, reason: "Big goals move as small pieces", sub: [
+      { title: "List the 3-5 big chunks", est: 30, reason: "Each becomes its own branch" },
+    ] },
     { title: "Set the first milestone", est: 60, reason: "A near target creates momentum" },
     { title: "Do the core work", est: 90, reason: "The part that actually matters" },
     { title: "Review progress", est: 30, reason: "Catch drift before it compounds" },
@@ -131,13 +160,24 @@ function isoDaysFromNow(days: number): string {
 export function mockGoalMap(input: GoalMapInput): GoalMapResult {
   const title = cleanTitle(input.prompt);
   const tpl = pickTemplate(input.prompt);
-  const nodes: GeneratedNode[] = tpl.nodes.map((n, i) => ({
+
+  // Flatten the phase/sub-step tree depth-first, recording each node's parent
+  // index so the map can draw the branches.
+  const flat: { title: string; est: number; reason: string; parentIndex: number | null }[] = [];
+  tpl.nodes.forEach((phase) => {
+    const parentIndex = flat.length;
+    flat.push({ title: phase.title, est: phase.est, reason: phase.reason, parentIndex: null });
+    (phase.sub ?? []).forEach((c) => flat.push({ title: c.title, est: c.est, reason: c.reason, parentIndex }));
+  });
+
+  const nodes: GeneratedNode[] = flat.map((n, i) => ({
     title: n.title,
     description: n.reason + ".",
     status: i === 0 ? "in_motion" : "not_started",
     estimatedMinutes: n.est,
     priority: Math.min(5, i + 1),
     aiReason: n.reason,
+    parentIndex: n.parentIndex,
   }));
   // Honor a deadline written in plain English ("by September", "in 6 weeks");
   // otherwise fall back to the template's suggested horizon.

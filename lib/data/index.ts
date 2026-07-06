@@ -23,7 +23,9 @@ export async function getProfile(): Promise<UserProfile> {
 }
 
 export const getGoals = cache(async (): Promise<GoalWithNodes[]> => {
-  if (!isRemote) return buildSeed().goals;
+  // Demo mode starts with an empty galaxy — the app opens on "create your first
+  // goal", not on fake data. (buildSeed still backs tests + the sign-in backdrop.)
+  if (!isRemote) return [];
   const scoped = await getScopedClient();
   const profile = await ensureProfile();
   if (!scoped || !profile) return [];
@@ -66,7 +68,7 @@ export async function getPrimaryGoal(): Promise<GoalWithNodes | null> {
 }
 
 export const getInbox = cache(async (): Promise<InboxItem[]> => {
-  if (!isRemote) return buildSeed().inbox;
+  if (!isRemote) return [];
   const scoped = await getScopedClient();
   const profile = await ensureProfile();
   if (!scoped || !profile) return [];
@@ -81,8 +83,7 @@ export const getInbox = cache(async (): Promise<InboxItem[]> => {
 });
 
 export async function getTodayPlan(): Promise<DailyPlanWithBlocks | null> {
-  // Today's plan is derived on demand by the AI from the user's live goals
-  // (see TodayBuilder), so there's nothing persisted to read yet.
-  if (isRemote) return null;
-  return buildSeed().todayPlan;
+  // Today's plan is derived on demand from the user's live goals (see
+  // TodayBuilder), so there's nothing persisted to read.
+  return null;
 }

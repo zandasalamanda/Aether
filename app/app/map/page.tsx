@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { getGoals, isRemote } from "@/lib/data";
-import { LiveMap } from "@/components/kairo/LiveMap";
+import { GalaxyMap } from "@/components/kairo/GalaxyMap";
 
 export const metadata: Metadata = { title: "Map · Aether" };
 
@@ -8,7 +8,7 @@ export default async function MapPage({ searchParams }: { searchParams: Promise<
   const [goals, { goal }] = await Promise.all([getGoals(), searchParams]);
   return (
     <div className="fixed inset-0 top-0 md:left-[248px]">
-      <LiveMap goals={goals} initialGoalId={goal} remote={isRemote} />
+      <GalaxyMap goals={goals} initialGoalId={goal} remote={isRemote} />
     </div>
   );
 }

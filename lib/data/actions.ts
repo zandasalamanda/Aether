@@ -4,17 +4,20 @@ import { revalidatePath } from "next/cache";
 import { getScopedClient } from "@/lib/supabase/scoped";
 import { ensureProfile } from "./profile";
 import { isRemote } from "./index";
+import { newId } from "@/lib/utils";
 import type { GoalMapResult } from "@/lib/ai/types";
 import type { NodeStatus, InboxCategory } from "@/types";
 
 type Result = { ok: boolean; id?: string };
+type GoalResult = { ok: boolean; id?: string; nodeIds?: string[] };
 const NO_OP: Result = { ok: false };
 
 /**
  * Persist a freshly generated goal map (from onboarding or the map prompt).
- * Returns the new goal id so the caller can deep-link to it.
+ * Returns the new goal id and the node ids (in order) so the client can keep
+ * its optimistic state in sync with the real rows.
  */
-export async function persistGoalFromMap(input: { result: GoalMapResult }): Promise<Result> {
+export async function persistGoalFromMap(input: { result: GoalMapResult }): Promise<GoalResult> {
   if (!isRemote) return NO_OP;
   const scoped = await getScopedClient();
   const profile = await ensureProfile();
@@ -37,7 +40,11 @@ export async function persistGoalFromMap(input: { result: GoalMapResult }): Prom
   if (goalRes.error || !goalRes.data) return NO_OP;
   const goalId = goalRes.data.id as string;
 
+  // Pre-assign ids so parent links can reference siblings. Insert flat first,
+  // then set parent_id for the branches (avoids FK ordering issues).
+  const ids = result.nodes.map(() => newId());
   const rows = result.nodes.map((n, i) => ({
+    id: ids[i],
     goal_id: goalId,
     title: n.title,
     description: n.description ?? "",
@@ -47,20 +54,35 @@ export async function persistGoalFromMap(input: { result: GoalMapResult }): Prom
     estimated_minutes: n.estimatedMinutes ?? 60,
     ai_reason: n.aiReason ?? null,
     sort_order: i,
+    parent_id: null as string | null,
   }));
-  await supabase.from("goal_nodes").insert(rows);
+  const insErr = (await supabase.from("goal_nodes").insert(rows)).error;
+  if (insErr) return NO_OP;
+
+  const branches = result.nodes
+    .map((n, i) => ({ i, p: n.parentIndex }))
+    .filter((x) => typeof x.p === "number" && x.p >= 0 && x.p < ids.length && x.p < x.i);
+  if (branches.length > 0) {
+    await Promise.all(
+      branches.map((b) => supabase.from("goal_nodes").update({ parent_id: ids[b.p as number] }).eq("id", ids[b.i]))
+    );
+  }
 
   revalidatePath("/app", "layout");
-  return { ok: true, id: goalId };
+  return { ok: true, id: goalId, nodeIds: ids };
 }
 
-/** Add a single node to an existing goal (map prompt bar). */
+/**
+ * Add a node to a goal. `parentId` attaches it as a branch off another node;
+ * null makes it a top-level branch off the goal core.
+ */
 export async function addNode(input: {
   id: string;
   goalId: string;
   title: string;
   estimatedMinutes: number;
   sortOrder: number;
+  parentId?: string | null;
 }): Promise<Result> {
   if (!isRemote) return NO_OP;
   const scoped = await getScopedClient();
@@ -68,6 +90,7 @@ export async function addNode(input: {
   const { error } = await scoped.supabase.from("goal_nodes").insert({
     id: input.id,
     goal_id: input.goalId,
+    parent_id: input.parentId ?? null,
     title: input.title,
     status: "not_started",
     priority: 3,
@@ -107,6 +130,17 @@ export async function setNodeStatus(input: {
 
   revalidatePath("/app", "layout");
   return { ok: true, id: input.nodeId };
+}
+
+/** Delete a goal and everything under it (nodes cascade via FK). */
+export async function deleteGoal(input: { goalId: string }): Promise<Result> {
+  if (!isRemote) return NO_OP;
+  const scoped = await getScopedClient();
+  if (!scoped) return NO_OP;
+  const { error } = await scoped.supabase.from("goals").delete().eq("id", input.goalId);
+  if (error) return NO_OP;
+  revalidatePath("/app", "layout");
+  return { ok: true, id: input.goalId };
 }
 
 /** Set a goal's target date (from a plain-English deadline). */

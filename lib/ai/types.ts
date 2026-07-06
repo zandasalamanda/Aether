@@ -19,6 +19,12 @@ export interface GeneratedNode {
   estimatedMinutes: number;
   priority: number;
   aiReason: string;
+  /**
+   * Index (within this same nodes array) of this node's parent, or null for a
+   * top-level phase branching off the goal core. Must reference an earlier
+   * index — the map renders the tree from these links.
+   */
+  parentIndex: number | null;
 }
 
 export interface GoalMapResult {

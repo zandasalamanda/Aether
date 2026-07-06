@@ -25,6 +25,16 @@ describe("mockGoalMap", () => {
     const study = mockGoalMap({ prompt: "study for exams" });
     expect(study.nodes.some((n) => /syllabus|study|mock test/i.test(n.title))).toBe(true);
   });
+
+  it("produces a branching tree with valid parent links", () => {
+    const r = mockGoalMap({ prompt: "Launch my startup" });
+    // at least one sub-step branches off a phase
+    expect(r.nodes.some((n) => n.parentIndex != null)).toBe(true);
+    // every parent link points to a strictly-earlier node
+    r.nodes.forEach((n, i) => {
+      if (n.parentIndex != null) expect(n.parentIndex).toBeLessThan(i);
+    });
+  });
 });
 
 describe("mockDailyPlan", () => {
