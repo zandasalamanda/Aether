@@ -112,8 +112,14 @@ function PlanBlock({ block: b, act }: { block: LiveBlock; act: Record<string, (i
           <span className={cn("block truncate text-[15px]", done ? "text-faint line-through" : "text-ink")}>{b.title}</span>
           <span className="truncate text-[12px] text-muted">{b.reason}</span>
         </span>
-        {b.status !== "planned" && <span className={cn("hidden rounded-md px-2 py-0.5 text-[11px] sm:inline", meta.chip)}>{meta.label}</span>}
-        <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", meta.dot)} />
+        {b.status !== "planned" && !done && <span className={cn("hidden rounded-md px-2 py-0.5 text-[11px] sm:inline", meta.chip)}>{meta.label}</span>}
+        {done ? (
+          <span className="grid h-5 w-5 shrink-0 animate-pop place-items-center rounded-full bg-sage" style={{ boxShadow: "0 0 10px #8fae9f88" }}>
+            <Check size={12} className="text-[#0d1a14]" strokeWidth={3} />
+          </span>
+        ) : (
+          <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", meta.dot)} />
+        )}
         <ChevronDown size={16} className={cn("shrink-0 text-faint transition-transform", open && "rotate-180")} />
       </button>
       {open && (

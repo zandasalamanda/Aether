@@ -11,7 +11,7 @@ export default async function InboxPage() {
   const [items, user] = await Promise.all([getInbox(), getSessionUser()]);
   return (
     <PageContainer user={user}>
-      <PageHeader eyebrow="Mental clutter → order" title="Inbox" description="Drop every loose thought. Kairo sorts it by what's urgent and what matters." />
+      <PageHeader title="Inbox" description="Capture now. Let Kairo organize later." />
       <InboxBoard initialItems={items} />
     </PageContainer>
   );

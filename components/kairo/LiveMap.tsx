@@ -49,6 +49,7 @@ export function LiveMap({ goals: initialGoals }: { goals: GoalWithNodes[] }) {
   const [thinking, setThinking] = React.useState(false);
   const [menu, setMenu] = React.useState(false);
   const [sent, setSent] = React.useState(false);
+  const [poppedId, setPoppedId] = React.useState<string | null>(null);
 
   const viewportRef = React.useRef<HTMLDivElement>(null);
   const pointers = React.useRef<Map<number, { x: number; y: number }>>(new Map());
@@ -119,7 +120,11 @@ export function LiveMap({ goals: initialGoals }: { goals: GoalWithNodes[] }) {
     );
   const setStatus = (id: string, status: NodeStatus) => {
     const p: Partial<GoalNode> = { status };
-    if (status === "done") p.progress = 100;
+    if (status === "done") {
+      p.progress = 100;
+      setPoppedId(id);
+      window.setTimeout(() => setPoppedId((c) => (c === id ? null : c)), 650);
+    }
     patch(id, p);
   };
 
@@ -194,12 +199,12 @@ export function LiveMap({ goals: initialGoals }: { goals: GoalWithNodes[] }) {
                   key={p.node.id}
                   d={`M 0 0 Q ${cx} ${cy} ${p.x} ${p.y}`}
                   fill="none"
-                  stroke={isNext ? "#e6b877" : "rgba(255,255,255,0.13)"}
+                  stroke={isNext ? "#e6b877" : `${nodeStatusMeta[p.node.status].hex}55`}
                   strokeWidth={isNext ? 1.6 : 1.1}
                   strokeLinecap="round"
                   strokeDasharray={isNext ? "3 7" : undefined}
                   className={isNext ? "animate-flow" : undefined}
-                  opacity={p.node.status === "not_started" ? 0.6 : 1}
+                  opacity={p.node.status === "not_started" ? 0.55 : 0.95}
                 />
               );
             })}
@@ -216,6 +221,7 @@ export function LiveMap({ goals: initialGoals }: { goals: GoalWithNodes[] }) {
               isNext={p.node.id === nId}
               selected={p.node.id === selectedId}
               fresh={newIds.has(p.node.id)}
+              popping={p.node.id === poppedId}
               onSelect={() => { if (!moved.current) focusNode(p); }}
             />
           ))}
@@ -335,16 +341,34 @@ function MapNode({
   isNext,
   selected,
   fresh,
+  popping,
   onSelect,
 }: {
   placed: Placed;
   isNext: boolean;
   selected: boolean;
   fresh: boolean;
+  popping: boolean;
   onSelect: () => void;
 }) {
   const meta = nodeStatusMeta[placed.node.status];
-  const done = placed.node.status === "done";
+  const status = placed.node.status;
+  const done = status === "done";
+  const dim = status === "not_started";
+  const hex = meta.hex;
+
+  // Every node is luminous; intensity encodes state (dim → strong → pulsing).
+  const glow = done
+    ? `0 0 26px ${hex}88, inset 0 0 12px ${hex}55`
+    : dim
+      ? `0 0 12px ${hex}33`
+      : isNext
+        ? `0 0 28px ${hex}75`
+        : `0 0 18px ${hex}4d`;
+  const bg = done
+    ? `radial-gradient(circle at 38% 30%, #f4faf6 0%, ${hex} 55%, #16281f 100%)`
+    : `radial-gradient(circle at 40% 34%, ${hex}33, rgba(12,14,18,0.94) 72%)`;
+
   return (
     <div className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: placed.x, top: placed.y }}>
       <div className={fresh ? "animate-grow-in" : ""}>
@@ -353,29 +377,33 @@ function MapNode({
           className="group flex flex-col items-center gap-2"
           style={{ animation: "breathe 6s ease-in-out infinite", animationDelay: `${placed.delay}s` }}
         >
-          <span className="relative grid place-items-center">
+          <span className="relative grid h-[52px] w-[52px] place-items-center">
             {(isNext || selected) && (
-              <span className="absolute inset-0 animate-pulse-soft rounded-full" style={{ boxShadow: `0 0 0 6px ${meta.hex}22, 0 0 26px ${meta.hex}55`, margin: -3 }} />
+              <span className="absolute inset-0 animate-pulse-soft rounded-full" style={{ boxShadow: `0 0 0 5px ${hex}22, 0 0 28px ${hex}66`, margin: -4 }} />
+            )}
+            {popping && (
+              <span className="absolute inset-0 animate-burst rounded-full" style={{ border: `2px solid ${hex}` }} />
             )}
             <span
-              className="grid h-[52px] w-[52px] place-items-center rounded-full border transition-colors"
+              className={cn("grid h-[52px] w-[52px] place-items-center rounded-full border", popping && "animate-pop")}
               style={{
-                borderColor: meta.hex,
-                background: done ? meta.hex : "rgba(16,18,22,0.92)",
-                boxShadow: done ? `0 0 18px ${meta.hex}66` : "none",
-                opacity: placed.node.status === "not_started" ? 0.9 : 1,
+                borderColor: dim ? `${hex}99` : hex,
+                background: bg,
+                boxShadow: glow,
+                opacity: dim ? 0.92 : 1,
+                transition: "background 0.4s ease, box-shadow 0.4s ease, border-color 0.4s ease",
               }}
             >
               {done ? (
-                <Check size={20} className="text-[#0a0b0d]" />
+                <Check size={20} className="text-[#0d1a14]" strokeWidth={2.5} />
               ) : (
-                <span className="h-2.5 w-2.5 rounded-full" style={{ background: meta.hex }} />
+                <span className="h-2.5 w-2.5 rounded-full" style={{ background: hex, boxShadow: `0 0 8px ${hex}` }} />
               )}
             </span>
           </span>
           <span className="max-w-[128px] text-center leading-tight">
             <span className={cn("block truncate text-[12.5px]", selected ? "font-semibold text-ink" : "text-ink/85")}>{placed.node.title}</span>
-            <span className="font-mono text-[10px]" style={{ color: meta.hex }}>{placed.node.estimatedMinutes}m</span>
+            <span className="font-mono text-[10px]" style={{ color: hex }}>{placed.node.estimatedMinutes}m</span>
           </span>
         </button>
       </div>
