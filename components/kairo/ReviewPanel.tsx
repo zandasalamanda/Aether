@@ -2,8 +2,11 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { TrendingUp, AlertTriangle, ArrowRight, LifeBuoy } from "lucide-react";
 import type { ReviewResult } from "@/lib/ai/types";
+import { SoftGlassCard } from "@/components/ui/SoftGlassCard";
+import { Button, buttonVariants } from "@/components/ui/Button";
+import { SectionLabel } from "./PageHeader";
 import { cn } from "@/lib/utils";
 
 export function ReviewPanel({ review }: { review: ReviewResult }) {
@@ -12,49 +15,56 @@ export function ReviewPanel({ review }: { review: ReviewResult }) {
   const onTrack = review.risks.length === 0;
 
   return (
-    <div className="max-w-xl">
+    <div className="max-w-xl space-y-8">
       {/* summary */}
-      <p className="font-display text-[22px] font-medium leading-snug text-ink md:text-[26px]">{review.summary}</p>
-      <p className={cn("mt-3 text-[14px]", onTrack ? "text-sage" : "text-warn")}>{review.recoverability}</p>
+      <div>
+        <p className="font-display text-[22px] font-medium leading-snug text-ink md:text-[26px]">{review.summary}</p>
+        <div className={cn("mt-4 inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-[13px]", onTrack ? "border-sage/25 bg-sage/[0.06] text-sage" : "border-warn/25 bg-warn/[0.06] text-warn")}>
+          {review.recoverability}
+        </div>
+      </div>
 
       {/* moved */}
       {review.changes.length > 0 && (
-        <Block label="What moved">
+        <ReviewBlock icon={<TrendingUp size={15} className="text-sage" />} label="What moved">
           {review.changes.map((c, i) => <Line key={i} dot="bg-sage">{c}</Line>)}
-        </Block>
+        </ReviewBlock>
       )}
 
       {/* at risk */}
       {review.risks.length > 0 && (
-        <Block label="At risk">
+        <ReviewBlock icon={<AlertTriangle size={15} className="text-warn" />} label="At risk">
           {review.risks.map((r, i) => <Line key={i} dot="bg-warn">{r}</Line>)}
-        </Block>
+        </ReviewBlock>
       )}
 
       {/* next best move */}
-      <div className="mt-9 border-t border-line pt-6">
-        <div className="text-[11px] font-medium uppercase tracking-[0.14em] text-accent/80">Next best move</div>
-        <p className="mt-2 text-[17px] text-ink">{review.nextBestMove}</p>
-        <div className="mt-4 flex flex-wrap items-center gap-2.5">
-          <button onClick={() => ping("Recovery block added to Today.")} className="inline-flex h-10 items-center gap-2 rounded-xl bg-accent px-5 text-sm font-semibold text-[#1b1206] transition-all hover:brightness-105">
-            Add recovery block
-          </button>
-          <Link href="/app/today" className="inline-flex h-10 items-center gap-2 rounded-xl border border-line px-5 text-sm text-ink transition-colors hover:bg-white/5">
+      <SoftGlassCard focal className="rounded-2xl p-6">
+        <SectionLabel className="text-accent/80">Next best move</SectionLabel>
+        <p className="mt-2.5 text-[17px] text-ink">{review.nextBestMove}</p>
+        <div className="mt-5 flex flex-wrap items-center gap-2.5">
+          <Button variant="primary" onClick={() => ping("Recovery block added to Today.")}>
+            <LifeBuoy size={16} /> Add recovery block
+          </Button>
+          <Link href="/app/today" className={buttonVariants({ variant: "glass" })}>
             Rebuild today <ArrowRight size={15} />
           </Link>
         </div>
         {flash && <p className="mt-3 text-[13px] text-sage">{flash}</p>}
-      </div>
+      </SoftGlassCard>
     </div>
   );
 }
 
-function Block({ label, children }: { label: string; children: React.ReactNode }) {
+function ReviewBlock({ icon, label, children }: { icon: React.ReactNode; label: string; children: React.ReactNode }) {
   return (
-    <section className="mt-8">
-      <div className="mb-2 text-[11px] font-medium uppercase tracking-[0.14em] text-faint">{label}</div>
-      <ul className="space-y-2">{children}</ul>
-    </section>
+    <SoftGlassCard className="rounded-2xl p-5">
+      <div className="mb-3 flex items-center gap-2">
+        {icon}
+        <SectionLabel>{label}</SectionLabel>
+      </div>
+      <ul className="space-y-2.5">{children}</ul>
+    </SoftGlassCard>
   );
 }
 

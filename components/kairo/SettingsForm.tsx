@@ -87,10 +87,10 @@ export function SettingsForm({ user }: { user: SessionUser }) {
       <div className="panel rounded-2xl p-6">
         <SectionLabel className="mb-4">Account</SectionLabel>
         <div className="flex flex-wrap gap-2.5">
-          <Link href="/app/billing" className="inline-flex h-10 items-center gap-2 rounded-full border border-accent/25 bg-accent/5 px-5 text-sm font-medium text-accent transition-colors hover:bg-accent/10">
+          <Link href="/app/billing" className="inline-flex h-10 items-center gap-2 rounded-xl border border-accent/25 bg-accent/5 px-5 text-sm font-medium text-accent transition-colors hover:bg-accent/10">
             <Zap size={15} /> Manage plan
           </Link>
-          <Link href="/" className="inline-flex h-10 items-center gap-2 rounded-full border border-line px-5 text-sm text-muted transition-colors hover:text-ink hover:bg-white/5">
+          <Link href="/" className="inline-flex h-10 items-center gap-2 rounded-xl border border-line px-5 text-sm text-muted transition-colors hover:text-ink hover:bg-white/5">
             <LogOut size={15} /> Sign out
           </Link>
         </div>

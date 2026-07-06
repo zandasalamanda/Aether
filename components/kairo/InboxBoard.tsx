@@ -1,10 +1,15 @@
 "use client";
 
 import * as React from "react";
-import { Sparkle, Target, CalendarPlus, Archive } from "lucide-react";
+import { Sparkle, Target, CalendarPlus, Archive, Plus, ChevronDown } from "lucide-react";
 import type { InboxItem, InboxCategory } from "@/types";
 import { sortInbox } from "@/lib/ai/sort-inbox";
 import { inboxCategoryMeta, inboxCategoryOrder } from "@/lib/kairo/status";
+import { SoftGlassCard } from "@/components/ui/SoftGlassCard";
+import { Button } from "@/components/ui/Button";
+import { Input } from "@/components/ui/Input";
+import { Chip } from "@/components/ui/Chip";
+import { SectionLabel } from "./PageHeader";
 import { cn, makeId } from "@/lib/utils";
 
 interface LiteItem { id: string; content: string; category: InboxCategory }
@@ -13,6 +18,7 @@ export function InboxBoard({ initialItems }: { initialItems: InboxItem[] }) {
   const [items, setItems] = React.useState<LiteItem[]>(initialItems.map((i) => ({ id: i.id, content: i.content, category: i.category })));
   const [input, setInput] = React.useState("");
   const [sorting, setSorting] = React.useState(false);
+  const [reasoning, setReasoning] = React.useState<string | null>(null);
   const [flash, setFlash] = React.useState<string | null>(null);
 
   const unsorted = items.filter((i) => i.category === "unsorted");
@@ -23,12 +29,12 @@ export function InboxBoard({ initialItems }: { initialItems: InboxItem[] }) {
     setInput("");
   };
   const sortAll = async () => {
-    setSorting(true);
+    setSorting(true); setReasoning(null);
     await new Promise((r) => setTimeout(r, 620));
     const res = await sortInbox({ items: items.map((i) => ({ id: i.id, content: i.content })) });
     const by = new Map(res.items.map((r) => [r.id, r.category]));
     setItems((p) => p.map((i) => ({ ...i, category: by.get(i.id) ?? i.category })));
-    setSorting(false);
+    setReasoning(res.reasoning); setSorting(false);
   };
   const remove = (id: string, msg: string) => {
     setItems((p) => p.filter((i) => i.id !== id));
@@ -36,31 +42,37 @@ export function InboxBoard({ initialItems }: { initialItems: InboxItem[] }) {
   };
 
   return (
-    <div>
+    <div className="space-y-10">
       {/* composer */}
-      <div className="mb-2 flex items-center gap-3 border-b border-line pb-3">
-        <input
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && add()}
-          placeholder="Drop anything here…"
-          className="flex-1 bg-transparent text-[15px] text-ink placeholder:text-faint focus:outline-none"
-        />
-        <button
-          onClick={sortAll}
-          disabled={sorting || items.length === 0}
-          className="inline-flex items-center gap-1.5 text-[13px] text-accent transition-opacity hover:opacity-80 disabled:opacity-30"
-        >
-          <Sparkle size={14} /> {sorting ? "Sorting…" : "Sort"}
-        </button>
+      <div className="space-y-3">
+        <SoftGlassCard className="flex items-center gap-2 rounded-2xl p-2 pl-4">
+          <Input
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && add()}
+            placeholder="Drop anything here…"
+            className="h-10 flex-1 border-0 bg-transparent px-0 focus:bg-transparent"
+          />
+          <Button variant="solid" size="sm" onClick={add} disabled={!input.trim()}>
+            <Plus size={15} /> Add
+          </Button>
+        </SoftGlassCard>
+        <div className="flex items-center justify-between px-1">
+          <p className="text-[13px] text-muted">{reasoning ?? `${items.length} item${items.length === 1 ? "" : "s"}`}</p>
+          <Button variant="primary" size="sm" onClick={sortAll} disabled={sorting || items.length === 0}>
+            <Sparkle size={14} /> {sorting ? "Sorting…" : "Sort with AI"}
+          </Button>
+        </div>
       </div>
 
-      {flash && <p className="py-2 text-center text-[13px] text-sage">{flash}</p>}
+      {flash && (
+        <div className="rounded-xl border border-sage/25 bg-sage/5 px-4 py-2.5 text-center text-[13px] text-sage">{flash}</div>
+      )}
 
       {items.length === 0 ? (
         <p className="py-14 text-center text-sm text-muted">Inbox zero. Drop new thoughts above whenever they land.</p>
       ) : (
-        <div className={cn("mt-2 transition-opacity", sorting && "opacity-50")}>
+        <div className={cn("space-y-9 transition-opacity", sorting && "opacity-50")}>
           {unsorted.length > 0 && <Group items={unsorted} category="unsorted" onRemove={remove} />}
           {inboxCategoryOrder.map((cat) => {
             const list = items.filter((i) => i.category === cat);
@@ -75,32 +87,35 @@ export function InboxBoard({ initialItems }: { initialItems: InboxItem[] }) {
 function Group({ items, category, onRemove }: { items: LiteItem[]; category: InboxCategory; onRemove: (id: string, msg: string) => void }) {
   const meta = inboxCategoryMeta[category];
   return (
-    <section className="mb-6">
-      <div className="mb-1 flex items-center gap-2">
+    <section>
+      <div className="mb-3 flex items-center gap-2 px-1">
         <span className={cn("h-1.5 w-1.5 rounded-full", meta.dot)} />
-        <h2 className={cn("text-[12px] font-medium uppercase tracking-wide", meta.text)}>{meta.label}</h2>
+        <SectionLabel className={meta.text}>{meta.label}</SectionLabel>
         <span className="font-mono text-[11px] text-faint">{items.length}</span>
       </div>
-      <ul className="divide-y divide-line/60">
-        {items.map((item) => (
-          <li key={item.id} className="group flex items-center gap-3 py-2.5">
-            <span className="min-w-0 flex-1 truncate text-[14px] text-ink/90">{item.content}</span>
-            <span className="flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
-              <Mini icon={<Target size={14} />} label="To a goal" onClick={() => onRemove(item.id, "Sent to a goal.")} />
-              <Mini icon={<CalendarPlus size={14} />} label="To Today" onClick={() => onRemove(item.id, "Added to Today.")} />
-              <Mini icon={<Archive size={14} />} label="Archive" onClick={() => onRemove(item.id, "Archived.")} />
-            </span>
-          </li>
-        ))}
-      </ul>
+      <div className="space-y-2">
+        {items.map((item) => <ItemBlock key={item.id} item={item} meta={meta} onRemove={onRemove} />)}
+      </div>
     </section>
   );
 }
 
-function Mini({ icon, label, onClick }: { icon: React.ReactNode; label: string; onClick: () => void }) {
+function ItemBlock({ item, meta, onRemove }: { item: LiteItem; meta: { dot: string }; onRemove: (id: string, msg: string) => void }) {
+  const [open, setOpen] = React.useState(false);
   return (
-    <button onClick={onClick} aria-label={label} title={label} className="grid h-7 w-7 place-items-center rounded-md text-faint transition-colors hover:bg-white/5 hover:text-ink">
-      {icon}
-    </button>
+    <SoftGlassCard className="rounded-xl">
+      <button onClick={() => setOpen((o) => !o)} className="flex w-full items-center gap-3 px-4 py-3.5 text-left">
+        <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", meta.dot)} />
+        <span className="min-w-0 flex-1 truncate text-[14px] text-ink/90">{item.content}</span>
+        <ChevronDown size={16} className={cn("shrink-0 text-faint transition-transform", open && "rotate-180")} />
+      </button>
+      {open && (
+        <div className="flex flex-wrap gap-2 border-t border-line px-4 py-3">
+          <Chip tone="accent" icon={<Target size={14} />} onClick={() => onRemove(item.id, "Sent to a goal.")}>To a goal</Chip>
+          <Chip tone="accent" icon={<CalendarPlus size={14} />} onClick={() => onRemove(item.id, "Added to Today.")}>To Today</Chip>
+          <Chip tone="warn" icon={<Archive size={14} />} onClick={() => onRemove(item.id, "Archived.")}>Archive</Chip>
+        </div>
+      )}
+    </SoftGlassCard>
   );
 }

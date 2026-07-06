@@ -1,21 +1,20 @@
 "use client";
 
 import * as React from "react";
-import { Check, ArrowRight, Minimize2, Split, Repeat, Play } from "lucide-react";
+import { Check, ArrowRight, Minimize2, Split, Repeat, Play, ChevronDown } from "lucide-react";
 import type { GoalWithNodes, EnergyLevel, BlockStatus, Difficulty } from "@/types";
 import { buildDailyPlan } from "@/lib/ai/build-daily-plan";
 import type { DailyPlanResult } from "@/lib/ai/types";
+import { blockStatusMeta } from "@/lib/kairo/status";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
-import { cn, makeId, formatDuration, formatClock } from "@/lib/utils";
+import { SoftGlassCard } from "@/components/ui/SoftGlassCard";
+import { Chip } from "@/components/ui/Chip";
+import { SectionLabel } from "./PageHeader";
+import { cn, makeId, formatClock } from "@/lib/utils";
 
 interface LiveBlock {
-  id: string;
-  title: string;
-  reason: string;
-  startTime: string | null;
-  durationMinutes: number;
-  difficulty: Difficulty;
-  status: BlockStatus;
+  id: string; title: string; reason: string; startTime: string | null;
+  durationMinutes: number; difficulty: Difficulty; status: BlockStatus;
 }
 
 const TIME = [
@@ -29,21 +28,12 @@ const ENERGY = [
   { value: "high", label: "High" },
 ] as const;
 
-const STATUS_TINT: Record<BlockStatus, string> = {
-  planned: "bg-faint",
-  in_progress: "bg-accent",
-  completed: "bg-sage",
-  pushed: "bg-warn",
-  skipped: "bg-faint",
-};
-
 export function TodayBuilder({ goals }: { goals: GoalWithNodes[] }) {
   const [minutes, setMinutes] = React.useState("120");
   const [energy, setEnergy] = React.useState<EnergyLevel>("normal");
   const [thinking, setThinking] = React.useState(true);
   const [plan, setPlan] = React.useState<DailyPlanResult | null>(null);
   const [blocks, setBlocks] = React.useState<LiveBlock[]>([]);
-  const [open, setOpen] = React.useState<string | null>(null);
 
   const build = React.useCallback(async (m: number, e: EnergyLevel) => {
     setThinking(true);
@@ -71,79 +61,83 @@ export function TodayBuilder({ goals }: { goals: GoalWithNodes[] }) {
   };
 
   return (
-    <div>
-      {/* controls */}
-      <div className="mb-8 grid gap-3 sm:grid-cols-2">
-        <SegmentedControl options={TIME as unknown as { value: string; label: string }[]} value={minutes} onChange={setMinutes} />
-        <SegmentedControl options={ENERGY as unknown as { value: EnergyLevel; label: string }[]} value={energy} onChange={setEnergy} />
+    <div className="space-y-10">
+      {/* window */}
+      <div className="grid gap-6 sm:grid-cols-2">
+        <div className="space-y-2.5">
+          <SectionLabel>Available time</SectionLabel>
+          <SegmentedControl options={TIME as unknown as { value: string; label: string }[]} value={minutes} onChange={setMinutes} />
+        </div>
+        <div className="space-y-2.5">
+          <SectionLabel>Energy</SectionLabel>
+          <SegmentedControl options={ENERGY as unknown as { value: EnergyLevel; label: string }[]} value={energy} onChange={setEnergy} />
+        </div>
       </div>
 
-      {/* plan */}
-      <p className="mb-4 text-[13px] text-muted">{thinking ? "Kairo is building your day…" : plan?.summary}</p>
-
-      {thinking ? (
-        <div className="space-y-2.5">
-          {[0, 1, 2].map((i) => <div key={i} className="h-14 animate-pulse rounded-xl bg-white/[0.03]" />)}
+      {/* path */}
+      <div className="space-y-4">
+        <div className="flex items-center justify-between">
+          <SectionLabel>Today&apos;s path</SectionLabel>
+          <span className="text-[12px] text-muted">{thinking ? "Building…" : plan?.summary}</span>
         </div>
-      ) : blocks.length === 0 ? (
-        <p className="py-10 text-center text-sm text-muted">No blocks fit today. Add time or raise your energy.</p>
-      ) : (
-        <ul className="divide-y divide-line">
-          {blocks.map((b) => {
-            const done = b.status === "completed";
-            const pushed = b.status === "pushed";
-            const expanded = open === b.id;
-            return (
-              <li key={b.id}>
-                <button
-                  onClick={() => setOpen(expanded ? null : b.id)}
-                  className="flex w-full items-center gap-4 py-4 text-left"
-                >
-                  <span className="w-14 shrink-0 font-mono text-[12px] text-faint">{formatClock(b.startTime) || `${b.durationMinutes}m`}</span>
-                  <span className="min-w-0 flex-1">
-                    <span className={cn("block truncate text-[15px]", done ? "text-faint line-through" : "text-ink")}>{b.title}</span>
-                    <span className="text-[12px] text-muted">{b.reason}</span>
-                  </span>
-                  <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", STATUS_TINT[b.status])} />
-                </button>
-                {expanded && !done && !pushed && (
-                  <div className="flex flex-wrap gap-1.5 pb-4">
-                    <Act icon={<Play size={13} />} label={b.status === "in_progress" ? "Complete" : "Start"} onClick={() => (b.status === "in_progress" ? act.complete(b.id) : act.start(b.id))} tone="accent" />
-                    <Act icon={<Check size={13} />} label="Done" onClick={() => act.complete(b.id)} tone="sage" />
-                    <Act icon={<ArrowRight size={13} />} label="Push" onClick={() => act.push(b.id)} tone="warn" />
-                    <Act icon={<Minimize2 size={13} />} label="Smaller" onClick={() => act.smaller(b.id)} />
-                    <Act icon={<Split size={13} />} label="Split" onClick={() => act.split(b.id)} />
-                    <Act icon={<Repeat size={13} />} label="Replace" onClick={() => act.replace(b.id)} />
-                  </div>
-                )}
-                {expanded && pushed && <p className="pb-4 text-[12px] text-warn">Moved to later. Timeline may slip ~1 day unless recovered.</p>}
-                {expanded && done && <p className="pb-4 text-[12px] text-sage">Done — goal progress updated.</p>}
-              </li>
-            );
-          })}
-        </ul>
-      )}
 
-      {!thinking && plan?.recoveryNote && (
-        <p className="mt-6 border-t border-line pt-4 text-[13px] text-warn">{plan.recoveryNote}</p>
-      )}
+        {thinking ? (
+          <div className="space-y-2.5">{[0, 1, 2].map((i) => <div key={i} className="h-[68px] animate-pulse rounded-xl bg-white/[0.03]" />)}</div>
+        ) : blocks.length === 0 ? (
+          <SoftGlassCard className="rounded-xl px-4 py-10 text-center text-sm text-muted">No blocks fit today. Add time or raise your energy.</SoftGlassCard>
+        ) : (
+          <div className="space-y-2.5">
+            {blocks.map((b) => <PlanBlock key={b.id} block={b} act={act} />)}
+          </div>
+        )}
+
+        {!thinking && plan?.recoveryNote && (
+          <div className="rounded-xl border border-warn/20 bg-warn/[0.06] px-4 py-3 text-[13px] text-warn">{plan.recoveryNote}</div>
+        )}
+      </div>
     </div>
   );
 }
 
-function Act({ icon, label, onClick, tone = "muted" }: { icon: React.ReactNode; label: string; onClick: () => void; tone?: "muted" | "accent" | "sage" | "warn" }) {
+function PlanBlock({ block: b, act }: { block: LiveBlock; act: Record<string, (id: string) => void> }) {
+  const [open, setOpen] = React.useState(false);
+  const done = b.status === "completed";
+  const pushed = b.status === "pushed";
+  const meta = blockStatusMeta[b.status];
   return (
-    <button
-      onClick={onClick}
-      className={cn(
-        "inline-flex items-center gap-1.5 rounded-lg border border-line px-2.5 py-1.5 text-[12px] text-muted transition-colors",
-        tone === "accent" && "hover:border-accent/40 hover:text-accent",
-        tone === "sage" && "hover:border-sage/40 hover:text-sage",
-        tone === "warn" && "hover:border-warn/40 hover:text-warn",
-        tone === "muted" && "hover:border-line-strong hover:text-ink"
+    <SoftGlassCard className="rounded-xl">
+      <button onClick={() => setOpen((o) => !o)} className="flex w-full items-center gap-4 px-4 py-3.5 text-left">
+        <span className="w-12 shrink-0 font-mono text-[12px] text-faint">{formatClock(b.startTime) || `${b.durationMinutes}m`}</span>
+        <span className="min-w-0 flex-1">
+          <span className={cn("block truncate text-[15px]", done ? "text-faint line-through" : "text-ink")}>{b.title}</span>
+          <span className="truncate text-[12px] text-muted">{b.reason}</span>
+        </span>
+        {b.status !== "planned" && <span className={cn("hidden rounded-md px-2 py-0.5 text-[11px] sm:inline", meta.chip)}>{meta.label}</span>}
+        <span className={cn("h-1.5 w-1.5 shrink-0 rounded-full", meta.dot)} />
+        <ChevronDown size={16} className={cn("shrink-0 text-faint transition-transform", open && "rotate-180")} />
+      </button>
+      {open && (
+        <div className="border-t border-line px-4 py-3">
+          {pushed ? (
+            <p className="text-[12px] text-warn">Moved to later. Timeline may slip ~1 day unless recovered.</p>
+          ) : done ? (
+            <p className="text-[12px] text-sage">Done — goal progress updated.</p>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {b.status === "in_progress" ? (
+                <Chip tone="sage" icon={<Check size={14} />} onClick={() => act.complete(b.id)}>Complete</Chip>
+              ) : (
+                <Chip tone="accent" icon={<Play size={14} />} onClick={() => act.start(b.id)}>Start</Chip>
+              )}
+              <Chip tone="sage" icon={<Check size={14} />} onClick={() => act.complete(b.id)}>Done</Chip>
+              <Chip tone="warn" icon={<ArrowRight size={14} />} onClick={() => act.push(b.id)}>Push</Chip>
+              <Chip icon={<Minimize2 size={14} />} onClick={() => act.smaller(b.id)}>Smaller</Chip>
+              <Chip icon={<Split size={14} />} onClick={() => act.split(b.id)}>Split</Chip>
+              <Chip icon={<Repeat size={14} />} onClick={() => act.replace(b.id)}>Replace</Chip>
+            </div>
+          )}
+        </div>
       )}
-    >
-      {icon} {label}
-    </button>
+    </SoftGlassCard>
   );
 }

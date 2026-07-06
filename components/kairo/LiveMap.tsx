@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowUp, Check, Play, CalendarPlus, X, ChevronDown, Locate } from "lucide-react";
 import type { GoalWithNodes, GoalNode, NodeStatus } from "@/types";
 import { nodeStatusMeta } from "@/lib/kairo/status";
+import { Chip } from "@/components/ui/Chip";
 import { cn, formatDuration, makeId } from "@/lib/utils";
 
 interface Placed {
@@ -414,21 +415,15 @@ function NodeSheet({
         </button>
       </div>
       <p className="mt-2 text-[13px] text-muted">Next: spend 25 min to {node.title.toLowerCase()}.</p>
-      <div className="mt-3 flex items-center gap-2">
-        <button onClick={onDone} className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-[13px] text-muted transition-colors hover:border-sage/40 hover:text-sage">
-          <Check size={14} /> Done
-        </button>
-        <button onClick={onMotion} className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-[13px] text-muted transition-colors hover:border-accent/40 hover:text-accent">
-          <Play size={14} /> Start
-        </button>
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <Chip tone="sage" icon={<Check size={14} />} onClick={onDone}>Done</Chip>
+        <Chip tone="accent" icon={<Play size={14} />} onClick={onMotion}>Start</Chip>
         {sent ? (
           <span className="inline-flex items-center gap-1.5 text-[13px] text-sage">
             <CalendarPlus size={14} /> In Today · <Link href="/app/today" className="underline">open</Link>
           </span>
         ) : (
-          <button onClick={onSend} className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-[13px] text-muted transition-colors hover:border-accent/40 hover:text-accent">
-            <CalendarPlus size={14} /> Today
-          </button>
+          <Chip tone="accent" icon={<CalendarPlus size={14} />} onClick={onSend}>Today</Chip>
         )}
       </div>
     </div>
