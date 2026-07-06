@@ -1,0 +1,136 @@
+"use client";
+
+import * as React from "react";
+import Link from "next/link";
+import { ArrowRight, RotateCcw } from "lucide-react";
+import { generateGoalMap } from "@/lib/ai/generate-goal-map";
+import type { GoalMapResult } from "@/lib/ai/types";
+import { GoalCore } from "./GoalCore";
+import { Logo } from "./Logo";
+import { Button } from "@/components/ui/Button";
+import { nodeStatusMeta } from "@/lib/kairo/status";
+import { cn, formatDuration, relativeDays } from "@/lib/utils";
+
+const CHIPS = ["Launch a project", "Study better", "Get organized", "Save money", "Build a routine"];
+
+type Step = "input" | "mapping" | "result";
+
+export function OnboardingFlow() {
+  const [step, setStep] = React.useState<Step>("input");
+  const [prompt, setPrompt] = React.useState("");
+  const [result, setResult] = React.useState<GoalMapResult | null>(null);
+
+  const submit = async () => {
+    const p = prompt.trim();
+    if (!p) return;
+    setStep("mapping");
+    await new Promise((r) => setTimeout(r, 1200));
+    const res = await generateGoalMap({ prompt: p });
+    setResult(res);
+    setStep("result");
+  };
+
+  const reset = () => {
+    setStep("input");
+    setResult(null);
+  };
+
+  return (
+    <div className="relative mx-auto flex min-h-screen w-full max-w-2xl flex-col items-center px-5 py-10">
+      <Link href="/" className="mb-auto self-start"><Logo /></Link>
+
+      {step === "input" && (
+        <div className="my-auto w-full animate-fade-up text-center">
+          <GoalCore size={140} className="mx-auto mb-8" />
+          <h1 className="font-display text-3xl font-semibold tracking-tight text-ink md:text-4xl">What are we making happen?</h1>
+          <p className="mx-auto mt-3 max-w-md text-[15px] text-muted">
+            Tell Kairo your goal. It will map the path and help build your day.
+          </p>
+
+          <div className="glass-strong mt-8 flex items-center gap-2 rounded-2xl p-2 pl-4 text-left">
+            <input
+              autoFocus
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && submit()}
+              placeholder="Launch my app by September…"
+              className="h-11 flex-1 bg-transparent text-[15px] text-ink placeholder:text-faint focus:outline-none"
+            />
+            <Button variant="primary" onClick={submit} disabled={!prompt.trim()}>
+              Map My Goal <ArrowRight size={16} />
+            </Button>
+          </div>
+
+          <div className="mt-5 flex flex-wrap justify-center gap-2">
+            {CHIPS.map((c) => (
+              <button
+                key={c}
+                onClick={() => setPrompt(c)}
+                className="rounded-full border border-line px-3.5 py-1.5 text-[13px] text-muted transition-colors hover:border-cyan/40 hover:text-ink"
+              >
+                {c}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {step === "mapping" && (
+        <div className="my-auto flex flex-col items-center text-center">
+          <GoalCore size={150} className="mb-8 animate-pulse-glow" />
+          <p className="font-display text-xl font-medium text-ink">Mapping your goal…</p>
+          <p className="mt-2 font-mono text-[12px] uppercase tracking-[0.2em] text-cyan/70">Kairo is drawing the path</p>
+        </div>
+      )}
+
+      {step === "result" && result && (
+        <div className="my-auto w-full animate-fade-up">
+          <div className="mb-6 flex items-center gap-4">
+            <GoalCore size={72} orbit={false} pulse={false} />
+            <div className="min-w-0">
+              <h1 className="truncate font-display text-2xl font-semibold text-ink">{result.title}</h1>
+              <p className="font-mono text-[12px] text-faint">
+                Target {relativeDays(result.suggestedTargetDate)} · {result.weeklyRhythm}
+              </p>
+            </div>
+          </div>
+
+          <p className="mb-5 text-[15px] leading-relaxed text-muted">{result.description}</p>
+
+          <div className="glass rounded-2xl p-4">
+            <div className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-faint">The path · {result.nodes.length} steps</div>
+            <ol className="space-y-1">
+              {result.nodes.map((n, i) => {
+                const meta = nodeStatusMeta[n.status];
+                return (
+                  <li key={i} className="flex items-center gap-3 rounded-xl px-2 py-2.5">
+                    <span className="font-mono text-[12px] text-faint">{String(i + 1).padStart(2, "0")}</span>
+                    <span className={cn("h-2 w-2 shrink-0 rounded-full", meta.dot)} />
+                    <span className="min-w-0 flex-1 truncate text-[14px] text-ink/90">{n.title}</span>
+                    <span className="font-mono text-[11px] text-faint">{formatDuration(n.estimatedMinutes)}</span>
+                  </li>
+                );
+              })}
+            </ol>
+          </div>
+
+          <div className="mt-4 rounded-2xl border border-cyan/20 bg-cyan/5 px-4 py-3">
+            <span className="font-mono text-[10px] uppercase tracking-wide text-cyan/80">First next action</span>
+            <p className="mt-0.5 text-[14px] text-ink">{result.firstNextAction}</p>
+          </div>
+
+          <div className="mt-6 flex flex-col gap-2.5 sm:flex-row">
+            <Link href="/app/map" className="flex-1">
+              <Button variant="primary" size="lg" className="w-full">
+                Open my living map <ArrowRight size={16} />
+              </Button>
+            </Link>
+            <Button variant="glass" size="lg" onClick={reset}>
+              <RotateCcw size={15} /> Start over
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

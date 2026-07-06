@@ -1,65 +1,220 @@
-import Image from "next/image";
+import Link from "next/link";
+import { ArrowRight, Waypoints, Sunrise, Inbox, Target, LifeBuoy, Activity } from "lucide-react";
+import { Logo } from "@/components/kairo/Logo";
+import { OrbBackground } from "@/components/kairo/OrbBackground";
+import { LivingGoalMap } from "@/components/kairo/LivingGoalMap";
+import { SectionLabel } from "@/components/kairo/PageHeader";
+import { buildSeed } from "@/lib/mock/seed";
 
-export default function Home() {
+const FEATURES = [
+  { icon: Waypoints, title: "Living Goal Maps", desc: "Every goal becomes a glowing map of steps — the next move pulses, the rest waits." },
+  { icon: Sunrise, title: "Daily Time Builder", desc: "Give Kairo your time and energy. It builds the most efficient plan for today." },
+  { icon: Inbox, title: "Idea Inbox", desc: "Dump every loose thought. Kairo sorts it into must-do, high-impact, and can-wait." },
+  { icon: Target, title: "Focus Path", desc: "One clear path through the day, ordered so momentum compounds." },
+  { icon: LifeBuoy, title: "Recovery Mode", desc: "Pushed a task? Kairo reshapes the plan and shows how to get back on track." },
+  { icon: Activity, title: "Weekly Review", desc: "See what moved, what's at risk, and the single best move next." },
+];
+
+const STEPS = [
+  { n: "01", title: "Tell Kairo your goal", desc: "Type what you want done. Kairo maps the whole path in seconds." },
+  { n: "02", title: "Map the path", desc: "Watch it become a living map of steps, estimates, and next actions." },
+  { n: "03", title: "Build today", desc: "Enter your time and energy. Kairo builds the plan that fits." },
+  { n: "04", title: "Rebuild when life changes", desc: "Push, shrink, or split anything. The plan stays honest and recoverable." },
+];
+
+export default function LandingPage() {
+  const goal = buildSeed().goals[0];
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
+    <div className="relative overflow-hidden">
+      <OrbBackground />
+
+      {/* Header */}
+      <header className="sticky top-0 z-40 border-b border-line/60 bg-canvas/60 backdrop-blur-xl">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4">
+          <Logo />
+          <nav className="hidden items-center gap-7 text-sm text-muted md:flex">
+            <a href="#how" className="transition-colors hover:text-ink">How it works</a>
+            <a href="#features" className="transition-colors hover:text-ink">Features</a>
+            <a href="#pricing" className="transition-colors hover:text-ink">Pricing</a>
+          </nav>
+          <div className="flex items-center gap-2">
+            <Link href="/sign-in" className="hidden rounded-full px-4 py-2 text-sm text-muted transition-colors hover:text-ink sm:block">
+              Sign in
+            </Link>
+            <Link
+              href="/onboarding"
+              className="rounded-full bg-[linear-gradient(100deg,#7ce8ee,#4c8dff)] px-4 py-2 text-sm font-semibold text-[#04121c] shadow-[0_0_30px_-8px_rgba(45,214,232,0.7)] transition-all hover:brightness-105"
+            >
+              Start
+            </Link>
+          </div>
+        </div>
+      </header>
+
+      {/* Hero */}
+      <section className="mx-auto grid max-w-6xl items-center gap-10 px-5 py-16 md:py-24 lg:grid-cols-2">
+        <div className="animate-fade-up">
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-line bg-white/[0.03] px-3 py-1.5 font-mono text-[11px] uppercase tracking-[0.18em] text-cyan/80">
+            <span className="h-1.5 w-1.5 rounded-full bg-cyan animate-pulse-glow" /> A calmer way to move forward
+          </div>
+          <h1 className="font-display text-5xl font-semibold leading-[1.05] tracking-tight text-ink md:text-6xl">
+            <span className="text-gradient">Map the way.</span>
+            <br />
+            Build the day.
           </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+          <p className="mt-5 max-w-md text-[17px] leading-relaxed text-muted">
+            Tell Kairo what you want done. It turns your goals, ideas, and available time into a clear plan for today.
           </p>
+          <div className="mt-8 flex flex-wrap items-center gap-3">
+            <Link
+              href="/onboarding"
+              className="inline-flex h-12 items-center gap-2 rounded-full bg-[linear-gradient(100deg,#7ce8ee,#4c8dff)] px-6 text-[15px] font-semibold text-[#04121c] shadow-[0_0_36px_-6px_rgba(45,214,232,0.7)] transition-all hover:brightness-105"
+            >
+              Start building your day <ArrowRight size={18} />
+            </Link>
+            <a href="#how" className="inline-flex h-12 items-center gap-2 rounded-full border border-line px-6 text-[15px] text-ink transition-colors hover:bg-white/5">
+              See how it works
+            </a>
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        {/* Hero living map */}
+        <div className="relative animate-fade-in">
+          <div className="pointer-events-none absolute inset-0 -z-10 bg-cyan/10 blur-[100px]" />
+          <div className="glass relative overflow-hidden rounded-[28px] p-3">
+            <div className="pointer-events-none absolute inset-0 grid-veil opacity-40" />
+            <div className="pointer-events-none relative">
+              <LivingGoalMap goal={goal} />
+            </div>
+            <div className="pointer-events-none absolute left-5 top-5 rounded-xl border border-line bg-canvas/70 px-3 py-2 backdrop-blur">
+              <div className="font-mono text-[10px] uppercase tracking-wide text-faint">Now mapping</div>
+              <div className="text-sm font-medium text-ink">{goal.title}</div>
+            </div>
+          </div>
         </div>
-      </main>
+      </section>
+
+      {/* Problem / Solution */}
+      <section className="mx-auto max-w-6xl px-5 py-16">
+        <div className="grid gap-4 md:grid-cols-2">
+          <div className="glass rounded-3xl p-8">
+            <SectionLabel className="mb-3 text-rose/70">The problem</SectionLabel>
+            <p className="font-display text-2xl font-medium leading-snug text-ink">
+              Your goals are scattered. Your day is busy. Your planner doesn't know what actually matters.
+            </p>
+          </div>
+          <div className="glass rounded-3xl p-8">
+            <SectionLabel className="mb-3 text-cyan/70">The solution</SectionLabel>
+            <p className="font-display text-2xl font-medium leading-snug text-ink">
+              Kairo turns goals into maps, maps into next steps, and next steps into today's plan.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* How it works */}
+      <section id="how" className="mx-auto max-w-6xl px-5 py-16">
+        <div className="mb-10 text-center">
+          <SectionLabel className="mb-3 flex justify-center">How it works</SectionLabel>
+          <h2 className="font-display text-3xl font-semibold tracking-tight text-ink md:text-4xl">Four steps, every day.</h2>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {STEPS.map((s) => (
+            <div key={s.n} className="glass rounded-2xl p-6">
+              <div className="font-mono text-2xl font-semibold text-cyan/50">{s.n}</div>
+              <h3 className="mt-3 font-display text-lg font-semibold text-ink">{s.title}</h3>
+              <p className="mt-1.5 text-sm text-muted">{s.desc}</p>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Features */}
+      <section id="features" className="mx-auto max-w-6xl px-5 py-16">
+        <div className="mb-10">
+          <SectionLabel className="mb-3">Everything in one calm surface</SectionLabel>
+          <h2 className="max-w-2xl font-display text-3xl font-semibold tracking-tight text-ink md:text-4xl">
+            A command center for getting locked in — without the overwhelm.
+          </h2>
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {FEATURES.map((f) => {
+            const Icon = f.icon;
+            return (
+              <div key={f.title} className="glass group rounded-2xl p-6 transition-all hover:border-line-strong">
+                <div className="grid h-11 w-11 place-items-center rounded-xl border border-cyan/20 bg-cyan/5 text-cyan transition-all group-hover:shadow-[0_0_24px_-8px_rgba(45,214,232,0.9)]">
+                  <Icon size={20} />
+                </div>
+                <h3 className="mt-4 font-display text-lg font-semibold text-ink">{f.title}</h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-muted">{f.desc}</p>
+              </div>
+            );
+          })}
+        </div>
+      </section>
+
+      {/* Pricing preview */}
+      <section id="pricing" className="mx-auto max-w-6xl px-5 py-16">
+        <div className="mb-10 text-center">
+          <SectionLabel className="mb-3 flex justify-center">Pricing</SectionLabel>
+          <h2 className="font-display text-3xl font-semibold tracking-tight text-ink md:text-4xl">Start free. Upgrade when it's moving.</h2>
+        </div>
+        <div className="mx-auto grid max-w-3xl gap-4 md:grid-cols-2">
+          <div className="glass rounded-3xl p-8">
+            <div className="text-sm font-semibold text-muted">Free</div>
+            <div className="mt-2 font-display text-4xl font-semibold text-ink">$0</div>
+            <p className="mt-2 text-sm text-muted">2 active goals, daily planning, inbox, and simple review.</p>
+            <Link href="/sign-up" className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-cyan hover:underline">
+              Get started <ArrowRight size={15} />
+            </Link>
+          </div>
+          <div className="relative overflow-hidden rounded-3xl border border-violet/30 bg-[linear-gradient(180deg,rgba(154,124,255,0.12),rgba(76,141,255,0.05))] p-8">
+            <div className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full bg-violet/20 blur-3xl" />
+            <div className="text-sm font-semibold text-violet">Pro</div>
+            <div className="mt-2 flex items-end gap-1">
+              <span className="font-display text-4xl font-semibold text-ink">$8</span>
+              <span className="mb-1.5 text-sm text-muted">/mo</span>
+            </div>
+            <p className="mt-2 text-sm text-muted">Unlimited goals, advanced AI planning, deeper reviews, forecasting.</p>
+            <Link href="/sign-up" className="mt-6 inline-flex items-center gap-2 text-sm font-medium text-ink hover:underline">
+              Start with Pro <ArrowRight size={15} />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="mx-auto max-w-6xl px-5 py-20">
+        <div className="glass-strong relative overflow-hidden rounded-[32px] px-8 py-16 text-center">
+          <div className="pointer-events-none absolute inset-0 -z-10">
+            <div className="absolute left-1/2 top-0 h-64 w-64 -translate-x-1/2 rounded-full bg-cyan/20 blur-[90px]" />
+          </div>
+          <h2 className="mx-auto max-w-2xl font-display text-4xl font-semibold tracking-tight text-ink md:text-5xl">
+            What's the best thing you can do with the time you have today?
+          </h2>
+          <p className="mx-auto mt-4 max-w-md text-[15px] text-muted">Kairo answers that every morning. Map the way. Build the day.</p>
+          <Link
+            href="/onboarding"
+            className="mt-8 inline-flex h-12 items-center gap-2 rounded-full bg-[linear-gradient(100deg,#7ce8ee,#4c8dff)] px-7 text-[15px] font-semibold text-[#04121c] shadow-[0_0_36px_-6px_rgba(45,214,232,0.7)] transition-all hover:brightness-105"
+          >
+            Start building your day <ArrowRight size={18} />
+          </Link>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-line">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-5 py-8 sm:flex-row">
+          <Logo size={22} />
+          <p className="font-mono text-[12px] text-faint">Map the way. Build the day.</p>
+          <div className="flex gap-5 text-sm text-muted">
+            <Link href="/sign-in" className="hover:text-ink">Sign in</Link>
+            <a href="#features" className="hover:text-ink">Features</a>
+            <a href="#pricing" className="hover:text-ink">Pricing</a>
+          </div>
+        </div>
+      </footer>
     </div>
   );
 }
