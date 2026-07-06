@@ -16,7 +16,7 @@ export function PageContainer({
   return (
     <>
       <TopBar user={user} className="md:hidden" />
-      <main className={cn("mx-auto w-full max-w-2xl px-5 pb-28 pt-6 md:px-8 md:pb-16 md:pt-12", className)}>
+      <main className={cn("mx-auto w-full max-w-2xl px-5 pb-40 pt-6 md:px-8 md:pb-16 md:pt-12", className)}>
         {children}
       </main>
     </>

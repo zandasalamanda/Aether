@@ -4,11 +4,11 @@ import { LiveMap } from "@/components/kairo/LiveMap";
 
 export const metadata: Metadata = { title: "Map · Kairo" };
 
-export default async function MapPage() {
-  const goals = await getGoals();
+export default async function MapPage({ searchParams }: { searchParams: Promise<{ goal?: string }> }) {
+  const [goals, { goal }] = await Promise.all([getGoals(), searchParams]);
   return (
     <div className="fixed inset-0 top-0 md:left-[248px]">
-      <LiveMap goals={goals} />
+      <LiveMap goals={goals} initialGoalId={goal} />
     </div>
   );
 }

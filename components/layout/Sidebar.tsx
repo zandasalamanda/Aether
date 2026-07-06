@@ -7,8 +7,9 @@ import { NAV } from "./nav";
 import { Logo } from "@/components/kairo/Logo";
 import { cn } from "@/lib/utils";
 import type { SessionUser } from "@/lib/auth";
+import type { NextMove } from "@/lib/kairo/next-move";
 
-export function Sidebar({ user, className }: { user: SessionUser; className?: string }) {
+export function Sidebar({ user, nextMove, className }: { user: SessionUser; nextMove: NextMove | null; className?: string }) {
   const pathname = usePathname();
   return (
     <aside
@@ -40,6 +41,19 @@ export function Sidebar({ user, className }: { user: SessionUser; className?: st
             );
           })}
         </nav>
+
+        {nextMove && (
+          <Link
+            href={`/app/map?goal=${nextMove.goalId}`}
+            className="mt-7 block rounded-xl border border-accent/25 bg-accent/[0.06] px-3.5 py-3 transition-colors hover:border-accent/40 hover:bg-accent/10"
+          >
+            <div className="flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-accent" style={{ boxShadow: "0 0 8px #e6b877" }} />
+              <span className="text-[10px] font-medium uppercase tracking-[0.16em] text-accent/80">Next move</span>
+            </div>
+            <p className="mt-1.5 truncate text-[13.5px] font-medium text-ink">{nextMove.title}</p>
+          </Link>
+        )}
       </div>
 
       <div className="space-y-3">

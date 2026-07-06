@@ -36,9 +36,12 @@ function nextId(nodes: GoalNode[]): string | null {
 
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 
-export function LiveMap({ goals: initialGoals }: { goals: GoalWithNodes[] }) {
+export function LiveMap({ goals: initialGoals, initialGoalId }: { goals: GoalWithNodes[]; initialGoalId?: string }) {
   const [goals, setGoals] = React.useState(initialGoals);
-  const [gi, setGi] = React.useState(0);
+  const [gi, setGi] = React.useState(() => {
+    const idx = initialGoalId ? initialGoals.findIndex((g) => g.id === initialGoalId) : 0;
+    return idx >= 0 ? idx : 0;
+  });
   const goal = goals[gi];
 
   const [view, setView] = React.useState({ tx: 0, ty: 0, scale: 1 });
