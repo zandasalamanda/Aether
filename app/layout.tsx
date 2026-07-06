@@ -11,15 +11,22 @@ const sora = Sora({
   display: "swap",
 });
 
+const title = "Kairo — Map the way. Build the day.";
+const description =
+  "Tell Kairo what you want done. It turns your goals, ideas, and available time into a clear plan for today.";
+
 export const metadata: Metadata = {
-  title: "Kairo — Map the way. Build the day.",
-  description:
-    "Tell Kairo what you want done. It turns your goals, ideas, and available time into a clear plan for today.",
+  metadataBase: new URL("https://kairo-zeta-five.vercel.app"),
+  title,
+  description,
   applicationName: "Kairo",
+  appleWebApp: { capable: true, title: "Kairo", statusBarStyle: "black-translucent" },
+  openGraph: { title, description, siteName: "Kairo", type: "website" },
+  twitter: { card: "summary_large_image", title, description },
 };
 
 export const viewport: Viewport = {
-  themeColor: "#070a11",
+  themeColor: "#0a0b0d",
   width: "device-width",
   initialScale: 1,
 };
