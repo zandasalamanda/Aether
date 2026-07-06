@@ -61,10 +61,19 @@ export function LivingGoalMap({
         const cxp = CX + ctrlR * Math.cos(angle + 0.4);
         const cyp = CY + ctrlR * Math.sin(angle + 0.4);
         const isNext = node.id === nextId;
+        // Trim to the core's edge and the node's edge (not center-to-center).
+        const s0 = Math.hypot(cxp - CX, cyp - CY) || 1;
+        const sx = CX + ((cxp - CX) / s0) * 54;
+        const sy = CY + ((cyp - CY) / s0) * 54;
+        const edx = x - cxp;
+        const edy = y - cyp;
+        const s1 = Math.hypot(edx, edy) || 1;
+        const ex = x - (edx / s1) * 34;
+        const ey = y - (edy / s1) * 34;
         return (
           <path
             key={`link-${node.id}`}
-            d={`M ${CX} ${CY} Q ${cxp} ${cyp} ${x} ${y}`}
+            d={`M ${sx.toFixed(1)} ${sy.toFixed(1)} Q ${cxp.toFixed(1)} ${cyp.toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}`}
             fill="none"
             stroke={isNext ? ACCENT : "rgba(255,255,255,0.14)"}
             strokeWidth={isNext ? 2 : 1.25}

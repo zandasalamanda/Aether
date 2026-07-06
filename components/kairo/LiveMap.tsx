@@ -197,10 +197,22 @@ export function LiveMap({ goals: initialGoals, initialGoalId }: { goals: GoalWit
               const isNext = p.node.id === nId;
               const cx = p.x * 0.5 + 22 * Math.cos(p.node.title.length);
               const cy = p.y * 0.5 - 22 * Math.sin(p.node.title.length);
+              // Trim both ends so the line emerges from the core's edge and
+              // stops at the node's edge (not center-to-center).
+              const CORE_R = 48;
+              const NODE_R = 30;
+              const d0 = Math.hypot(cx, cy) || 1;
+              const sx = (cx / d0) * CORE_R;
+              const sy = (cy / d0) * CORE_R;
+              const endDx = p.x - cx;
+              const endDy = p.y - cy;
+              const d1 = Math.hypot(endDx, endDy) || 1;
+              const ex = p.x - (endDx / d1) * NODE_R;
+              const ey = p.y - (endDy / d1) * NODE_R;
               return (
                 <path
                   key={p.node.id}
-                  d={`M 0 0 Q ${cx} ${cy} ${p.x} ${p.y}`}
+                  d={`M ${sx.toFixed(1)} ${sy.toFixed(1)} Q ${cx.toFixed(1)} ${cy.toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}`}
                   fill="none"
                   stroke={isNext ? "#e6b877" : `${nodeStatusMeta[p.node.status].hex}55`}
                   strokeWidth={isNext ? 1.6 : 1.1}
