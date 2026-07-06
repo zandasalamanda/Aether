@@ -410,6 +410,13 @@ export function GalaxyMap({
             <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.2em] text-accent/70">Aether is drawing the path</p>
           </div>
         )}
+
+        {empty && !mapping && (
+          <div className="pointer-events-none absolute left-1/2 top-[42%] -translate-x-1/2 -translate-y-1/2 text-center">
+            <span className="mx-auto block rounded-full" style={{ width: 96, height: 96, background: "radial-gradient(circle at 36% 28%, #fdf3e0 0%, #e6b877 46%, #1a130a 100%)", boxShadow: "0 0 60px rgba(230,184,119,0.28)", animation: "breathe 6s ease-in-out infinite" }} />
+            <p className="mt-6 font-mono text-[11px] uppercase tracking-[0.22em] text-faint">Your galaxy is empty</p>
+          </div>
+        )}
       </div>
 
       {/* top chrome: goal switcher (fly-to) + new goal */}

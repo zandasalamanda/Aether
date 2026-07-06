@@ -112,6 +112,10 @@ export function TodayBuilder({ goals }: { goals: GoalWithNodes[] }) {
 
         {thinking ? (
           <div className="space-y-2.5">{[0, 1, 2].map((i) => <div key={i} className="h-[68px] animate-pulse rounded-xl bg-white/[0.03]" />)}</div>
+        ) : goals.length === 0 ? (
+          <SoftGlassCard className="rounded-xl px-4 py-10 text-center text-sm text-muted">
+            No goals yet. <a href="/app/map" className="text-accent underline underline-offset-2">Create one on the map</a> and Aether builds your day from it.
+          </SoftGlassCard>
         ) : blocks.length === 0 ? (
           <SoftGlassCard className="rounded-xl px-4 py-10 text-center text-sm text-muted">No blocks fit today. Add time or raise your energy.</SoftGlassCard>
         ) : (
