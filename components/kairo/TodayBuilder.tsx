@@ -125,7 +125,7 @@ export function TodayBuilder({ goals }: { goals: GoalWithNodes[] }) {
         )}
 
         {!thinking && blocks.length > 1 && (
-          <p className="px-1 text-[11px] text-faint">Drag the handle to reorder. Kairo sorts by momentum; you have the final say.</p>
+          <p className="px-1 text-[11px] text-faint">Drag the handle to reorder. Aether sorts by momentum; you have the final say.</p>
         )}
 
         {!thinking && plan?.recoveryNote && (

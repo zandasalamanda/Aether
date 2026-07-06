@@ -2,7 +2,7 @@ import { generateJson, isObj, isClient, viaRoute } from "./provider";
 import { mockSortInbox } from "./mock";
 import type { SortInboxInput, SortInboxResult } from "./types";
 
-const SYSTEM = `You are Kairo, sorting loose inbox items.
+const SYSTEM = `You are Aether, sorting loose inbox items.
 Return JSON: {"items":[{"id":string,"category":"must_do"|"high_impact"|"quick_win"|"can_wait"|"not_worth_doing","reason":string}],"reasoning":string}.
 Keep every input id; categorize by urgency and impact; "reason" is a short phrase. Concise.`;
 

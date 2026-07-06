@@ -2,7 +2,7 @@ import { generateJson, isObj } from "./provider";
 import { mockReview } from "./mock";
 import type { ReviewInput, ReviewResult } from "./types";
 
-const SYSTEM = `You are Kairo, reviewing a user's goals and recent plan.
+const SYSTEM = `You are Aether, reviewing a user's goals and recent plan.
 Return JSON: {"summary":string,"changes":string[],"risks":string[],"recoverability":string,"nextBestMove":string}.
 "changes" = what moved; "risks" = what's slipping; "recoverability" = one honest sentence; "nextBestMove" = the single best next action. Practical, no vague advice, no guarantees.`;
 

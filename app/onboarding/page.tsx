@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { OrbBackground } from "@/components/kairo/OrbBackground";
 import { OnboardingFlow } from "@/components/kairo/OnboardingFlow";
 
-export const metadata: Metadata = { title: "Create your first goal · Kairo" };
+export const metadata: Metadata = { title: "Create your first goal · Aether" };
 
 export default function OnboardingPage() {
   return (

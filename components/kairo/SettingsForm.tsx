@@ -88,9 +88,9 @@ export function SettingsForm({ user }: { user: SessionUser }) {
       {/* Preferences */}
       <div className="panel rounded-2xl px-6 py-2">
         <div className="py-3">
-          <SectionLabel>Kairo's behavior</SectionLabel>
+          <SectionLabel>Aether's behavior</SectionLabel>
         </div>
-        <PillGroup label="AI tone" hint="How Kairo talks to you" value={tone} onChange={setTone} options={[{ value: "calm", label: "Calm" }, { value: "direct", label: "Direct" }, { value: "strict", label: "Strict" }, { value: "encouraging", label: "Encouraging" }]} />
+        <PillGroup label="AI tone" hint="How Aether talks to you" value={tone} onChange={setTone} options={[{ value: "calm", label: "Calm" }, { value: "direct", label: "Direct" }, { value: "strict", label: "Strict" }, { value: "encouraging", label: "Encouraging" }]} />
         <PillGroup label="Planning style" hint="How it shapes your day" value={planning} onChange={setPlanning} options={[{ value: "balanced", label: "Balanced" }, { value: "ambitious", label: "Ambitious" }, { value: "light", label: "Light" }, { value: "deep_work", label: "Deep Work" }]} />
         <PillGroup label="Default energy" value={energy} onChange={setEnergy} options={[{ value: "low", label: "Low" }, { value: "normal", label: "Normal" }, { value: "high", label: "High" }]} />
         <PillGroup label="Notifications" hint="Placeholder — not sending yet" value={notify} onChange={setNotify} options={[{ value: "off", label: "Off" }, { value: "daily", label: "Daily nudge" }]} />

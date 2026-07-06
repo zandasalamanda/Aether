@@ -8,17 +8,17 @@ import { buildSeed } from "@/lib/mock/seed";
 
 const FEATURES = [
   { icon: Waypoints, title: "Living Goal Maps", desc: "Every goal becomes a glowing map of steps — the next move pulses, the rest waits." },
-  { icon: Sunrise, title: "Daily Time Builder", desc: "Give Kairo your time and energy. It builds the most efficient plan for today." },
-  { icon: Inbox, title: "Idea Inbox", desc: "Dump every loose thought. Kairo sorts it into must-do, high-impact, and can-wait." },
+  { icon: Sunrise, title: "Daily Time Builder", desc: "Give Aether your time and energy. It builds the most efficient plan for today." },
+  { icon: Inbox, title: "Idea Inbox", desc: "Dump every loose thought. Aether sorts it into must-do, high-impact, and can-wait." },
   { icon: Target, title: "Focus Path", desc: "One clear path through the day, ordered so momentum compounds." },
-  { icon: LifeBuoy, title: "Recovery Mode", desc: "Pushed a task? Kairo reshapes the plan and shows how to get back on track." },
+  { icon: LifeBuoy, title: "Recovery Mode", desc: "Pushed a task? Aether reshapes the plan and shows how to get back on track." },
   { icon: Activity, title: "Weekly Review", desc: "See what moved, what's at risk, and the single best move next." },
 ];
 
 const STEPS = [
-  { n: "01", title: "Tell Kairo your goal", desc: "Type what you want done. Kairo maps the whole path in seconds." },
+  { n: "01", title: "Tell Aether your goal", desc: "Type what you want done. Aether maps the whole path in seconds." },
   { n: "02", title: "Map the path", desc: "Watch it become a living map of steps, estimates, and next actions." },
-  { n: "03", title: "Build today", desc: "Enter your time and energy. Kairo builds the plan that fits." },
+  { n: "03", title: "Build today", desc: "Enter your time and energy. Aether builds the plan that fits." },
   { n: "04", title: "Rebuild when life changes", desc: "Push, shrink, or split anything. The plan stays honest and recoverable." },
 ];
 
@@ -64,7 +64,7 @@ export default function LandingPage() {
             Build the day.
           </h1>
           <p className="mt-5 max-w-md text-[17px] leading-relaxed text-muted">
-            Tell Kairo what you want done. It turns your goals, ideas, and available time into a clear plan for today.
+            Tell Aether what you want done. It turns your goals, ideas, and available time into a clear plan for today.
           </p>
           <div className="mt-8 flex flex-wrap items-center gap-3">
             <Link
@@ -107,7 +107,7 @@ export default function LandingPage() {
           <div className="panel rounded-3xl p-8">
             <SectionLabel className="mb-3 text-accent/70">The solution</SectionLabel>
             <p className="font-display text-2xl font-medium leading-snug text-ink">
-              Kairo turns goals into maps, maps into next steps, and next steps into today's plan.
+              Aether turns goals into maps, maps into next steps, and next steps into today's plan.
             </p>
           </div>
         </div>
@@ -193,7 +193,7 @@ export default function LandingPage() {
           <h2 className="mx-auto max-w-2xl font-display text-4xl font-semibold tracking-tight text-ink md:text-5xl">
             What's the best thing you can do with the time you have today?
           </h2>
-          <p className="mx-auto mt-4 max-w-md text-[15px] text-muted">Kairo answers that every morning. Map the way. Build the day.</p>
+          <p className="mx-auto mt-4 max-w-md text-[15px] text-muted">Aether answers that every morning. Map the way. Build the day.</p>
           <Link
             href="/onboarding"
             className="mt-8 inline-flex h-12 items-center gap-2 rounded-full bg-accent px-7 text-[15px] font-semibold text-[#1b1206] transition-all hover:brightness-105"

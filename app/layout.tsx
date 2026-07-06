@@ -13,17 +13,17 @@ const sora = Sora({
   display: "swap",
 });
 
-const title = "Kairo — Map the way. Build the day.";
+const title = "Aether — Map the way. Build the day.";
 const description =
-  "Tell Kairo what you want done. It turns your goals, ideas, and available time into a clear plan for today.";
+  "Tell Aether what you want done. It turns your goals, ideas, and available time into a clear plan for today.";
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://kairo-zeta-five.vercel.app"),
   title,
   description,
-  applicationName: "Kairo",
-  appleWebApp: { capable: true, title: "Kairo", statusBarStyle: "black-translucent" },
-  openGraph: { title, description, siteName: "Kairo", type: "website" },
+  applicationName: "Aether",
+  appleWebApp: { capable: true, title: "Aether", statusBarStyle: "black-translucent" },
+  openGraph: { title, description, siteName: "Aether", type: "website" },
   twitter: { card: "summary_large_image", title, description },
 };
 

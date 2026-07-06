@@ -1,18 +1,18 @@
-# CLAUDE.md — Kairo
+# CLAUDE.md — Aether
 
 Guidance for Claude Code working in this repository. These instructions override default behavior.
 
 ---
 
-## What Kairo is
+## What Aether is
 
-Kairo is a minimalist but visually rich, AI-powered **execution** app.
+Aether is a minimalist but visually rich, AI-powered **execution** app.
 
-> **Tell Kairo what you want done. Tell it your time and energy. It maps the way and builds your day.**
+> **Tell Aether what you want done. Tell it your time and energy. It maps the way and builds your day.**
 
-Tagline: **Map the way. Build the day.** ("Kairos" = the right, opportune moment.)
+Tagline: **Map the way. Build the day.** ("Aethers" = the right, opportune moment.)
 
-Users create goals; Kairo turns each into a **living goal map**; every morning the user gives Kairo their available time + energy, and Kairo builds the most efficient plan for today and keeps the goal moving. Every day the app answers one question: **What is the best thing I can do with the time I actually have today?**
+Users create goals; Aether turns each into a **living goal map**; every morning the user gives Aether their available time + energy, and Aether builds the most efficient plan for today and keeps the goal moving. Every day the app answers one question: **What is the best thing I can do with the time I actually have today?**
 
 **It IS:** a calm AI execution assistant · a living goal map · a daily efficiency scheduler · a futuristic personal command center · minimal but beautiful.
 

@@ -338,7 +338,7 @@ export function LiveMap({ goals: initialGoals, initialGoalId }: { goals: GoalWit
               <input
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder={thinking ? "Kairo is mapping…" : speech.listening ? "Listening…" : "Add a task or set a deadline…"}
+                placeholder={thinking ? "Aether is mapping…" : speech.listening ? "Listening…" : "Add a task or set a deadline…"}
                 disabled={thinking}
                 className="h-9 flex-1 bg-transparent text-[15px] text-ink placeholder:text-faint focus:outline-none"
               />
