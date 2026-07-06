@@ -7,7 +7,9 @@ import { sortInbox } from "@/lib/ai/sort-inbox";
 import { inboxCategoryMeta, inboxCategoryOrder } from "@/lib/kairo/status";
 import { Button } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
+import { MicButton } from "@/components/ui/MicButton";
 import { usePersistentState } from "@/lib/store/persist";
+import { useSpeechInput } from "@/lib/hooks/use-speech-input";
 import { cn, makeId } from "@/lib/utils";
 
 interface LiteItem { id: string; content: string; category: InboxCategory }
@@ -22,6 +24,7 @@ export function InboxBoard({ initialItems }: { initialItems: InboxItem[] }) {
   const [sorted, setSorted] = React.useState(false);
   const [reasoning, setReasoning] = React.useState<string | null>(null);
   const [flash, setFlash] = React.useState<string | null>(null);
+  const speech = useSpeechInput(setInput);
 
   const add = () => {
     const c = input.trim(); if (!c) return;
@@ -54,9 +57,10 @@ export function InboxBoard({ initialItems }: { initialItems: InboxItem[] }) {
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && add()}
-          placeholder="Drop anything here…"
+          placeholder={speech.listening ? "Listening…" : "Drop anything here…"}
           className="h-10 flex-1 bg-transparent text-[15px] text-ink placeholder:text-faint focus:outline-none"
         />
+        {speech.supported && <MicButton listening={speech.listening} onClick={() => speech.toggle(input)} />}
         <button
           onClick={add}
           disabled={!input.trim()}

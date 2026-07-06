@@ -7,7 +7,9 @@ import type { GoalWithNodes, GoalNode, NodeStatus } from "@/types";
 import { nodeStatusMeta } from "@/lib/kairo/status";
 import { parseDeadline } from "@/lib/kairo/deadline";
 import { usePersistentState } from "@/lib/store/persist";
+import { useSpeechInput } from "@/lib/hooks/use-speech-input";
 import { Chip } from "@/components/ui/Chip";
+import { MicButton } from "@/components/ui/MicButton";
 import { cn, formatDuration, makeId, relativeDays } from "@/lib/utils";
 
 interface Placed {
@@ -56,6 +58,7 @@ export function LiveMap({ goals: initialGoals, initialGoalId }: { goals: GoalWit
   const [sent, setSent] = React.useState(false);
   const [poppedId, setPoppedId] = React.useState<string | null>(null);
   const [toast, setToast] = React.useState<string | null>(null);
+  const speech = useSpeechInput(setPrompt);
 
   const viewportRef = React.useRef<HTMLDivElement>(null);
   const pointers = React.useRef<Map<number, { x: number; y: number }>>(new Map());
@@ -335,10 +338,11 @@ export function LiveMap({ goals: initialGoals, initialGoalId }: { goals: GoalWit
               <input
                 value={prompt}
                 onChange={(e) => setPrompt(e.target.value)}
-                placeholder={thinking ? "Kairo is mapping…" : "Add a task or set a deadline…"}
+                placeholder={thinking ? "Kairo is mapping…" : speech.listening ? "Listening…" : "Add a task or set a deadline…"}
                 disabled={thinking}
                 className="h-9 flex-1 bg-transparent text-[15px] text-ink placeholder:text-faint focus:outline-none"
               />
+              {speech.supported && <MicButton listening={speech.listening} onClick={() => speech.toggle(prompt)} />}
               <button
                 type="submit"
                 disabled={!prompt.trim() || thinking}

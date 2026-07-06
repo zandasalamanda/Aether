@@ -8,6 +8,8 @@ import type { GoalMapResult } from "@/lib/ai/types";
 import { GoalCore } from "./GoalCore";
 import { Logo } from "./Logo";
 import { Button } from "@/components/ui/Button";
+import { MicButton } from "@/components/ui/MicButton";
+import { useSpeechInput } from "@/lib/hooks/use-speech-input";
 import { nodeStatusMeta } from "@/lib/kairo/status";
 import { cn, formatDuration, relativeDays } from "@/lib/utils";
 
@@ -19,6 +21,7 @@ export function OnboardingFlow() {
   const [step, setStep] = React.useState<Step>("input");
   const [prompt, setPrompt] = React.useState("");
   const [result, setResult] = React.useState<GoalMapResult | null>(null);
+  const speech = useSpeechInput(setPrompt);
 
   const submit = async () => {
     const p = prompt.trim();
@@ -53,9 +56,10 @@ export function OnboardingFlow() {
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && submit()}
-              placeholder="Launch my app by September…"
+              placeholder={speech.listening ? "Listening…" : "Launch my app by September…"}
               className="h-11 flex-1 bg-transparent text-[15px] text-ink placeholder:text-faint focus:outline-none"
             />
+            {speech.supported && <MicButton listening={speech.listening} onClick={() => speech.toggle(prompt)} />}
             <Button variant="primary" onClick={submit} disabled={!prompt.trim()}>
               Map My Goal <ArrowRight size={16} />
             </Button>

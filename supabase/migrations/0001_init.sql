@@ -5,17 +5,6 @@
 
 create extension if not exists "pgcrypto";
 
--- Resolve the current user's profile id from the Clerk JWT `sub`.
-create or replace function public.current_profile_id() returns uuid
-language sql stable as $$
-  select id from public.users_profile where clerk_user_id = (auth.jwt() ->> 'sub')
-$$;
-
-create or replace function public.set_updated_at() returns trigger
-language plpgsql as $$
-begin new.updated_at = now(); return new; end;
-$$;
-
 -- ---------- tables ----------
 
 create table if not exists public.users_profile (
@@ -138,6 +127,18 @@ create table if not exists public.ai_events (
   created_at timestamptz not null default now()
 );
 create index if not exists ai_events_user_idx on public.ai_events(user_id);
+
+-- ---------- functions (after tables so their bodies validate) ----------
+create or replace function public.set_updated_at() returns trigger
+language plpgsql as $$
+begin new.updated_at = now(); return new; end;
+$$;
+
+-- Resolve the current user's profile id from the Clerk JWT `sub`.
+create or replace function public.current_profile_id() returns uuid
+language sql stable as $$
+  select id from public.users_profile where clerk_user_id = (auth.jwt() ->> 'sub')
+$$;
 
 -- ---------- updated_at triggers ----------
 do $$
