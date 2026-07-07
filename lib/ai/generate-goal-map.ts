@@ -17,7 +17,7 @@ STEP TITLES are a concrete FIRST ACTION they can start now — "Draft the 3 core
 
 RESOURCES — for each SUB-STEP where a specific piece of external content would genuinely help them DO it (learning something, a technique, a drill, a workout), add "resource": {"kind","label","query"}. "kind": "watch" for a video/tutorial, "practice" for a drill/workout/exercise routine, "read" for an article/guide. "label" is a short human name (≤5 words). "query" is the exact phrase someone would search (specific to the goal, e.g. "winger agility ladder drills soccer"). Set "resource": null for steps where no external content helps (e.g. "email the designer"). Never invent URLs — only a search query.
 
-CLARIFIERS — return AT MOST 2 short questions, and ONLY ones whose answer would MEANINGFULLY change the plan. Skip anything already implied by the goal; one great question beats two weak ones; if the goal is already specific, return an empty array. Each has 2-4 quick options. E.g. {"question":"Deadline?","options":["2 weeks","1 month","3 months","No rush"]} and {"question":"Your level?","options":["Beginner","Some","Advanced"]}. Question ≤4 words, each option ≤3 words.
+CLARIFIERS — return 2-3 short questions a sharp coach would ask to make THIS plan concrete and personal: the specifics that materially change the steps or the numbers. Ask what actually shapes the plan for this goal — e.g. a savings goal → monthly income, how much you can set aside, and by when; fitness → current level, days per week, equipment; learning an instrument → current level, practice time per week, deadline. Use ranges as options where a number is needed (e.g. income "<$2k","$2-4k","$4-7k","$7k+"; or "$100/mo","$300/mo","$500/mo+"). Skip generic filler and anything already stated in the goal. Question ≤5 words, each option ≤4 words, 2-4 options each. Return [] only if the goal is already fully specified.
 
 ICON — also return "icon": the ONE key from this list that best fits the goal: ${GOAL_ICON_KEYS.join(", ")}. Use "target" only if none fit.
 
@@ -40,7 +40,7 @@ function cleanClarifiers(cs: unknown): Clarifier[] {
   if (!Array.isArray(cs)) return [];
   return cs
     .filter(isObj)
-    .slice(0, 2)
+    .slice(0, 3)
     .map((c) => ({
       question: String(c.question ?? "").trim().slice(0, 50),
       options: Array.isArray(c.options) ? c.options.map((o) => String(o).trim().slice(0, 24)).filter(Boolean).slice(0, 4) : [],

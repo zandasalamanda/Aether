@@ -394,12 +394,13 @@ export function GalaxyMap({
     showToast("Goal removed");
   };
 
-  const createGoal = async (text: string, isRefinement = false) => {
+  const createGoal = async (text: string, isRefinement = false, inherit?: { pos?: { x: number; y: number }; colorIndex?: number }) => {
     const p = text.trim();
     if (!p || mapping) return;
     // Fly to the spot the new planet will occupy and coalesce it there (not a
-    // fixed overlay in the middle of the screen).
-    const pos = defaultPos(goals.length);
+    // fixed overlay in the middle of the screen). A refinement inherits the
+    // original goal's spot so it stays put.
+    const pos = inherit?.pos ?? defaultPos(goals.length);
     const scale = 0.82;
     setFormingPos(pos);
     setMapping(true);
@@ -418,6 +419,7 @@ export function GalaxyMap({
     }
     const goal = toLocalGoal(goalId, res, nodeIds);
     setPositions((pp) => ({ ...pp, [goalId]: pos }));
+    if (inherit?.colorIndex !== undefined) setColorIdx((c) => ({ ...c, [goalId]: inherit.colorIndex as number }));
     setGoals((prev) => [...prev, goal]);
     setMapping(false);
     setFormingPos(null);
@@ -438,9 +440,12 @@ export function GalaxyMap({
     if (extra.trim()) parts.push(extra.trim());
     setRefine(null);
     if (parts.length === 0) return;
+    // Keep the same spot + color so it reads as the SAME goal, sharpened.
+    const idx = goals.findIndex((g) => g.id === r.goalId);
+    const inherit = { pos: positions[r.goalId] ?? (idx >= 0 ? defaultPos(idx) : undefined), colorIndex: colorIdx[r.goalId] };
     setGoals((prev) => prev.filter((g) => g.id !== r.goalId));
     if (remote) void deleteGoal({ goalId: r.goalId });
-    void createGoal(`${r.prompt} — ${parts.join("; ")}`, true);
+    void createGoal(`${r.prompt} — ${parts.join("; ")}`, true, inherit);
   };
 
   // Add several AI-generated sub-steps as branches under a node.
