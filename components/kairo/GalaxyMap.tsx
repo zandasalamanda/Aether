@@ -44,7 +44,7 @@ function resourceUrl(r: NodeResource): string {
 /** Deterministic galaxy slot for a goal by its index (used until dragged). */
 function defaultPos(i: number): { x: number; y: number } {
   // Wide spacing so one goal's expanded tree never crowds another's.
-  const r = 460 + 300 * Math.sqrt(i);
+  const r = 560 + 340 * Math.sqrt(i);
   const a = i * GOLDEN - Math.PI / 2;
   return { x: Math.cos(a) * (i === 0 ? 0 : r), y: Math.sin(a) * (i === 0 ? 0 : r) };
 }
@@ -68,8 +68,8 @@ interface Placed {
   spine: boolean; // a milestone (has children) vs a leaf sub-step
 }
 
-const SPINE_RAD = 190; // distance to the next milestone along the spine
-const LEAF_RAD = 116; // distance to a rib (leaf sub-step)
+const SPINE_RAD = 224; // distance to the next milestone along the spine
+const LEAF_RAD = 150; // distance to a rib (leaf sub-step)
 const SPINE_ARC = 0.17; // gentle, consistent bend so the spine curves instead of running off
 
 /**
@@ -98,8 +98,8 @@ function layoutTree(nodes: GoalNode[]): Placed[] {
     leaves.forEach((leaf, i) => {
       const side = i % 2 === 0 ? 1 : -1;
       const rank = Math.floor(i / 2);
-      const angle = dir + side * (Math.PI / 2 - 0.14) + side * rank * 0.4;
-      const rad = LEAF_RAD + rank * 30;
+      const angle = dir + side * (Math.PI / 2 - 0.08) + side * rank * 0.32;
+      const rad = LEAF_RAD + rank * 54;
       out.push({ node: leaf, x: cx + Math.cos(angle) * rad, y: cy + Math.sin(angle) * rad, px: cx, py: cy, depth, spine: false });
     });
 
@@ -859,8 +859,13 @@ function NodeOrb({
             )}
           </span>
         </span>
-        <span className="max-w-[120px] text-center leading-tight">
-          <span className={cn("block truncate text-[12px]", selected ? "font-semibold text-ink" : "text-ink/80")}>{node.title}</span>
+        <span className="max-w-[100px] text-center leading-tight">
+          <span
+            className={cn("block truncate text-[11px]", selected ? "font-semibold text-ink" : "text-ink/85")}
+            style={{ textShadow: "0 1px 8px rgba(8,9,11,0.96), 0 0 3px rgba(8,9,11,0.95)" }}
+          >
+            {node.title}
+          </span>
         </span>
       </button>
     </div>
