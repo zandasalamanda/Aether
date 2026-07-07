@@ -692,6 +692,7 @@ export function GalaxyMap({
             </form>
           ) : selectedNode && expanded ? (
             <NodeSheet
+              key={selectedNode.id}
               node={selectedNode}
               hex={hexOf(expanded.id)}
               goalTitle={expanded.title}
