@@ -5,7 +5,7 @@ import type { GoalWithNodes, GoalNode } from "@/types";
 const nd = (over: Partial<GoalNode>): GoalNode => ({
   id: "n", goalId: "g", parentId: null, title: "t", description: "", status: "not_started",
   progress: 0, priority: 3, estimatedMinutes: 30, dueDate: null, positionX: null, positionY: null,
-  aiReason: null, createdAt: "", updatedAt: "", ...over,
+  aiReason: null, resource: null, createdAt: "", updatedAt: "", ...over,
 });
 
 const gl = (over: Partial<GoalWithNodes>): GoalWithNodes => ({

@@ -27,12 +27,19 @@ function cleanTitle(prompt: string): string {
   return capped.length > 80 ? capped.slice(0, 77) + "…" : capped;
 }
 
+type SubStep = {
+  title: string;
+  est: number;
+  reason: string;
+  res?: { kind: "watch" | "read" | "practice"; label: string; query: string };
+};
+
 interface TemplateNode {
   title: string;
   est: number;
   reason: string;
   /** Concrete do-this-now sub-steps that branch off this phase. */
-  sub?: { title: string; est: number; reason: string }[];
+  sub?: SubStep[];
 }
 
 interface Template {
@@ -56,11 +63,11 @@ const TEMPLATES: Template[] = [
         { title: "Circle the 3 that prove the idea", est: 20, reason: "Everything else is later" },
       ] },
       { title: "Design the core flows", est: 90, reason: "Know what you're building before you build it", sub: [
-        { title: "Sketch the 3 key screens", est: 45, reason: "Paper is faster than code" },
+        { title: "Sketch the 3 key screens", est: 45, reason: "Paper is faster than code", res: { kind: "watch", label: "App wireframing basics", query: "app wireframing tutorial for beginners" } },
         { title: "Pick colors and type", est: 30, reason: "One look, decided once" },
       ] },
       { title: "Build the foundation", est: 120, reason: "The load-bearing work everything sits on", sub: [
-        { title: "Set up auth + database", est: 90, reason: "Every feature leans on this" },
+        { title: "Set up auth + database", est: 90, reason: "Every feature leans on this", res: { kind: "watch", label: "Auth setup walkthrough", query: "next.js auth database setup tutorial" } },
         { title: "Ship one flow end to end", est: 90, reason: "Prove the stack works" },
       ] },
       { title: "Test with real users", est: 60, reason: "Reality checks the plan early", sub: [
@@ -164,12 +171,12 @@ export function mockGoalMap(input: GoalMapInput): GoalMapResult {
   // Flatten depth-first into a chronological SPINE: each milestone chains off
   // the previous one (parentIndex = previous milestone), and its sub-steps hang
   // off it. Depth = time, so nothing sequential ends up as a sibling at the root.
-  const flat: { title: string; est: number; reason: string; parentIndex: number | null }[] = [];
+  const flat: { title: string; est: number; reason: string; parentIndex: number | null; res?: SubStep["res"] }[] = [];
   let prevPhase: number | null = null;
   tpl.nodes.forEach((phase) => {
     const phaseIndex = flat.length;
     flat.push({ title: phase.title, est: phase.est, reason: phase.reason, parentIndex: prevPhase });
-    (phase.sub ?? []).forEach((c) => flat.push({ title: c.title, est: c.est, reason: c.reason, parentIndex: phaseIndex }));
+    (phase.sub ?? []).forEach((c) => flat.push({ title: c.title, est: c.est, reason: c.reason, parentIndex: phaseIndex, res: c.res }));
     prevPhase = phaseIndex;
   });
 
@@ -181,6 +188,7 @@ export function mockGoalMap(input: GoalMapInput): GoalMapResult {
     priority: Math.min(5, i + 1),
     aiReason: n.reason,
     parentIndex: n.parentIndex,
+    resource: n.res ?? null,
   }));
   // Honor a deadline written in plain English ("by September", "in 6 weeks");
   // otherwise fall back to the template's suggested horizon.
@@ -192,6 +200,10 @@ export function mockGoalMap(input: GoalMapInput): GoalMapResult {
     nodes,
     firstNextAction: `Spend 25 minutes to ${tpl.nodes[0].title.toLowerCase()}`,
     weeklyRhythm: tpl.rhythm,
+    clarifiers: [
+      { question: "Deadline?", options: ["2 weeks", "1 month", "3 months", "No rush"] },
+      { question: "Time / week?", options: ["2 hrs", "5 hrs", "10+ hrs"] },
+    ],
   };
 }
 

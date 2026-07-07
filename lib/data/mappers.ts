@@ -11,6 +11,7 @@ import type {
   GoalStatus,
   NodeStatus,
   InboxCategory,
+  ResourceKind,
 } from "@/types";
 
 export interface ProfileRow {
@@ -53,6 +54,9 @@ export interface NodeRow {
   position_x: number | null;
   position_y: number | null;
   ai_reason: string | null;
+  resource_kind: ResourceKind | null;
+  resource_label: string | null;
+  resource_query: string | null;
   sort_order: number;
   created_at: string;
   updated_at: string;
@@ -116,6 +120,9 @@ export function rowToNode(r: NodeRow): GoalNode {
     positionX: r.position_x,
     positionY: r.position_y,
     aiReason: r.ai_reason,
+    resource: r.resource_kind && r.resource_query
+      ? { kind: r.resource_kind, label: r.resource_label ?? r.resource_query, query: r.resource_query }
+      : null,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
   };

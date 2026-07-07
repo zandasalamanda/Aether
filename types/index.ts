@@ -37,6 +37,16 @@ export type InboxCategory =
 
 export type EnergyLevel = "low" | "normal" | "high";
 export type Difficulty = "light" | "moderate" | "deep";
+
+/** A one-tap pointer to external content that helps you do a step. */
+export type ResourceKind = "watch" | "read" | "practice";
+export interface NodeResource {
+  kind: ResourceKind;
+  /** short human label, e.g. "Winger agility drills" */
+  label: string;
+  /** the search string we open (never a raw URL — no dead links) */
+  query: string;
+}
 export type AiTone = "calm" | "direct" | "strict" | "encouraging";
 export type PlanningStyle = "balanced" | "ambitious" | "light" | "deep_work";
 
@@ -83,6 +93,7 @@ export interface GoalNode {
   positionX: number | null;
   positionY: number | null;
   aiReason: string | null;
+  resource: NodeResource | null;
   createdAt: string;
   updatedAt: string;
 }

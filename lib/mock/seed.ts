@@ -28,6 +28,7 @@ function node(partial: Partial<GoalNode> & Pick<GoalNode, "id" | "goalId" | "tit
     positionX: null,
     positionY: null,
     aiReason: null,
+    resource: null,
     createdAt: now(),
     updatedAt: now(),
     ...partial,

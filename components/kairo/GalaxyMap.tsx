@@ -2,11 +2,12 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowUp, Check, Play, X, ChevronDown, Locate, GitBranch, Plus, Palette, Trash2, Sparkles, CalendarPlus, MessageCircle, Loader2 } from "lucide-react";
-import type { GoalWithNodes, GoalNode, NodeStatus } from "@/types";
+import { ArrowUp, Check, Play, X, ChevronDown, Locate, GitBranch, Plus, Palette, Trash2, Sparkles, CalendarPlus, MessageCircle, Loader2, PlayCircle, Dumbbell, BookOpen, ExternalLink } from "lucide-react";
+import type { GoalWithNodes, GoalNode, NodeStatus, NodeResource, ResourceKind } from "@/types";
 import { parseDeadline } from "@/lib/kairo/deadline";
 import { generateGoalMap } from "@/lib/ai/generate-goal-map";
 import { expandNode, askNode } from "@/lib/ai/node-assist";
+import type { Clarifier } from "@/lib/ai/types";
 import { GOAL_PALETTE, goalColorHex, goalColorIndex } from "@/lib/kairo/goal-color";
 import { usePersistentState } from "@/lib/store/persist";
 import { useSpeechInput } from "@/lib/hooks/use-speech-input";
@@ -24,6 +25,20 @@ import { cn, formatDuration, newId, relativeDays, truncate } from "@/lib/utils";
 const GOLDEN = 2.399963229;
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 const nowISO = () => new Date().toISOString();
+
+// A resource is a search intent, not a URL — one tap opens a live search so the
+// link is never dead. "read" → Google, "watch"/"practice" → YouTube.
+const RESOURCE_META: Record<ResourceKind, { verb: string; Icon: typeof PlayCircle }> = {
+  watch: { verb: "Watch", Icon: PlayCircle },
+  practice: { verb: "Practice", Icon: Dumbbell },
+  read: { verb: "Read", Icon: BookOpen },
+};
+function resourceUrl(r: NodeResource): string {
+  const q = encodeURIComponent(r.query);
+  return r.kind === "read"
+    ? `https://www.google.com/search?q=${q}`
+    : `https://www.youtube.com/results?search_query=${q}`;
+}
 
 /** Deterministic galaxy slot for a goal by its index (used until dragged). */
 function defaultPos(i: number): { x: number; y: number } {
@@ -126,6 +141,7 @@ function toLocalGoal(goalId: string, res: Awaited<ReturnType<typeof generateGoal
     positionX: null,
     positionY: null,
     aiReason: n.aiReason ?? null,
+    resource: n.resource ?? null,
     createdAt: nowISO(),
     updatedAt: nowISO(),
   }));
@@ -180,6 +196,7 @@ export function GalaxyMap({
   const [stepText, setStepText] = React.useState("");
   const [assisting, setAssisting] = React.useState(false);
   const [toast, setToast] = React.useState<string | null>(null);
+  const [refine, setRefine] = React.useState<{ goalId: string; prompt: string; clarifiers: Clarifier[] } | null>(null);
 
   const speech = useSpeechInput(setPrompt);
   const pointers = React.useRef<Map<number, { x: number; y: number }>>(new Map());
@@ -318,7 +335,7 @@ export function GalaxyMap({
     const node: GoalNode = {
       id, goalId, parentId, title: text.replace(/\s+/g, " ").replace(/[.?!]+$/, ""),
       description: "", status: "not_started", progress: 0, priority: 3, estimatedMinutes: 30,
-      dueDate: null, positionX: null, positionY: null, aiReason: "Added from the map",
+      dueDate: null, positionX: null, positionY: null, aiReason: "Added from the map", resource: null,
       createdAt: nowISO(), updatedAt: nowISO(),
     };
     setGoals((prev) => prev.map((x) => (x.id === goalId ? { ...x, nodes: [...x.nodes, node] } : x)));
@@ -352,6 +369,7 @@ export function GalaxyMap({
     if (!p || mapping) return;
     setMapping(true);
     setComposing(false);
+    setRefine(null);
     setPrompt("");
     const res = await generateGoalMap({ prompt: p });
     let goalId = newId();
@@ -372,6 +390,19 @@ export function GalaxyMap({
     const scale = 0.82;
     setAnimating(true);
     setView({ tx: -pos.x * scale, ty: -pos.y * scale, scale });
+    if (res.clarifiers && res.clarifiers.length > 0) {
+      setRefine({ goalId, prompt: p, clarifiers: res.clarifiers });
+    }
+  };
+
+  // Answer a clarifier → replace the just-made goal with a sharpened one.
+  const refineGoal = (question: string, answer: string) => {
+    const r = refine;
+    if (!r) return;
+    setRefine(null);
+    setGoals((prev) => prev.filter((g) => g.id !== r.goalId));
+    if (remote) void deleteGoal({ goalId: r.goalId });
+    void createGoal(`${r.prompt} — ${question}: ${answer}`);
   };
 
   // Add several AI-generated sub-steps as branches under a node.
@@ -385,7 +416,7 @@ export function GalaxyMap({
       return {
         id, goalId, parentId, title: s.title, description: "", status: "not_started", progress: 0,
         priority: 3, estimatedMinutes: s.estimatedMinutes, dueDate: null, positionX: null, positionY: null,
-        aiReason: "Aether broke this down", createdAt: nowISO(), updatedAt: nowISO(),
+        aiReason: "Aether broke this down", resource: null, createdAt: nowISO(), updatedAt: nowISO(),
       };
     });
     setGoals((prev) => prev.map((x) => (x.id === goalId ? { ...x, nodes: [...x.nodes, ...created] } : x)));
@@ -521,6 +552,10 @@ export function GalaxyMap({
             <div className="chrome mb-2 animate-fade-in rounded-xl px-4 py-2 text-center text-[13px] text-accent">
               {toast}
             </div>
+          )}
+
+          {refine && expandedId === refine.goalId && !mapping && !composing && !selectedNode && !branchFor && (
+            <ClarifierBar clarifiers={refine.clarifiers} onPick={refineGoal} onClose={() => setRefine(null)} />
           )}
 
           {/* new-goal composer (also the empty-state entry) */}
@@ -884,6 +919,34 @@ function MiniInput({
   );
 }
 
+function ClarifierBar({ clarifiers, onPick, onClose }: { clarifiers: Clarifier[]; onPick: (q: string, a: string) => void; onClose: () => void }) {
+  const [open, setOpen] = React.useState<number | null>(clarifiers.length === 1 ? 0 : null);
+  return (
+    <div className="chrome mb-2 animate-sheet-up rounded-2xl p-2.5">
+      <div className="mb-0.5 flex items-center gap-2 px-1">
+        <Sparkles size={13} className="text-accent" />
+        <span className="flex-1 text-[12px] text-muted">Answer to sharpen this plan</span>
+        <button onClick={onClose} className="grid h-6 w-6 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Dismiss"><X size={13} /></button>
+      </div>
+      {clarifiers.map((c, qi) => (
+        <div key={qi} className="px-1">
+          <button onClick={() => setOpen((o) => (o === qi ? null : qi))} className="flex w-full items-center gap-1.5 py-1.5 text-left text-[13px] text-ink">
+            <ChevronDown size={13} className={cn("shrink-0 text-faint transition-transform", open === qi && "rotate-180")} />
+            {c.question}
+          </button>
+          {open === qi && (
+            <div className="flex flex-wrap gap-1.5 pb-1.5 pl-5">
+              {c.options.map((o) => (
+                <Chip key={o} tone="accent" onClick={() => onPick(c.question, o)}>{o}</Chip>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function NodeSheet({
   node, hex, goalTitle, breaking, onClose, onDone, onStart, onBranch, onBreakDown,
 }: {
@@ -901,6 +964,7 @@ function NodeSheet({
   const [question, setQuestion] = React.useState("");
   const [answer, setAnswer] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
+  const resMeta = node.resource ? RESOURCE_META[node.resource.kind] : null;
 
   const ask = async () => {
     const q = question.trim();
@@ -925,6 +989,22 @@ function NodeSheet({
         <button onClick={onClose} className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Close"><X size={16} /></button>
       </div>
       {node.description && <p className="mt-1.5 text-[13px] leading-relaxed text-muted">{node.description}</p>}
+
+      {node.resource && resMeta && (
+        <a
+          href={resourceUrl(node.resource)}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="raised-btn mt-3 flex items-center gap-3 rounded-xl px-3.5 py-2.5"
+        >
+          <resMeta.Icon size={18} className="shrink-0 text-accent" />
+          <span className="min-w-0 flex-1">
+            <span className="block truncate text-[13px] font-medium text-ink">{resMeta.verb}: {node.resource.label}</span>
+            <span className="block text-[11px] text-faint">Opens a search — pick the best result</span>
+          </span>
+          <ExternalLink size={14} className="shrink-0 text-faint" />
+        </a>
+      )}
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <Chip tone="sage" icon={<Check size={14} />} onClick={onDone}>Done</Chip>

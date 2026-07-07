@@ -5,6 +5,7 @@ import type {
   InboxCategory,
   GoalWithNodes,
   DailyPlanWithBlocks,
+  NodeResource,
 } from "@/types";
 
 // ---------- Goal map generation ----------
@@ -25,6 +26,14 @@ export interface GeneratedNode {
    * index — the map renders the tree from these links.
    */
   parentIndex: number | null;
+  /** Optional pointer to content that helps do this step (a search intent). */
+  resource?: NodeResource | null;
+}
+
+/** A short question the AI can pose to sharpen the plan (answered with a tap). */
+export interface Clarifier {
+  question: string;
+  options: string[];
 }
 
 export interface GoalMapResult {
@@ -34,6 +43,7 @@ export interface GoalMapResult {
   nodes: GeneratedNode[];
   firstNextAction: string;
   weeklyRhythm: string;
+  clarifiers?: Clarifier[];
 }
 
 // ---------- Daily plan ----------

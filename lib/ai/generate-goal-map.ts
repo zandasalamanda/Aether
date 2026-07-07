@@ -1,19 +1,47 @@
 import { generateJson, isObj, isClient, viaRoute } from "./provider";
 import { mockGoalMap } from "./mock";
 import { parseDeadline } from "@/lib/kairo/deadline";
-import type { GoalMapInput, GoalMapResult, GeneratedNode } from "./types";
+import type { GoalMapInput, GoalMapResult, GeneratedNode, Clarifier } from "./types";
+import type { NodeResource, ResourceKind } from "@/types";
 
-const SYSTEM = `You are Aether, an execution planner. Turn the user's goal into a DETAILED, DIRECT, step-by-step plan they can follow with ZERO further thinking — as if a sharp friend already worked out exactly what to do and in what order.
+const SYSTEM = `You are Aether, an execution planner and coach. Turn the user's goal into a DETAILED, DIRECT, step-by-step plan they can start with ZERO further thinking.
 
-Return JSON: {"title":string,"description":string,"suggestedTargetDate":ISO8601,"nodes":[{"title":string,"description":string,"status":"in_motion"|"not_started","estimatedMinutes":number,"priority":number,"aiReason":string,"parentIndex":number|null}],"firstNextAction":string,"weeklyRhythm":string}.
+Return JSON: {"title":string,"description":string,"suggestedTargetDate":ISO8601,"nodes":[{"title":string,"description":string,"status":"in_motion"|"not_started","estimatedMinutes":number,"priority":number,"aiReason":string,"parentIndex":number|null,"resource":{"kind":"watch"|"read"|"practice","label":string,"query":string}|null}],"firstNextAction":string,"weeklyRhythm":string,"clarifiers":[{"question":string,"options":string[]}]}.
 
-FORMAT — read carefully. The nodes form a TREE where DEPTH REPRESENTS TIME:
-- There is ONE chronological SPINE of milestones. The FIRST milestone has "parentIndex": null. EVERY later milestone's "parentIndex" is the index of the milestone that comes DIRECTLY BEFORE it in time — so milestones form a chain, each hanging off the previous one.
-- NEVER make two things that happen at different times both top-level or both children of the same node when one must finish before the other starts — that reads to the user as "do these at the same time." If B can only happen after A, B's parent is A.
-- Under each milestone, attach its concrete sub-steps as children (parentIndex = that milestone's index). Sub-steps of the SAME milestone happen around the same time, so they may share that parent.
-- The spine has EXACTLY 4-5 milestones. EACH milestone MUST have 2 or 3 sub-steps — never a milestone with zero sub-steps, and never a bare chain of milestones with nothing branching off. Total 14-18 nodes. Every parentIndex references an EARLIER index. The result should read as a PATH of a few milestones with concrete sub-steps branching off each — not one long line, and not a flat burst off the root.
+FORMAT — nodes form a TREE where DEPTH = TIME:
+- ONE chronological SPINE of 4-5 milestones. The first has "parentIndex": null; every later milestone's parentIndex is the milestone right before it in time (a chain — later work hangs off earlier work, never a sibling of it).
+- Each milestone MUST have 2-3 concrete sub-steps as children (parentIndex = that milestone's index). Total 14-18 nodes. Every parentIndex references an EARLIER index.
 
-Rules: nodes[0] is the first milestone, status "in_motion"; every other node "not_started". "title" is imperative and specific ("Draft the 3 core screens" — not "Design"). "description" is ONE concrete sentence on HOW. "estimatedMinutes" is realistic (a single sitting). "priority" ascends along the spine (1..5). "aiReason" is a short why. "firstNextAction" is the literal first thing to open or do. "suggestedTargetDate" must be after today's date; resolve any named deadline (e.g. "by December") to its next occurrence. Be detailed and direct — no motivation-speak, no filler.`;
+STEP TITLES are a concrete FIRST ACTION they can start now — "Draft the 3 core screens in Figma", never a vague theme like "Design". "description" is one sentence on HOW.
+
+RESOURCES — for each SUB-STEP where a specific piece of external content would genuinely help them DO it (learning something, a technique, a drill, a workout), add "resource": {"kind","label","query"}. "kind": "watch" for a video/tutorial, "practice" for a drill/workout/exercise routine, "read" for an article/guide. "label" is a short human name (≤5 words). "query" is the exact phrase someone would search (specific to the goal, e.g. "winger agility ladder drills soccer"). Set "resource": null for steps where no external content helps (e.g. "email the designer"). Never invent URLs — only a search query.
+
+CLARIFIERS — return 1-2 SHORT questions whose answers would most sharpen THIS plan, each with 2-4 quick options. E.g. {"question":"Deadline?","options":["2 weeks","1 month","3 months","No rush"]} and {"question":"Your level?","options":["Beginner","Some","Advanced"]}. Make them specific to the goal; question ≤4 words, each option ≤3 words.
+
+nodes[0] is the first milestone with status "in_motion"; all others "not_started". priority ascends along the spine. suggestedTargetDate is after today; resolve any named deadline. Be detailed and direct — no motivation-speak.`;
+
+const KINDS: ReadonlySet<string> = new Set<ResourceKind>(["watch", "read", "practice"]);
+
+function cleanResource(r: unknown): NodeResource | null {
+  if (!isObj(r)) return null;
+  const kind = String(r.kind ?? "");
+  const query = String(r.query ?? "").trim();
+  if (!KINDS.has(kind) || !query) return null;
+  const label = String(r.label ?? "").trim() || query;
+  return { kind: kind as ResourceKind, label: label.slice(0, 60), query: query.slice(0, 120) };
+}
+
+function cleanClarifiers(cs: unknown): Clarifier[] {
+  if (!Array.isArray(cs)) return [];
+  return cs
+    .filter(isObj)
+    .slice(0, 2)
+    .map((c) => ({
+      question: String(c.question ?? "").trim().slice(0, 50),
+      options: Array.isArray(c.options) ? c.options.map((o) => String(o).trim().slice(0, 24)).filter(Boolean).slice(0, 4) : [],
+    }))
+    .filter((c) => c.question && c.options.length >= 2);
+}
 
 function isNode(n: unknown): n is GeneratedNode {
   return isObj(n) && typeof n.title === "string";
@@ -30,14 +58,19 @@ function valid(r: unknown): r is GoalMapResult {
   );
 }
 
-/** Ensure every parentIndex is null or points to a strictly-earlier node. */
-function normalizeTree(r: GoalMapResult): GoalMapResult {
+/** Normalize parent links, statuses, resources, and clarifiers. */
+function normalize(r: GoalMapResult): GoalMapResult {
   const nodes = r.nodes.map((n, i) => {
     const p = n.parentIndex;
     const parentIndex = typeof p === "number" && Number.isInteger(p) && p >= 0 && p < i ? p : null;
-    return { ...n, parentIndex, status: i === 0 ? "in_motion" : n.status === "done" ? "done" : "not_started" } as GeneratedNode;
+    return {
+      ...n,
+      parentIndex,
+      status: i === 0 ? "in_motion" : n.status === "done" ? "done" : "not_started",
+      resource: cleanResource(n.resource),
+    } as GeneratedNode;
   });
-  return { ...r, nodes };
+  return { ...r, nodes, clarifiers: cleanClarifiers(r.clarifiers) };
 }
 
 // Guard against the model returning a past/invalid target date (it may not know today).
@@ -52,7 +85,7 @@ function fixDate(r: GoalMapResult, prompt: string): GoalMapResult {
 }
 
 function finish(r: GoalMapResult, prompt: string): GoalMapResult {
-  return normalizeTree(fixDate(r, prompt));
+  return normalize(fixDate(r, prompt));
 }
 
 export async function generateGoalMap(input: GoalMapInput): Promise<GoalMapResult> {

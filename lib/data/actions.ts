@@ -53,6 +53,9 @@ export async function persistGoalFromMap(input: { result: GoalMapResult }): Prom
     priority: n.priority ?? i + 1,
     estimated_minutes: n.estimatedMinutes ?? 60,
     ai_reason: n.aiReason ?? null,
+    resource_kind: n.resource?.kind ?? null,
+    resource_label: n.resource?.label ?? null,
+    resource_query: n.resource?.query ?? null,
     sort_order: i,
     parent_id: null as string | null,
   }));
