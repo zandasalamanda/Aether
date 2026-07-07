@@ -48,9 +48,18 @@ interface Placed {
   px: number; // parent center (0,0 = goal core)
   py: number;
   depth: number;
+  spine: boolean; // a milestone (has children) vs a leaf sub-step
 }
 
-/** Radial tree layout of a goal's nodes, relative to its core at (0,0). */
+const SPINE_RAD = 172; // distance to the next milestone along the spine
+const LEAF_RAD = 132; // distance to a leaf sub-step
+
+/**
+ * Tree layout relative to the goal core at (0,0). Milestones (nodes with
+ * children) flow FORWARD along the spine — kept centered in each fan — while
+ * leaf sub-steps splay out to the sides, so a plan reads as a path with
+ * branches rather than a straight line or a crowded burst.
+ */
 function layoutTree(nodes: GoalNode[]): Placed[] {
   const ids = new Set(nodes.map((n) => n.id));
   const kids = new Map<string | null, GoalNode[]>();
@@ -60,28 +69,44 @@ function layoutTree(nodes: GoalNode[]): Placed[] {
     arr.push(n);
     kids.set(parent, arr);
   }
-  const RAD = [0, 165, 150, 135];
+  const hasKids = (id: string) => (kids.get(id)?.length ?? 0) > 0;
   const out: Placed[] = [];
-  const place = (parent: string | null, cx: number, cy: number, base: number, depth: number) => {
-    const list = kids.get(parent) ?? [];
-    const n = list.length;
-    list.forEach((node, i) => {
-      let angle: number;
-      if (depth === 0) {
-        angle = (i / Math.max(1, n)) * Math.PI * 2 - Math.PI / 2 + 0.0001;
-      } else {
-        const spread = Math.PI / 2.3;
-        const offset = n === 1 ? 0 : (i / (n - 1) - 0.5) * spread;
-        angle = base + offset;
-      }
-      const rad = RAD[Math.min(depth + 1, RAD.length - 1)];
+
+  const place = (parentId: string | null, cx: number, cy: number, dir: number, depth: number) => {
+    const children = kids.get(parentId) ?? [];
+    const leaves = children.filter((c) => !hasKids(c.id));
+    const spineKids = children.filter((c) => hasKids(c.id));
+    // Center the continuing milestone(s) in the fan, leaves flanking them.
+    const half = Math.ceil(leaves.length / 2);
+    const ordered = [...leaves.slice(0, half), ...spineKids, ...leaves.slice(half)];
+    const n = ordered.length;
+    const spread = Math.min(Math.PI * 0.92, 0.5 + n * 0.34);
+
+    ordered.forEach((node, i) => {
+      const spine = hasKids(node.id);
+      const offset = n === 1 ? 0 : (i / (n - 1) - 0.5) * spread;
+      const angle = dir + offset;
+      const rad = spine ? SPINE_RAD : LEAF_RAD;
       const x = cx + Math.cos(angle) * rad;
       const y = cy + Math.sin(angle) * rad;
-      out.push({ node, x, y, px: cx, py: cy, depth });
-      place(node.id, x, y, angle, depth + 1);
+      out.push({ node, x, y, px: cx, py: cy, depth, spine });
+      if (spine) place(node.id, x, y, angle, depth + 1);
     });
   };
-  place(null, 0, 0, 0, 0);
+
+  // Root milestones off the core. Usually one (the first milestone); if the plan
+  // has several independent starts, fan them around the core.
+  const roots = kids.get(null) ?? [];
+  const r = roots.length;
+  roots.forEach((root, i) => {
+    const dir = r === 1 ? -Math.PI / 2 : (i / r) * Math.PI * 2 - Math.PI / 2;
+    const spine = hasKids(root.id);
+    const rad = spine ? SPINE_RAD : LEAF_RAD;
+    const x = Math.cos(dir) * rad;
+    const y = Math.sin(dir) * rad;
+    out.push({ node: root, x, y, px: 0, py: 0, depth: 0, spine });
+    if (spine) place(root.id, x, y, dir, 1);
+  });
   return out;
 }
 
@@ -137,7 +162,7 @@ export function GalaxyMap({
     if (!initialExpanded) return { tx: 0, ty: 0, scale: 0.9 };
     const i = Math.max(0, initialGoals.findIndex((g) => g.id === initialExpanded));
     const p = defaultPos(i);
-    const scale = 1.05;
+    const scale = 0.82;
     return { tx: -p.x * scale, ty: -p.y * scale, scale };
   });
   const [animating, setAnimating] = React.useState(false);
@@ -185,7 +210,7 @@ export function GalaxyMap({
     const i = goals.findIndex((g) => g.id === id);
     if (i < 0) return;
     const p = positions[id] ?? defaultPos(i);
-    const scale = 1.05;
+    const scale = 0.82;
     setAnimating(true);
     setView({ tx: -p.x * scale, ty: -p.y * scale, scale });
   }, [goals, positions]);
@@ -588,8 +613,8 @@ function GoalCluster({
         <svg width={1} height={1} className="absolute" style={{ left: 0, top: 0, overflow: "visible" }} aria-hidden>
           {placed.map((p) => {
             const isNext = p.node.id === nId;
-            const CORE_R = p.depth === 0 ? 46 : 22;
-            const NODE_R = 24;
+            const CORE_R = p.px === 0 && p.py === 0 ? 46 : 24;
+            const NODE_R = p.spine ? 25 : 20;
             const dx = p.x - p.px;
             const dy = p.y - p.py;
             const d = Math.hypot(dx, dy) || 1;
@@ -628,7 +653,7 @@ function GoalCluster({
             isNext={p.node.id === nId}
             selected={p.node.id === selectedNodeId}
             popping={p.node.id === poppedId}
-            depth={p.depth}
+            spine={p.spine}
             onSelect={() => onSelectNode(p.node.id)}
           />
         ))}
@@ -675,7 +700,7 @@ function GoalCluster({
 }
 
 function NodeOrb({
-  node, x, y, hex, isNext, selected, popping, depth, onSelect,
+  node, x, y, hex, isNext, selected, popping, spine, onSelect,
 }: {
   node: GoalNode;
   x: number;
@@ -684,12 +709,12 @@ function NodeOrb({
   isNext: boolean;
   selected: boolean;
   popping: boolean;
-  depth: number;
+  spine: boolean;
   onSelect: () => void;
 }) {
   const done = node.status === "done";
   const dim = node.status === "not_started";
-  const size = depth === 0 ? 48 : 40;
+  const size = spine ? 50 : 38;
   const glow = done
     ? `0 0 24px ${hex}88, inset 0 0 12px ${hex}55`
     : dim
@@ -718,9 +743,9 @@ function NodeOrb({
             style={{ width: size, height: size, borderColor: dim ? `${hex}88` : hex, background: bg, boxShadow: glow, opacity: dim ? 0.92 : 1, transition: "background .4s ease, box-shadow .4s ease" }}
           >
             {done ? (
-              <Check size={depth === 0 ? 18 : 15} className="text-[#0d1a14]" strokeWidth={2.5} />
+              <Check size={spine ? 18 : 15} className="text-[#0d1a14]" strokeWidth={2.5} />
             ) : (
-              <span className="rounded-full" style={{ width: 9, height: 9, background: hex, boxShadow: `0 0 8px ${hex}` }} />
+              <span className="rounded-full" style={{ width: spine ? 9 : 7, height: spine ? 9 : 7, background: hex, boxShadow: `0 0 8px ${hex}` }} />
             )}
           </span>
         </span>
