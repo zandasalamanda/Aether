@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowUp, Check, Timer, X, ChevronDown, Locate, GitBranch, Plus, Palette, Trash2, Sparkles, CalendarPlus, MessageCircle, Loader2, PlayCircle, Dumbbell, BookOpen, ExternalLink, NotebookPen, Wand2, ArrowDownToLine, HelpCircle, LayoutGrid } from "lucide-react";
+import { ArrowUp, Check, Timer, X, ChevronDown, Locate, GitBranch, Plus, Palette, Trash2, Sparkles, CalendarPlus, MessageCircle, Loader2, PlayCircle, Dumbbell, BookOpen, ExternalLink, NotebookPen, Wand2, ArrowDownToLine, HelpCircle, LayoutGrid, Share2 } from "lucide-react";
 import type { GoalWithNodes, GoalNode, NodeStatus, NodeResource, ResourceKind, ResolvedResource } from "@/types";
 import { parseDeadline } from "@/lib/kairo/deadline";
 import { generateGoalMap } from "@/lib/ai/generate-goal-map";
@@ -25,6 +25,7 @@ import {
   setGoalNotes,
   logFocusSession,
   setNodeResolvedResource,
+  shareGoal,
   deleteGoal,
 } from "@/lib/data/actions";
 import { MicButton } from "@/components/ui/MicButton";
@@ -553,6 +554,16 @@ export function GalaxyMap({
     setReplanLoading(false);
   };
 
+  // Share a goal as a public read-only link (copies it to the clipboard).
+  const shareGoalLink = async (goalId: string) => {
+    if (!remote) { showToast("Sign in to share your map"); return; }
+    const res = await shareGoal({ goalId });
+    if (!res.ok || !res.token) { showToast("Couldn't create a link"); return; }
+    const url = `${window.location.origin}/s/${res.token}`;
+    try { await navigator.clipboard.writeText(url); showToast("Share link copied"); }
+    catch { showToast(url); }
+  };
+
   const acceptProposal = (p: ReplanProposal & { pid: string }) => {
     const g = goals.find((x) => x.id === replanForId);
     if (!g) return;
@@ -784,6 +795,7 @@ export function GalaxyMap({
               onColor={() => cycleColor(expanded.id)}
               onDelete={() => removeGoal(expanded.id)}
               onAdapt={() => void runReplan(expanded.id)}
+              onShare={() => void shareGoalLink(expanded.id)}
               onClose={() => { setExpandedId(null); overview(); }}
             />
           ) : (
@@ -1145,7 +1157,7 @@ function NewGoalBar({
 }
 
 function GoalBar({
-  goal, hex, value, onChange, onAddStep, onColor, onDelete, onAdapt, onClose,
+  goal, hex, value, onChange, onAddStep, onColor, onDelete, onAdapt, onShare, onClose,
 }: {
   goal: GoalWithNodes;
   hex: string;
@@ -1155,6 +1167,7 @@ function GoalBar({
   onColor: () => void;
   onDelete: () => void;
   onAdapt: () => void;
+  onShare: () => void;
   onClose: () => void;
 }) {
   const [armed, setArmed] = React.useState(false);
@@ -1180,6 +1193,7 @@ function GoalBar({
             {goal.nodes.length > 0 && (
               <button onClick={onAdapt} className="grid h-7 w-7 place-items-center rounded-lg text-faint hover:text-accent" aria-label="Adapt the plan" title="Adapt the plan to your progress"><Wand2 size={15} /></button>
             )}
+            <button onClick={onShare} className="grid h-7 w-7 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Share this map" title="Copy a public link"><Share2 size={15} /></button>
             <Link href={`/app/notebook?goal=${goal.id}`} className="grid h-7 w-7 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Notes"><NotebookPen size={15} /></Link>
             <button onClick={onColor} className="grid h-7 w-7 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Change color"><Palette size={15} /></button>
             <button onClick={() => setArmed(true)} className="grid h-7 w-7 place-items-center rounded-lg text-faint hover:text-warn" aria-label="Delete goal"><Trash2 size={15} /></button>

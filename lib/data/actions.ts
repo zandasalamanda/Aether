@@ -180,6 +180,30 @@ export async function setGoalNotes(input: { goalId: string; notes: string }): Pr
   return { ok: true, id: input.goalId };
 }
 
+/** Make a goal shareable (idempotent): returns a stable public token. */
+export async function shareGoal(input: { goalId: string }): Promise<{ ok: boolean; token?: string }> {
+  if (!isRemote) return { ok: false };
+  const scoped = await getScopedClient();
+  if (!scoped) return { ok: false };
+  const existing = await scoped.supabase.from("goals").select("share_id").eq("id", input.goalId).single();
+  const current = existing.data?.share_id as string | null | undefined;
+  if (current) return { ok: true, token: current };
+  const token = crypto.randomUUID().replace(/-/g, "").slice(0, 16);
+  const { error } = await scoped.supabase.from("goals").update({ share_id: token }).eq("id", input.goalId);
+  if (error) return { ok: false };
+  return { ok: true, token };
+}
+
+/** Revoke a goal's public link. */
+export async function unshareGoal(input: { goalId: string }): Promise<Result> {
+  if (!isRemote) return NO_OP;
+  const scoped = await getScopedClient();
+  if (!scoped) return NO_OP;
+  const { error } = await scoped.supabase.from("goals").update({ share_id: null }).eq("id", input.goalId);
+  if (error) return NO_OP;
+  return { ok: true, id: input.goalId };
+}
+
 /** Cache a real resolved resource (live video etc.) on a node so we resolve once. */
 export async function setNodeResolvedResource(input: {
   nodeId: string;
