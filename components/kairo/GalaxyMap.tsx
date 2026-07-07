@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowUp, Check, Play, X, ChevronDown, Locate, GitBranch, Plus, Palette, Trash2, Sparkles, CalendarPlus, MessageCircle, Loader2, PlayCircle, Dumbbell, BookOpen, ExternalLink } from "lucide-react";
+import { ArrowUp, Check, Timer, X, ChevronDown, Locate, GitBranch, Plus, Palette, Trash2, Sparkles, CalendarPlus, MessageCircle, Loader2, PlayCircle, Dumbbell, BookOpen, ExternalLink } from "lucide-react";
 import type { GoalWithNodes, GoalNode, NodeStatus, NodeResource, ResourceKind } from "@/types";
 import { parseDeadline } from "@/lib/kairo/deadline";
 import { generateGoalMap } from "@/lib/ai/generate-goal-map";
@@ -21,6 +21,7 @@ import {
 } from "@/lib/data/actions";
 import { MicButton } from "@/components/ui/MicButton";
 import { Chip } from "@/components/ui/Chip";
+import { FocusOverlay } from "./FocusOverlay";
 import { cn, formatDuration, newId, relativeDays, truncate } from "@/lib/utils";
 
 const GOLDEN = 2.399963229;
@@ -46,7 +47,7 @@ function defaultPos(i: number): { x: number; y: number } {
   // A tighter galaxy: only one path opens at a time, so trees may cross — the
   // spacing just needs to keep cores well clear of each other (golden-angle
   // placement spreads them so they never collide).
-  const r = 340 + 190 * Math.sqrt(i);
+  const r = 250 + 150 * Math.sqrt(i);
   const a = i * GOLDEN - Math.PI / 2;
   return { x: Math.cos(a) * (i === 0 ? 0 : r), y: Math.sin(a) * (i === 0 ? 0 : r) };
 }
@@ -204,6 +205,7 @@ export function GalaxyMap({
   const [toast, setToast] = React.useState<string | null>(null);
   const [refine, setRefine] = React.useState<{ goalId: string; prompt: string; clarifiers: Clarifier[] } | null>(null);
   const [formingPos, setFormingPos] = React.useState<{ x: number; y: number } | null>(null);
+  const [focusNode, setFocusNode] = React.useState<GoalNode | null>(null);
 
   const speech = useSpeechInput(setPrompt);
   const pointers = React.useRef<Map<number, { x: number; y: number }>>(new Map());
@@ -476,6 +478,13 @@ export function GalaxyMap({
     showToast(`Added ${res.steps.length} step${res.steps.length === 1 ? "" : "s"} under "${truncate(node.title, 20)}"`);
   };
 
+  // Enter a focus session on a step (marks it in-motion; completing marks it done).
+  const openFocus = (node: GoalNode) => {
+    if (!expanded) return;
+    if (node.status !== "done") setStatus(expanded.id, node.id, "in_motion");
+    setFocusNode(node);
+  };
+
   const transform = `translate(${view.tx}px, ${view.ty}px) scale(${view.scale})`;
   const empty = goals.length === 0;
 
@@ -633,7 +642,7 @@ export function GalaxyMap({
               breaking={assisting}
               onClose={() => setSelectedNodeId(null)}
               onDone={() => { setStatus(expanded.id, selectedNode.id, "done"); setSelectedNodeId(null); }}
-              onStart={() => setStatus(expanded.id, selectedNode.id, "in_motion")}
+              onFocus={() => openFocus(selectedNode)}
               onBranch={() => setBranchFor(selectedNode.id)}
               onBreakDown={() => breakDown(selectedNode)}
             />
@@ -667,6 +676,20 @@ export function GalaxyMap({
           )}
         </div>
       </div>
+
+      {focusNode && expanded && (
+        <FocusOverlay
+          title={focusNode.title}
+          hex={hexOf(expanded.id)}
+          onComplete={() => {
+            setStatus(expanded.id, focusNode.id, "done");
+            setFocusNode(null);
+            setSelectedNodeId(null);
+            showToast("Nice — step complete");
+          }}
+          onClose={() => setFocusNode(null)}
+        />
+      )}
     </div>
   );
 }
@@ -1063,7 +1086,7 @@ function ClarifierBar({ clarifiers, onApply, onClose }: { clarifiers: Clarifier[
 }
 
 function NodeSheet({
-  node, hex, goalTitle, breaking, onClose, onDone, onStart, onBranch, onBreakDown,
+  node, hex, goalTitle, breaking, onClose, onDone, onFocus, onBranch, onBreakDown,
 }: {
   node: GoalNode;
   hex: string;
@@ -1071,7 +1094,7 @@ function NodeSheet({
   breaking: boolean;
   onClose: () => void;
   onDone: () => void;
-  onStart: () => void;
+  onFocus: () => void;
   onBranch: () => void;
   onBreakDown: () => void;
 }) {
@@ -1123,7 +1146,7 @@ function NodeSheet({
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <Chip tone="sage" icon={<Check size={14} />} onClick={onDone}>Done</Chip>
-        <Chip tone="accent" icon={<Play size={14} />} onClick={onStart}>Start</Chip>
+        <Chip tone="accent" icon={<Timer size={14} />} onClick={onFocus}>Focus</Chip>
         <Chip tone="accent" icon={breaking ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} onClick={breaking ? undefined : onBreakDown}>
           {breaking ? "Breaking down…" : "Go deeper"}
         </Chip>

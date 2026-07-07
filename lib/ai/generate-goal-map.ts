@@ -26,7 +26,7 @@ nodes[0] is the first milestone with status "in_motion"; all others "not_started
 const ICONS: ReadonlySet<string> = new Set(GOAL_ICON_KEYS);
 
 // Always-asked deadline question (the AI is told to leave this to us).
-const DEADLINE_CLARIFIER: Clarifier = { question: "Deadline?", options: ["1 month", "3 months", "6 months", "1 year"] };
+const DEADLINE_CLARIFIER: Clarifier = { question: "Deadline?", options: ["1 month", "3 months", "6 months", "1 year", "2+ years"] };
 const DEADLINE_RE = /deadline|time ?frame|by when|due|timeline|how long|when.*(done|finish|complete|by)/i;
 
 const KINDS: ReadonlySet<string> = new Set<ResourceKind>(["watch", "read", "practice"]);
