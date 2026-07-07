@@ -2,11 +2,12 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowUp, Check, Timer, X, ChevronDown, Locate, GitBranch, Plus, Palette, Trash2, Sparkles, CalendarPlus, MessageCircle, Loader2, PlayCircle, Dumbbell, BookOpen, ExternalLink, NotebookPen, Wand2, ArrowDownToLine } from "lucide-react";
+import { ArrowUp, Check, Timer, X, ChevronDown, Locate, GitBranch, Plus, Palette, Trash2, Sparkles, CalendarPlus, MessageCircle, Loader2, PlayCircle, Dumbbell, BookOpen, ExternalLink, NotebookPen, Wand2, ArrowDownToLine, HelpCircle } from "lucide-react";
 import type { GoalWithNodes, GoalNode, NodeStatus, NodeResource, ResourceKind, ResolvedResource } from "@/types";
 import { parseDeadline } from "@/lib/kairo/deadline";
 import { generateGoalMap } from "@/lib/ai/generate-goal-map";
 import { expandNode, askNode } from "@/lib/ai/node-assist";
+import { unblock } from "@/lib/ai/work-session";
 import { replanGoal } from "@/lib/ai/replan";
 import { viaRoute } from "@/lib/ai/provider";
 import type { Clarifier, ReplanProposal, ReplanKind } from "@/lib/ai/types";
@@ -1336,6 +1337,17 @@ function NodeSheet({
   const [question, setQuestion] = React.useState("");
   const [answer, setAnswer] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
+  const [stuckLoading, setStuckLoading] = React.useState(false);
+  const [stuckAnswer, setStuckAnswer] = React.useState<string | null>(null);
+
+  const runStuck = async () => {
+    if (stuckLoading) return;
+    setStuckLoading(true);
+    setStuckAnswer(null);
+    const r = await unblock({ goalTitle, nodeTitle: node.title, context: goalNotes.trim() || undefined });
+    setStuckAnswer(r.answer);
+    setStuckLoading(false);
+  };
 
   const ask = async () => {
     const q = question.trim();
@@ -1373,10 +1385,17 @@ function NodeSheet({
         </Chip>
         <Chip icon={<GitBranch size={14} />} onClick={onBranch}>Add branch</Chip>
         <Chip tone="accent" icon={<MessageCircle size={14} />} onClick={() => setAsking((a) => !a)}>Ask</Chip>
+        <Chip tone="accent" icon={stuckLoading ? <Loader2 size={14} className="animate-spin" /> : <HelpCircle size={14} />} onClick={stuckLoading ? undefined : runStuck}>Stuck?</Chip>
         <Link href="/app/today" className="raised-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] text-muted transition-colors hover:text-ink">
           <CalendarPlus size={14} /> Today
         </Link>
       </div>
+
+      {stuckAnswer && (
+        <div className="mt-3 border-t border-line pt-3">
+          <p className="whitespace-pre-line text-[13px] leading-relaxed text-muted">{stuckAnswer}</p>
+        </div>
+      )}
 
       {asking && (
         <div className="mt-3 border-t border-line pt-3">
