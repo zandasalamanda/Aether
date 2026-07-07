@@ -10,6 +10,7 @@ export async function POST(req: Request) {
     goalTitle: clampText(b.goalTitle, 300),
     nodeTitle: clampText(b.nodeTitle, 300),
     nodeDescription: clampText(b.nodeDescription, 600),
+    context: clampText(b.context, 600),
   });
   return NextResponse.json(result);
 }

@@ -95,6 +95,8 @@ export interface ExpandNodeInput {
   goalTitle: string;
   nodeTitle: string;
   nodeDescription: string;
+  /** optional personalization: the user's inline detail + the goal's notebook context */
+  context?: string;
 }
 export interface ExpandNodeResult {
   steps: { title: string; estimatedMinutes: number; aiReason: string }[];

@@ -8,6 +8,7 @@ import { parseDeadline } from "@/lib/kairo/deadline";
 import { generateGoalMap } from "@/lib/ai/generate-goal-map";
 import { expandNode, askNode } from "@/lib/ai/node-assist";
 import type { Clarifier } from "@/lib/ai/types";
+import { clarifiersFor } from "@/lib/ai/clarifiers";
 import { GOAL_PALETTE, goalColorHex, goalColorIndex } from "@/lib/kairo/goal-color";
 import { goalIcon } from "@/lib/kairo/goal-icon";
 import { usePersistentState } from "@/lib/store/persist";
@@ -203,9 +204,11 @@ export function GalaxyMap({
   const [stepText, setStepText] = React.useState("");
   const [assisting, setAssisting] = React.useState(false);
   const [toast, setToast] = React.useState<string | null>(null);
-  const [refine, setRefine] = React.useState<{ goalId: string; prompt: string; clarifiers: Clarifier[] } | null>(null);
+  const [pending, setPending] = React.useState<{ prompt: string; clarifiers: Clarifier[] } | null>(null);
   const [formingPos, setFormingPos] = React.useState<{ x: number; y: number } | null>(null);
   const [focusNode, setFocusNode] = React.useState<GoalNode | null>(null);
+  const [breakdownFor, setBreakdownFor] = React.useState<GoalNode | null>(null);
+  const [breakdownText, setBreakdownText] = React.useState("");
 
   const speech = useSpeechInput(setPrompt);
   const pointers = React.useRef<Map<number, { x: number; y: number }>>(new Map());
@@ -398,19 +401,33 @@ export function GalaxyMap({
     showToast("Goal removed");
   };
 
-  const createGoal = async (text: string, isRefinement = false, inherit?: { pos?: { x: number; y: number }; colorIndex?: number }) => {
+  // Step 1: user submits a goal → stage the quick questions (chosen locally).
+  const startCreate = (text: string) => {
     const p = text.trim();
     if (!p || mapping) return;
-    // Fly to the spot the new planet will occupy and coalesce it there (not a
-    // fixed overlay in the middle of the screen). A refinement inherits the
-    // original goal's spot so it stays put.
-    const pos = inherit?.pos ?? defaultPos(goals.length);
+    setComposing(false);
+    setPrompt("");
+    setPending({ prompt: p, clarifiers: clarifiersFor(p) });
+  };
+
+  // Step 2: they answer (or skip) → generate the plan ONCE with the answers folded in.
+  const finishCreate = (answers: Record<string, string>, extra: string) => {
+    const pend = pending;
+    if (!pend) return;
+    setPending(null);
+    const parts = Object.entries(answers).filter(([, a]) => a).map(([q, a]) => `${q.replace(/\?$/, "")}: ${a}`);
+    if (extra.trim()) parts.push(extra.trim());
+    void createGoal(parts.length ? `${pend.prompt} — ${parts.join("; ")}` : pend.prompt);
+  };
+
+  const createGoal = async (text: string) => {
+    const p = text.trim();
+    if (!p || mapping) return;
+    // Fly to the spot the new planet will occupy and coalesce it there.
+    const pos = defaultPos(goals.length);
     const scale = 0.82;
     setFormingPos(pos);
     setMapping(true);
-    setComposing(false);
-    setRefine(null);
-    setPrompt("");
     setAnimating(true);
     setView({ tx: -pos.x * scale, ty: -pos.y * scale, scale });
 
@@ -423,33 +440,11 @@ export function GalaxyMap({
     }
     const goal = toLocalGoal(goalId, res, nodeIds);
     setPositions((pp) => ({ ...pp, [goalId]: pos }));
-    if (inherit?.colorIndex !== undefined) setColorIdx((c) => ({ ...c, [goalId]: inherit.colorIndex as number }));
     setGoals((prev) => [...prev, goal]);
     setMapping(false);
     setFormingPos(null);
     setExpandedId(goalId);
     setSelectedNodeId(null);
-    // Only offer clarifiers on the FIRST plan for a goal — a refined plan must
-    // not spawn a new round of questions (that's an endless, token-burning loop).
-    if (!isRefinement && res.clarifiers && res.clarifiers.length > 0) {
-      setRefine({ goalId, prompt: p, clarifiers: res.clarifiers });
-    }
-  };
-
-  // Apply the staged clarifier answers (+ optional free text) in ONE regen.
-  const applyRefinements = (answers: Record<string, string>, extra: string) => {
-    const r = refine;
-    if (!r) return;
-    const parts = Object.entries(answers).map(([q, a]) => `${q.replace(/\?$/, "")}: ${a}`);
-    if (extra.trim()) parts.push(extra.trim());
-    setRefine(null);
-    if (parts.length === 0) return;
-    // Keep the same spot + color so it reads as the SAME goal, sharpened.
-    const idx = goals.findIndex((g) => g.id === r.goalId);
-    const inherit = { pos: positions[r.goalId] ?? (idx >= 0 ? defaultPos(idx) : undefined), colorIndex: colorIdx[r.goalId] };
-    setGoals((prev) => prev.filter((g) => g.id !== r.goalId));
-    if (remote) void deleteGoal({ goalId: r.goalId });
-    void createGoal(`${r.prompt} — ${parts.join("; ")}`, true, inherit);
   };
 
   // Add several AI-generated sub-steps as branches under a node.
@@ -469,10 +464,18 @@ export function GalaxyMap({
     setGoals((prev) => prev.map((x) => (x.id === goalId ? { ...x, nodes: [...x.nodes, ...created] } : x)));
   };
 
-  const breakDown = async (node: GoalNode) => {
+  // Break a step into sub-steps, optionally personalized with the user's context.
+  const runBreakDown = async (node: GoalNode, context: string) => {
     if (!expanded || assisting) return;
+    setBreakdownFor(null);
+    setBreakdownText("");
     setAssisting(true);
-    const res = await expandNode({ goalTitle: expanded.title, nodeTitle: node.title, nodeDescription: node.description });
+    const res = await expandNode({
+      goalTitle: expanded.title,
+      nodeTitle: node.title,
+      nodeDescription: node.description,
+      context: context.trim() || undefined,
+    });
     if (res.steps.length) addSteps(expanded.id, node.id, res.steps);
     setAssisting(false);
     showToast(`Added ${res.steps.length} step${res.steps.length === 1 ? "" : "s"} under "${truncate(node.title, 20)}"`);
@@ -611,16 +614,18 @@ export function GalaxyMap({
             </div>
           )}
 
-          {refine && expandedId === refine.goalId && !mapping && !composing && !selectedNode && !branchFor && (
-            <ClarifierBar clarifiers={refine.clarifiers} onApply={applyRefinements} onClose={() => setRefine(null)} />
-          )}
-
-          {/* new-goal composer (also the empty-state entry) */}
-          {(composing || empty) && !mapping ? (
+          {/* a couple quick questions BEFORE generating — one AI call total */}
+          {pending && !mapping ? (
+            <PreGenClarifier
+              clarifiers={pending.clarifiers}
+              onCreate={finishCreate}
+              onCancel={() => setPending(null)}
+            />
+          ) : (composing || empty) && !mapping ? (
             <NewGoalBar
               value={prompt}
               onChange={setPrompt}
-              onSubmit={() => void createGoal(prompt)}
+              onSubmit={() => startCreate(prompt)}
               speech={speech}
               empty={empty}
               onCancel={empty ? undefined : () => { setComposing(false); setPrompt(""); }}
@@ -634,6 +639,22 @@ export function GalaxyMap({
               onClose={() => { setBranchFor(null); setBranchText(""); }}
               icon={<GitBranch size={15} />}
             />
+          ) : breakdownFor && expanded ? (
+            <form
+              onSubmit={(e) => { e.preventDefault(); void runBreakDown(breakdownFor, breakdownText); }}
+              className="chrome animate-sheet-up flex items-center gap-2 rounded-2xl p-1.5 pl-4"
+            >
+              <Sparkles size={15} className="shrink-0 text-accent" />
+              <input
+                autoFocus
+                value={breakdownText}
+                onChange={(e) => setBreakdownText(e.target.value)}
+                placeholder="Personalize the breakdown… (optional)"
+                className="h-10 flex-1 bg-transparent text-[15px] text-ink placeholder:text-faint focus:outline-none"
+              />
+              <button type="button" onClick={() => { setBreakdownFor(null); setBreakdownText(""); }} className="grid h-9 w-9 place-items-center rounded-xl text-faint hover:text-ink" aria-label="Cancel"><X size={16} /></button>
+              <button type="submit" className="raised-gold inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl px-4 text-[13px] font-medium">Break down</button>
+            </form>
           ) : selectedNode && expanded ? (
             <NodeSheet
               node={selectedNode}
@@ -644,7 +665,7 @@ export function GalaxyMap({
               onDone={() => { setStatus(expanded.id, selectedNode.id, "done"); setSelectedNodeId(null); }}
               onFocus={() => openFocus(selectedNode)}
               onBranch={() => setBranchFor(selectedNode.id)}
-              onBreakDown={() => breakDown(selectedNode)}
+              onBreakDown={() => setBreakdownFor(selectedNode)}
             />
           ) : expanded ? (
             <GoalBar
@@ -1030,21 +1051,20 @@ function MiniInput({
   );
 }
 
-function ClarifierBar({ clarifiers, onApply, onClose }: { clarifiers: Clarifier[]; onApply: (answers: Record<string, string>, extra: string) => void; onClose: () => void }) {
-  // Answers are staged locally — nothing regenerates until "Update plan", so a
-  // whole round of questions costs at most ONE extra AI call.
+function PreGenClarifier({ clarifiers, onCreate, onCancel }: { clarifiers: Clarifier[]; onCreate: (answers: Record<string, string>, extra: string) => void; onCancel: () => void }) {
+  // Answers are staged locally and folded into the SINGLE goal-map call. Skip =
+  // just hit "Create plan" without answering.
   const [answers, setAnswers] = React.useState<Record<string, string>>({});
   const [showMore, setShowMore] = React.useState(false);
   const [extra, setExtra] = React.useState("");
   const pick = (q: string, o: string) => setAnswers((a) => ({ ...a, [q]: a[q] === o ? "" : o }));
-  const dirty = Object.values(answers).some(Boolean) || extra.trim().length > 0;
 
   return (
     <div className="chrome mb-2 animate-sheet-up rounded-2xl p-3">
       <div className="mb-2 flex items-center gap-2">
         <Sparkles size={13} className="text-accent" />
-        <span className="flex-1 text-[12px] text-muted">Sharpen this plan <span className="text-faint">· optional</span></span>
-        <button onClick={onClose} className="grid h-6 w-6 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Dismiss"><X size={13} /></button>
+        <span className="flex-1 text-[12px] text-muted">A couple quick things <span className="text-faint">· optional</span></span>
+        <button onClick={onCancel} className="grid h-6 w-6 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Cancel"><X size={13} /></button>
       </div>
 
       <div className="space-y-2.5">
@@ -1059,7 +1079,7 @@ function ClarifierBar({ clarifiers, onApply, onClose }: { clarifiers: Clarifier[
           </div>
         ))}
 
-        {/* Tell me more — free-text refinement (a future Pro capability). */}
+        {/* Tell me more — free-text context (a future Pro capability). */}
         {showMore ? (
           <textarea
             autoFocus
@@ -1076,9 +1096,9 @@ function ClarifierBar({ clarifiers, onApply, onClose }: { clarifiers: Clarifier[
       </div>
 
       <div className="mt-3 flex items-center justify-end gap-2">
-        <button onClick={onClose} className="raised-btn rounded-lg px-3.5 py-1.5 text-[13px] text-muted hover:text-ink">Keep as is</button>
-        <button onClick={() => onApply(answers, extra)} disabled={!dirty} className="raised-gold inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[13px] disabled:opacity-40">
-          <Sparkles size={13} /> Update plan
+        <button onClick={() => onCreate({}, "")} className="raised-btn rounded-lg px-3.5 py-1.5 text-[13px] text-muted hover:text-ink">Skip</button>
+        <button onClick={() => onCreate(answers, extra)} className="raised-gold inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[13px]">
+          <Sparkles size={13} /> Create plan
         </button>
       </div>
     </div>

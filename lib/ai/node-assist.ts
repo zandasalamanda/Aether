@@ -48,7 +48,7 @@ export async function expandNode(input: ExpandNodeInput): Promise<ExpandNodeResu
   }
   const r = await generateJson<ExpandNodeResult>(
     EXPAND_SYSTEM,
-    `Goal: ${input.goalTitle}\nStep to break down: ${input.nodeTitle}\nContext: ${input.nodeDescription || "(none)"}`
+    `Goal: ${input.goalTitle}\nStep to break down: ${input.nodeTitle}\nStep detail: ${input.nodeDescription || "(none)"}${input.context ? `\nPersonalize for: ${input.context}` : ""}`
   );
   return validExpand(r) && r.steps.length > 0 ? cleanExpand(r) : fallbackExpand(input);
 }
