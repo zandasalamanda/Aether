@@ -8,7 +8,7 @@ import { parseDeadline } from "@/lib/kairo/deadline";
 import { generateGoalMap } from "@/lib/ai/generate-goal-map";
 import { expandNode, askNode } from "@/lib/ai/node-assist";
 import type { Clarifier } from "@/lib/ai/types";
-import { clarifiersFor } from "@/lib/ai/clarifiers";
+import { clarifyGoal } from "@/lib/ai/clarify";
 import { GOAL_PALETTE, goalColorHex, goalColorIndex } from "@/lib/kairo/goal-color";
 import { goalIcon } from "@/lib/kairo/goal-icon";
 import { usePersistentState } from "@/lib/store/persist";
@@ -205,7 +205,7 @@ export function GalaxyMap({
   const [stepText, setStepText] = React.useState("");
   const [assisting, setAssisting] = React.useState(false);
   const [toast, setToast] = React.useState<string | null>(null);
-  const [pending, setPending] = React.useState<{ prompt: string; clarifiers: Clarifier[] } | null>(null);
+  const [pending, setPending] = React.useState<{ prompt: string; clarifiers: Clarifier[]; loading: boolean } | null>(null);
   const [formingPos, setFormingPos] = React.useState<{ x: number; y: number } | null>(null);
   const [focusNode, setFocusNode] = React.useState<GoalNode | null>(null);
   const [breakdownFor, setBreakdownFor] = React.useState<GoalNode | null>(null);
@@ -402,13 +402,16 @@ export function GalaxyMap({
     showToast("Goal removed");
   };
 
-  // Step 1: user submits a goal → stage the quick questions (chosen locally).
-  const startCreate = (text: string) => {
+  // Step 1: user submits a goal → fetch a couple tailored questions (small AI
+  // call), shown before the plan is generated.
+  const startCreate = async (text: string) => {
     const p = text.trim();
     if (!p || mapping) return;
     setComposing(false);
     setPrompt("");
-    setPending({ prompt: p, clarifiers: clarifiersFor(p) });
+    setPending({ prompt: p, clarifiers: [], loading: true });
+    const clar = await clarifyGoal(p);
+    setPending((cur) => (cur && cur.prompt === p ? { prompt: p, clarifiers: clar, loading: false } : cur));
   };
 
   // Step 2: they answer (or skip) → generate the plan ONCE with the answers folded in.
@@ -620,6 +623,7 @@ export function GalaxyMap({
           {pending && !mapping ? (
             <PreGenClarifier
               clarifiers={pending.clarifiers}
+              loading={pending.loading}
               onCreate={finishCreate}
               onCancel={() => setPending(null)}
             />
@@ -627,7 +631,7 @@ export function GalaxyMap({
             <NewGoalBar
               value={prompt}
               onChange={setPrompt}
-              onSubmit={() => startCreate(prompt)}
+              onSubmit={() => void startCreate(prompt)}
               speech={speech}
               empty={empty}
               onCancel={empty ? undefined : () => { setComposing(false); setPrompt(""); }}
@@ -1055,7 +1059,7 @@ function MiniInput({
   );
 }
 
-function PreGenClarifier({ clarifiers, onCreate, onCancel }: { clarifiers: Clarifier[]; onCreate: (answers: Record<string, string>, extra: string) => void; onCancel: () => void }) {
+function PreGenClarifier({ clarifiers, loading, onCreate, onCancel }: { clarifiers: Clarifier[]; loading: boolean; onCreate: (answers: Record<string, string>, extra: string) => void; onCancel: () => void }) {
   // Answers are staged locally and folded into the SINGLE goal-map call. Skip =
   // just hit "Create plan" without answering.
   const [answers, setAnswers] = React.useState<Record<string, string>>({});
@@ -1066,11 +1070,20 @@ function PreGenClarifier({ clarifiers, onCreate, onCancel }: { clarifiers: Clari
   return (
     <div className="chrome mb-2 animate-sheet-up rounded-2xl p-3">
       <div className="mb-2 flex items-center gap-2">
-        <Sparkles size={13} className="text-accent" />
-        <span className="flex-1 text-[12px] text-muted">A couple quick things <span className="text-faint">· optional</span></span>
+        {loading ? <Loader2 size={13} className="animate-spin text-accent" /> : <Sparkles size={13} className="text-accent" />}
+        <span className="flex-1 text-[12px] text-muted">{loading ? "Thinking of a couple questions…" : <>A couple quick things <span className="text-faint">· optional</span></>}</span>
         <button onClick={onCancel} className="grid h-6 w-6 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Cancel"><X size={13} /></button>
       </div>
 
+      {loading ? (
+        <div className="space-y-2 py-1">
+          {[0, 1].map((i) => <div key={i} className="h-8 animate-pulse rounded-lg bg-white/[0.04]" />)}
+          <div className="pt-1 text-right">
+            <button onClick={() => onCreate({}, "")} className="raised-btn rounded-lg px-3.5 py-1.5 text-[13px] text-muted hover:text-ink">Skip questions</button>
+          </div>
+        </div>
+      ) : (
+      <>
       <div className="space-y-2.5">
         {clarifiers.map((c, qi) => (
           <div key={qi}>
@@ -1105,6 +1118,8 @@ function PreGenClarifier({ clarifiers, onCreate, onCancel }: { clarifiers: Clari
           <Sparkles size={13} /> Create plan
         </button>
       </div>
+      </>
+      )}
     </div>
   );
 }
