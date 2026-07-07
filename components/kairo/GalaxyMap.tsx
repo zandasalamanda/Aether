@@ -789,24 +789,33 @@ function GoalCluster({
           }}
         >
           <PlanetSurface hex={hex} seed={goal.id} />
-          <span className="relative text-center leading-none text-[#1b1206]">
-            <span className="block text-[17px] font-bold">{Math.round(goal.progress)}%</span>
-          </span>
+          {/* the goal's icon, embossed into the planet's shine */}
+          {React.createElement(goalIcon(goal.icon), {
+            size: expanded ? 54 : 46,
+            strokeWidth: 1.5,
+            className: "relative",
+            style: { color: "#ffffff", opacity: 0.72, filter: "drop-shadow(0 1px 2px rgba(50,34,8,0.4))" },
+          })}
         </span>
-        {/* label: always visible on touch; hover-reveal on desktop; always when open */}
-        <span
-          className={cn(
-            "pointer-events-none absolute left-1/2 top-full mt-3 -translate-x-1/2 whitespace-nowrap text-center transition-opacity duration-200",
-            expanded || hovered ? "opacity-100" : "opacity-100 [@media(hover:hover)]:opacity-0"
-          )}
-        >
-          <span className="flex items-center justify-center gap-1.5 text-[13.5px] font-semibold text-ink" style={{ textShadow: "0 1px 14px rgba(8,9,11,0.96), 0 0 5px rgba(8,9,11,0.9)" }}>
-            {React.createElement(goalIcon(goal.icon), { size: 13, className: "shrink-0", style: { color: hex } })}
-            <span className="truncate">{truncate(goal.title, 30)}</span>
+
+        {/* beneath the planet: percentage (significant, always shown) + name */}
+        <span className="pointer-events-none absolute left-1/2 top-full mt-2 -translate-x-1/2 whitespace-nowrap text-center">
+          <span className="block text-[19px] font-bold leading-none text-ink" style={{ textShadow: "0 1px 12px rgba(8,9,11,0.96), 0 0 4px rgba(8,9,11,0.92)" }}>
+            {Math.round(goal.progress)}%
           </span>
-          <span className="mt-0.5 block font-mono text-[10px] text-faint" style={{ textShadow: "0 1px 12px rgba(8,9,11,0.96)" }}>
-            {goal.nodes.length} step{goal.nodes.length === 1 ? "" : "s"}
-            {goal.targetDate ? ` · due ${relativeDays(goal.targetDate)}` : ""}
+          <span
+            className={cn(
+              "mt-1 block transition-opacity duration-200",
+              expanded || hovered ? "opacity-100" : "opacity-100 [@media(hover:hover)]:opacity-0"
+            )}
+          >
+            <span className="mx-auto block max-w-[170px] truncate text-[13px] font-semibold text-ink" style={{ textShadow: "0 1px 12px rgba(8,9,11,0.96), 0 0 5px rgba(8,9,11,0.9)" }}>
+              {truncate(goal.title, 30)}
+            </span>
+            <span className="mt-0.5 block font-mono text-[10px] text-faint" style={{ textShadow: "0 1px 12px rgba(8,9,11,0.96)" }}>
+              {goal.nodes.length} step{goal.nodes.length === 1 ? "" : "s"}
+              {goal.targetDate ? ` · due ${relativeDays(goal.targetDate)}` : ""}
+            </span>
           </span>
         </span>
       </button>
