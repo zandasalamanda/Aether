@@ -1,12 +1,13 @@
 import { generateJson, isObj, isClient, viaRoute } from "./provider";
 import { mockGoalMap } from "./mock";
 import { parseDeadline } from "@/lib/kairo/deadline";
+import { GOAL_ICON_KEYS } from "@/lib/kairo/goal-icon-keys";
 import type { GoalMapInput, GoalMapResult, GeneratedNode, Clarifier } from "./types";
 import type { NodeResource, ResourceKind } from "@/types";
 
 const SYSTEM = `You are Aether, an execution planner and coach. Turn the user's goal into a DETAILED, DIRECT, step-by-step plan they can start with ZERO further thinking.
 
-Return JSON: {"title":string,"description":string,"suggestedTargetDate":ISO8601,"nodes":[{"title":string,"description":string,"status":"in_motion"|"not_started","estimatedMinutes":number,"priority":number,"aiReason":string,"parentIndex":number|null,"resource":{"kind":"watch"|"read"|"practice","label":string,"query":string}|null}],"firstNextAction":string,"weeklyRhythm":string,"clarifiers":[{"question":string,"options":string[]}]}.
+Return JSON: {"title":string,"description":string,"suggestedTargetDate":ISO8601,"nodes":[{"title":string,"description":string,"status":"in_motion"|"not_started","estimatedMinutes":number,"priority":number,"aiReason":string,"parentIndex":number|null,"resource":{"kind":"watch"|"read"|"practice","label":string,"query":string}|null}],"firstNextAction":string,"weeklyRhythm":string,"clarifiers":[{"question":string,"options":string[]}],"icon":string}.
 
 FORMAT — nodes form a TREE where DEPTH = TIME:
 - ONE chronological SPINE of 4-5 milestones. The first has "parentIndex": null; every later milestone's parentIndex is the milestone right before it in time (a chain — later work hangs off earlier work, never a sibling of it).
@@ -18,7 +19,11 @@ RESOURCES — for each SUB-STEP where a specific piece of external content would
 
 CLARIFIERS — return AT MOST 2 short questions, and ONLY ones whose answer would MEANINGFULLY change the plan. Skip anything already implied by the goal; one great question beats two weak ones; if the goal is already specific, return an empty array. Each has 2-4 quick options. E.g. {"question":"Deadline?","options":["2 weeks","1 month","3 months","No rush"]} and {"question":"Your level?","options":["Beginner","Some","Advanced"]}. Question ≤4 words, each option ≤3 words.
 
+ICON — also return "icon": the ONE key from this list that best fits the goal: ${GOAL_ICON_KEYS.join(", ")}. Use "target" only if none fit.
+
 nodes[0] is the first milestone with status "in_motion"; all others "not_started". priority ascends along the spine. suggestedTargetDate is after today; resolve any named deadline. Be detailed and direct — no motivation-speak.`;
+
+const ICONS: ReadonlySet<string> = new Set(GOAL_ICON_KEYS);
 
 const KINDS: ReadonlySet<string> = new Set<ResourceKind>(["watch", "read", "practice"]);
 
@@ -70,7 +75,8 @@ function normalize(r: GoalMapResult): GoalMapResult {
       resource: cleanResource(n.resource),
     } as GeneratedNode;
   });
-  return { ...r, nodes, clarifiers: cleanClarifiers(r.clarifiers) };
+  const icon = typeof r.icon === "string" && ICONS.has(r.icon) ? r.icon : "target";
+  return { ...r, nodes, clarifiers: cleanClarifiers(r.clarifiers), icon };
 }
 
 // Guard against the model returning a past/invalid target date (it may not know today).

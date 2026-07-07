@@ -47,6 +47,7 @@ interface Template {
   description: (title: string) => string;
   rhythm: string;
   weeks: number;
+  icon: string;
   nodes: TemplateNode[];
 }
 
@@ -57,6 +58,7 @@ const TEMPLATES: Template[] = [
       `A focused build toward "${t}". Aether mapped the path from a clear MVP to your first real users, ordered so momentum compounds.`,
     rhythm: "3 focus blocks / week · ~90 min each",
     weeks: 9,
+    icon: "rocket",
     nodes: [
       { title: "Define the MVP", est: 60, reason: "Scope tightly so you can move", sub: [
         { title: "List every feature you imagine", est: 20, reason: "Get it all out of your head" },
@@ -84,6 +86,7 @@ const TEMPLATES: Template[] = [
       `A calm study path toward "${t}". Aether turned it into a rhythm you can actually hold, weighted toward your weak spots.`,
     rhythm: "5 study blocks / week · ~45 min each",
     weeks: 6,
+    icon: "school",
     nodes: [
       { title: "Map the syllabus", est: 45, reason: "See the whole terrain first", sub: [
         { title: "List every topic to cover", est: 25, reason: "Nothing hides until exam day" },
@@ -104,6 +107,7 @@ const TEMPLATES: Template[] = [
       `A steady plan toward "${t}". Aether broke it into small, repeatable moves so progress compounds without stress.`,
     rhythm: "2 money blocks / week · ~30 min each",
     weeks: 12,
+    icon: "money",
     nodes: [
       { title: "Map current spending", est: 45, reason: "You can't change what you can't see" },
       { title: "Set a clear target", est: 30, reason: "A number gives the plan direction" },
@@ -119,6 +123,7 @@ const TEMPLATES: Template[] = [
       `A grounded path toward "${t}". Aether started small and stackable so the routine sticks instead of stalling.`,
     rhythm: "Daily anchor · ~20 min",
     weeks: 8,
+    icon: "habit",
     nodes: [
       { title: "Define the routine", est: 30, reason: "Decide once, not every day" },
       { title: "Prep the environment", est: 30, reason: "Make the right move the easy move" },
@@ -136,6 +141,7 @@ const DEFAULT_TEMPLATE: Template = {
     `A clear path toward "${t}". Aether broke it into ordered steps so you always know the next move.`,
   rhythm: "3 focus blocks / week · ~60 min each",
   weeks: 8,
+  icon: "target",
   nodes: [
     { title: "Clarify the outcome", est: 45, reason: "Define what done looks like", sub: [
       { title: "Write the goal in one sentence", est: 20, reason: "If you can't, it's not clear yet" },
@@ -200,6 +206,7 @@ export function mockGoalMap(input: GoalMapInput): GoalMapResult {
     nodes,
     firstNextAction: `Spend 25 minutes to ${tpl.nodes[0].title.toLowerCase()}`,
     weeklyRhythm: tpl.rhythm,
+    icon: tpl.icon,
     clarifiers: [
       { question: "Deadline?", options: ["2 weeks", "1 month", "3 months", "No rush"] },
       { question: "Time / week?", options: ["2 hrs", "5 hrs", "10+ hrs"] },

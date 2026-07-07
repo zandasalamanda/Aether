@@ -9,6 +9,7 @@ import { generateGoalMap } from "@/lib/ai/generate-goal-map";
 import { expandNode, askNode } from "@/lib/ai/node-assist";
 import type { Clarifier } from "@/lib/ai/types";
 import { GOAL_PALETTE, goalColorHex, goalColorIndex } from "@/lib/kairo/goal-color";
+import { goalIcon } from "@/lib/kairo/goal-icon";
 import { usePersistentState } from "@/lib/store/persist";
 import { useSpeechInput } from "@/lib/hooks/use-speech-input";
 import {
@@ -155,6 +156,7 @@ function toLocalGoal(goalId: string, res: Awaited<ReturnType<typeof generateGoal
     status: "active",
     progress: 0,
     targetDate: res.suggestedTargetDate ?? null,
+    icon: res.icon ?? null,
     createdAt: nowISO(),
     updatedAt: nowISO(),
     archivedAt: null,
@@ -556,7 +558,7 @@ export function GalaxyMap({
                   onClick={() => { setExpandedId(g.id); setSelectedNodeId(null); setMenu(false); flyTo(g.id); }}
                   className={cn("flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm", expandedId === g.id ? "raised-btn text-ink" : "text-muted hover:text-ink")}
                 >
-                  <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: hexOf(g.id), boxShadow: `0 0 8px ${hexOf(g.id)}` }} />
+                  {React.createElement(goalIcon(g.icon), { size: 16, className: "shrink-0", style: { color: hexOf(g.id) } })}
                   <span className="min-w-0 flex-1 truncate">{g.title}</span>
                   <span className="shrink-0 font-mono text-[11px] text-faint">{Math.round(g.progress)}%</span>
                 </button>
@@ -664,6 +666,30 @@ export function GalaxyMap({
 
 /* ------------------------------------------------------------------ */
 
+function hashN(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return h;
+}
+
+/** A faint, seeded "surface" — a tilted band + soft spots — so each planet looks distinct. */
+function PlanetSurface({ hex, seed }: { hex: string; seed: string }) {
+  const h = hashN(seed);
+  const bandRot = h % 360;
+  const bandTop = 22 + (h % 46);
+  const sX = 12 + ((h >> 4) % 60);
+  const sY = 44 + ((h >> 7) % 40);
+  const s2X = 10 + ((h >> 9) % 55);
+  const s2Y = 10 + ((h >> 11) % 38);
+  return (
+    <span className="pointer-events-none absolute inset-0 overflow-hidden rounded-full" aria-hidden>
+      <span className="absolute -left-1/4 -right-1/4 h-[24%]" style={{ top: `${bandTop}%`, transform: `rotate(${bandRot}deg)`, background: `linear-gradient(90deg, transparent, ${hex}38, transparent)` }} />
+      <span className="absolute rounded-full blur-md" style={{ width: "52%", height: "52%", left: `${sX}%`, top: `${sY}%`, background: `radial-gradient(circle, ${hex}45, transparent 70%)` }} />
+      <span className="absolute rounded-full blur-[5px]" style={{ width: "22%", height: "22%", left: `${s2X}%`, top: `${s2Y}%`, background: "radial-gradient(circle, rgba(255,255,255,0.20), transparent 70%)" }} />
+    </span>
+  );
+}
+
 function GoalCluster({
   goal, pos, hex, expanded, dimmed, hovered, selectedNodeId, poppedId,
   onPlanetDown, onPlanetUp, onEnter, onLeave, onSelectNode,
@@ -751,13 +777,14 @@ function GoalCluster({
         <span className="absolute left-1/2 top-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 animate-pulse-soft rounded-full"
           style={{ background: `radial-gradient(circle, ${hex}55, transparent 68%)`, width: 150, height: 150 }} />
         <span
-          className={cn("grid animate-grow-in place-items-center rounded-full transition-transform", expanded ? "h-[92px] w-[92px]" : "h-20 w-20")}
+          className={cn("relative grid animate-grow-in place-items-center overflow-hidden rounded-full transition-transform", expanded ? "h-[92px] w-[92px]" : "h-20 w-20")}
           style={{
             background: `radial-gradient(circle at 34% 26%, #fdf3e0 0%, ${hex} 46%, #1a130a 100%)`,
             boxShadow: `inset 0 -8px 22px rgba(0,0,0,0.5), inset 0 3px 9px rgba(255,255,255,0.35), 0 0 44px ${hex}44`,
           }}
         >
-          <span className="text-center leading-none text-[#1b1206]">
+          <PlanetSurface hex={hex} seed={goal.id} />
+          <span className="relative text-center leading-none text-[#1b1206]">
             <span className="block text-[17px] font-bold">{Math.round(goal.progress)}%</span>
           </span>
         </span>
@@ -768,8 +795,9 @@ function GoalCluster({
             expanded || hovered ? "opacity-100" : "opacity-100 [@media(hover:hover)]:opacity-0"
           )}
         >
-          <span className="block text-[13.5px] font-semibold text-ink" style={{ textShadow: "0 1px 14px rgba(8,9,11,0.96), 0 0 5px rgba(8,9,11,0.9)" }}>
-            {truncate(goal.title, 34)}
+          <span className="flex items-center justify-center gap-1.5 text-[13.5px] font-semibold text-ink" style={{ textShadow: "0 1px 14px rgba(8,9,11,0.96), 0 0 5px rgba(8,9,11,0.9)" }}>
+            {React.createElement(goalIcon(goal.icon), { size: 13, className: "shrink-0", style: { color: hex } })}
+            <span className="truncate">{truncate(goal.title, 30)}</span>
           </span>
           <span className="mt-0.5 block font-mono text-[10px] text-faint" style={{ textShadow: "0 1px 12px rgba(8,9,11,0.96)" }}>
             {goal.nodes.length} step{goal.nodes.length === 1 ? "" : "s"}

@@ -34,6 +34,7 @@ export async function persistGoalFromMap(input: { result: GoalMapResult }): Prom
       status: "active",
       progress: 0,
       target_date: result.suggestedTargetDate ?? null,
+      icon: result.icon ?? null,
     })
     .select("id")
     .single();

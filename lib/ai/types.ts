@@ -44,6 +44,8 @@ export interface GoalMapResult {
   firstNextAction: string;
   weeklyRhythm: string;
   clarifiers?: Clarifier[];
+  /** An icon key from GOAL_ICON_KEYS that fits the goal. */
+  icon?: string | null;
 }
 
 // ---------- Daily plan ----------

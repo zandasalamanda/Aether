@@ -35,6 +35,7 @@ export interface GoalRow {
   status: GoalStatus;
   progress: number;
   target_date: string | null;
+  icon: string | null;
   created_at: string;
   updated_at: string;
   archived_at: string | null;
@@ -99,6 +100,7 @@ export function rowToGoal(r: GoalRow): Goal {
     status: r.status,
     progress: r.progress,
     targetDate: r.target_date,
+    icon: r.icon,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
     archivedAt: r.archived_at,

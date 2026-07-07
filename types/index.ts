@@ -72,6 +72,8 @@ export interface Goal {
   /** 0..100 */
   progress: number;
   targetDate: string | null;
+  /** AI-chosen icon key from GOAL_ICON_KEYS (null → default). */
+  icon: string | null;
   createdAt: string;
   updatedAt: string;
   archivedAt: string | null;
