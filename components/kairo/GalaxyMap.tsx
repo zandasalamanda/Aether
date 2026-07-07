@@ -2,13 +2,14 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowUp, Check, Timer, X, ChevronDown, Locate, GitBranch, Plus, Palette, Trash2, Sparkles, CalendarPlus, MessageCircle, Loader2, PlayCircle, Dumbbell, BookOpen, ExternalLink, NotebookPen } from "lucide-react";
+import { ArrowUp, Check, Timer, X, ChevronDown, Locate, GitBranch, Plus, Palette, Trash2, Sparkles, CalendarPlus, MessageCircle, Loader2, PlayCircle, Dumbbell, BookOpen, ExternalLink, NotebookPen, Wand2, ArrowDownToLine } from "lucide-react";
 import type { GoalWithNodes, GoalNode, NodeStatus, NodeResource, ResourceKind, ResolvedResource } from "@/types";
 import { parseDeadline } from "@/lib/kairo/deadline";
 import { generateGoalMap } from "@/lib/ai/generate-goal-map";
 import { expandNode, askNode } from "@/lib/ai/node-assist";
+import { replanGoal } from "@/lib/ai/replan";
 import { viaRoute } from "@/lib/ai/provider";
-import type { Clarifier } from "@/lib/ai/types";
+import type { Clarifier, ReplanProposal, ReplanKind } from "@/lib/ai/types";
 import { clarifyGoal } from "@/lib/ai/clarify";
 import { GOAL_PALETTE, goalColorHex, goalColorIndex } from "@/lib/kairo/goal-color";
 import { goalIcon } from "@/lib/kairo/goal-icon";
@@ -214,6 +215,9 @@ export function GalaxyMap({
   const [focusNode, setFocusNode] = React.useState<GoalNode | null>(null);
   const [breakdownFor, setBreakdownFor] = React.useState<GoalNode | null>(null);
   const [breakdownText, setBreakdownText] = React.useState("");
+  const [replanForId, setReplanForId] = React.useState<string | null>(null);
+  const [replanLoading, setReplanLoading] = React.useState(false);
+  const [proposals, setProposals] = React.useState<(ReplanProposal & { pid: string })[]>([]);
 
   const speech = useSpeechInput(setPrompt);
   const pointers = React.useRef<Map<number, { x: number; y: number }>>(new Map());
@@ -368,7 +372,7 @@ export function GalaxyMap({
     if (remote) void setNodeStatus({ goalId, nodeId: id, status });
   };
 
-  const addBranch = (goalId: string, parentId: string | null, title: string) => {
+  const addBranch = (goalId: string, parentId: string | null, title: string, minutes = 30) => {
     const text = title.trim();
     if (!text) return;
     const g = goals.find((x) => x.id === goalId);
@@ -376,12 +380,12 @@ export function GalaxyMap({
     const id = newId();
     const node: GoalNode = {
       id, goalId, parentId, title: text.replace(/\s+/g, " ").replace(/[.?!]+$/, ""),
-      description: "", status: "not_started", progress: 0, priority: 3, estimatedMinutes: 30,
+      description: "", status: "not_started", progress: 0, priority: 3, estimatedMinutes: minutes,
       dueDate: null, positionX: null, positionY: null, aiReason: "Added from the map", resource: null,
       createdAt: nowISO(), updatedAt: nowISO(),
     };
     setGoals((prev) => prev.map((x) => (x.id === goalId ? { ...x, nodes: [...x.nodes, node] } : x)));
-    if (remote) void addNode({ id, goalId, title: node.title, estimatedMinutes: 30, sortOrder: g.nodes.length, parentId });
+    if (remote) void addNode({ id, goalId, title: node.title, estimatedMinutes: minutes, sortOrder: g.nodes.length, parentId });
   };
 
   const setDeadline = (goalId: string, text: string) => {
@@ -509,6 +513,33 @@ export function GalaxyMap({
       })
     );
     showToast("Saved to notebook");
+  };
+
+  // The living map: ask Aether where the plan should adapt to the user's real
+  // progress. Proposals are additive and shown for accept/dismiss — never auto-applied.
+  const runReplan = async (goalId: string) => {
+    const g = goals.find((x) => x.id === goalId);
+    if (!g) return;
+    setReplanForId(goalId);
+    setProposals([]);
+    setReplanLoading(true);
+    const res = await replanGoal({
+      goalTitle: g.title,
+      nodes: g.nodes.map((n) => ({ title: n.title, status: n.status })),
+      context: g.notes.trim() || undefined,
+    });
+    setProposals(res.proposals.map((p) => ({ ...p, pid: newId() })));
+    setReplanLoading(false);
+  };
+
+  const acceptProposal = (p: ReplanProposal & { pid: string }) => {
+    const g = goals.find((x) => x.id === replanForId);
+    if (!g) return;
+    const key = p.parentTitle?.trim().toLowerCase();
+    const parentId = key ? g.nodes.find((n) => n.title.trim().toLowerCase() === key)?.id ?? null : null;
+    addBranch(g.id, parentId, p.title, p.estimatedMinutes);
+    setProposals((prev) => prev.filter((x) => x.pid !== p.pid));
+    showToast(`Added “${truncate(p.title, 22)}”`);
   };
 
   // Cache a real resolved resource (live video) on the node once found.
@@ -690,6 +721,15 @@ export function GalaxyMap({
               <button type="button" onClick={() => { setBreakdownFor(null); setBreakdownText(""); }} className="grid h-9 w-9 place-items-center rounded-xl text-faint hover:text-ink" aria-label="Cancel"><X size={16} /></button>
               <button type="submit" className="raised-gold inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl px-4 text-[13px] font-medium">Break down</button>
             </form>
+          ) : replanForId && expanded ? (
+            <ReplanSheet
+              hex={hexOf(expanded.id)}
+              loading={replanLoading}
+              proposals={proposals}
+              onAccept={acceptProposal}
+              onDismiss={(pid) => setProposals((prev) => prev.filter((x) => x.pid !== pid))}
+              onClose={() => { setReplanForId(null); setProposals([]); }}
+            />
           ) : selectedNode && expanded ? (
             <NodeSheet
               key={selectedNode.id}
@@ -721,6 +761,7 @@ export function GalaxyMap({
               }}
               onColor={() => cycleColor(expanded.id)}
               onDelete={() => removeGoal(expanded.id)}
+              onAdapt={() => void runReplan(expanded.id)}
               onClose={() => { setExpandedId(null); overview(); }}
             />
           ) : (
@@ -1025,7 +1066,7 @@ function NewGoalBar({
 }
 
 function GoalBar({
-  goal, hex, value, onChange, onAddStep, onColor, onDelete, onClose,
+  goal, hex, value, onChange, onAddStep, onColor, onDelete, onAdapt, onClose,
 }: {
   goal: GoalWithNodes;
   hex: string;
@@ -1034,6 +1075,7 @@ function GoalBar({
   onAddStep: () => void;
   onColor: () => void;
   onDelete: () => void;
+  onAdapt: () => void;
   onClose: () => void;
 }) {
   const [armed, setArmed] = React.useState(false);
@@ -1056,6 +1098,9 @@ function GoalBar({
           <div className="mb-2 flex items-center gap-2 px-1.5">
             <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: hex, boxShadow: `0 0 8px ${hex}` }} />
             <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-ink">{goal.title}</span>
+            {goal.nodes.length > 0 && (
+              <button onClick={onAdapt} className="grid h-7 w-7 place-items-center rounded-lg text-faint hover:text-accent" aria-label="Adapt the plan" title="Adapt the plan to your progress"><Wand2 size={15} /></button>
+            )}
             <Link href={`/app/notebook?goal=${goal.id}`} className="grid h-7 w-7 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Notes"><NotebookPen size={15} /></Link>
             <button onClick={onColor} className="grid h-7 w-7 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Change color"><Palette size={15} /></button>
             <button onClick={() => setArmed(true)} className="grid h-7 w-7 place-items-center rounded-lg text-faint hover:text-warn" aria-label="Delete goal"><Trash2 size={15} /></button>
@@ -1071,6 +1116,59 @@ function GoalBar({
             <button type="submit" disabled={!value.trim()} className="raised-gold grid h-8 w-8 shrink-0 place-items-center rounded-lg disabled:opacity-30" aria-label="Add"><ArrowUp size={16} /></button>
           </form>
         </>
+      )}
+    </div>
+  );
+}
+
+const REPLAN_META: Record<ReplanKind, string> = {
+  onramp: "Easier on-ramp",
+  substep: "Next step",
+  milestone: "New phase",
+  stretch: "Stretch",
+};
+
+/** The living map's review sheet: accept or dismiss Aether's proposed changes. */
+function ReplanSheet({ hex, loading, proposals, onAccept, onDismiss, onClose }: {
+  hex: string;
+  loading: boolean;
+  proposals: (ReplanProposal & { pid: string })[];
+  onAccept: (p: ReplanProposal & { pid: string }) => void;
+  onDismiss: (pid: string) => void;
+  onClose: () => void;
+}) {
+  return (
+    <div className="chrome animate-sheet-up rounded-2xl p-3">
+      <div className="mb-2.5 flex items-center gap-2 px-1">
+        {loading ? <Loader2 size={14} className="animate-spin text-accent" /> : <Wand2 size={14} className="text-accent" />}
+        <span className="flex-1 text-[13px] font-medium text-ink">Adapt the plan</span>
+        <button onClick={onClose} className="grid h-7 w-7 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Close"><X size={15} /></button>
+      </div>
+
+      {loading ? (
+        <div className="space-y-2 px-1 pb-1">
+          {[0, 1].map((i) => <div key={i} className="h-16 animate-pulse rounded-xl bg-white/[0.04]" />)}
+          <p className="pt-0.5 font-mono text-[11px] uppercase tracking-[0.16em] text-faint">Reading where you are…</p>
+        </div>
+      ) : proposals.length === 0 ? (
+        <p className="px-1 pb-1.5 text-[13px] text-muted">Your plan&apos;s in good shape — nothing to change right now.</p>
+      ) : (
+        <div className="space-y-2">
+          {proposals.map((p) => (
+            <div key={p.pid} className="inset-well rounded-xl p-3">
+              <div className="flex items-center gap-2">
+                <span className="rounded-full px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide" style={{ background: `${hex}22`, color: hex }}>{REPLAN_META[p.kind]}</span>
+                {p.parentTitle && <span className="min-w-0 truncate text-[11px] text-faint">under &ldquo;{truncate(p.parentTitle, 22)}&rdquo;</span>}
+              </div>
+              <p className="mt-1.5 text-[14px] font-medium leading-snug text-ink">{p.title}</p>
+              {p.reason && <p className="mt-0.5 text-[12px] text-muted">{p.reason}</p>}
+              <div className="mt-2.5 flex items-center gap-2">
+                <button onClick={() => onAccept(p)} className="raised-gold inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12.5px] font-medium"><ArrowDownToLine size={13} /> Add to map</button>
+                <button onClick={() => onDismiss(p.pid)} className="raised-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12.5px] text-muted hover:text-ink">Dismiss</button>
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

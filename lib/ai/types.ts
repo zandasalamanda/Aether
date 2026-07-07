@@ -141,6 +141,26 @@ export interface UnblockResult {
   answer: string;
 }
 
+// ---------- adaptive replan (the living map) ----------
+export type ReplanKind = "onramp" | "substep" | "milestone" | "stretch";
+export interface ReplanInput {
+  goalTitle: string;
+  /** the current steps with their status, so proposals match reality */
+  nodes: { title: string; status: NodeStatus }[];
+  context?: string;
+}
+export interface ReplanProposal {
+  kind: ReplanKind;
+  /** title of an existing step to attach under, or null for a new top-level phase */
+  parentTitle: string | null;
+  title: string;
+  estimatedMinutes: number;
+  reason: string;
+}
+export interface ReplanResult {
+  proposals: ReplanProposal[];
+}
+
 // ---------- draft (a co-produced artifact for a desk step) ----------
 export interface DraftInput {
   goalTitle: string;
