@@ -42,7 +42,8 @@ function resourceUrl(r: NodeResource): string {
 
 /** Deterministic galaxy slot for a goal by its index (used until dragged). */
 function defaultPos(i: number): { x: number; y: number } {
-  const r = 250 + 130 * Math.sqrt(i);
+  // Wide spacing so one goal's expanded tree never crowds another's.
+  const r = 460 + 300 * Math.sqrt(i);
   const a = i * GOLDEN - Math.PI / 2;
   return { x: Math.cos(a) * (i === 0 ? 0 : r), y: Math.sin(a) * (i === 0 ? 0 : r) };
 }
@@ -66,14 +67,14 @@ interface Placed {
   spine: boolean; // a milestone (has children) vs a leaf sub-step
 }
 
-const SPINE_RAD = 172; // distance to the next milestone along the spine
-const LEAF_RAD = 132; // distance to a leaf sub-step
+const SPINE_RAD = 190; // distance to the next milestone along the spine
+const LEAF_RAD = 116; // distance to a rib (leaf sub-step)
+const SPINE_ARC = 0.17; // gentle, consistent bend so the spine curves instead of running off
 
 /**
- * Tree layout relative to the goal core at (0,0). Milestones (nodes with
- * children) flow FORWARD along the spine — kept centered in each fan — while
- * leaf sub-steps splay out to the sides, so a plan reads as a path with
- * branches rather than a straight line or a crowded burst.
+ * Fishbone layout relative to the goal core at (0,0): milestones flow forward
+ * along a gently arcing spine, and each milestone's sub-steps hang as ribs on
+ * alternating sides — so subtrees stay clear of one another.
  */
 function layoutTree(nodes: GoalNode[]): Placed[] {
   const ids = new Set(nodes.map((n) => n.id));
@@ -91,26 +92,27 @@ function layoutTree(nodes: GoalNode[]): Placed[] {
     const children = kids.get(parentId) ?? [];
     const leaves = children.filter((c) => !hasKids(c.id));
     const spineKids = children.filter((c) => hasKids(c.id));
-    // Center the continuing milestone(s) in the fan, leaves flanking them.
-    const half = Math.ceil(leaves.length / 2);
-    const ordered = [...leaves.slice(0, half), ...spineKids, ...leaves.slice(half)];
-    const n = ordered.length;
-    const spread = Math.min(Math.PI * 0.92, 0.5 + n * 0.34);
 
-    ordered.forEach((node, i) => {
-      const spine = hasKids(node.id);
-      const offset = n === 1 ? 0 : (i / (n - 1) - 0.5) * spread;
-      const angle = dir + offset;
-      const rad = spine ? SPINE_RAD : LEAF_RAD;
-      const x = cx + Math.cos(angle) * rad;
-      const y = cy + Math.sin(angle) * rad;
-      out.push({ node, x, y, px: cx, py: cy, depth, spine });
-      if (spine) place(node.id, x, y, angle, depth + 1);
+    // Ribs: perpendicular to the spine, alternating sides, fanning out slightly.
+    leaves.forEach((leaf, i) => {
+      const side = i % 2 === 0 ? 1 : -1;
+      const rank = Math.floor(i / 2);
+      const angle = dir + side * (Math.PI / 2 - 0.14) + side * rank * 0.4;
+      const rad = LEAF_RAD + rank * 30;
+      out.push({ node: leaf, x: cx + Math.cos(angle) * rad, y: cy + Math.sin(angle) * rad, px: cx, py: cy, depth, spine: false });
+    });
+
+    // Spine: continue forward with a gentle arc (fan a little if several branch).
+    spineKids.forEach((cont, i) => {
+      const fan = spineKids.length > 1 ? (i - (spineKids.length - 1) / 2) * 0.6 : 0;
+      const angle = dir + SPINE_ARC + fan;
+      const x = cx + Math.cos(angle) * SPINE_RAD;
+      const y = cy + Math.sin(angle) * SPINE_RAD;
+      out.push({ node: cont, x, y, px: cx, py: cy, depth, spine: true });
+      place(cont.id, x, y, angle, depth + 1);
     });
   };
 
-  // Root milestones off the core. Usually one (the first milestone); if the plan
-  // has several independent starts, fan them around the core.
   const roots = kids.get(null) ?? [];
   const r = roots.length;
   roots.forEach((root, i) => {
@@ -175,7 +177,7 @@ export function GalaxyMap({
 
   const initialExpanded = initialGoalId ?? (initialGoals.length === 1 ? initialGoals[0].id : null);
   const [view, setView] = React.useState(() => {
-    if (!initialExpanded) return { tx: 0, ty: 0, scale: 0.9 };
+    if (!initialExpanded) return { tx: 0, ty: 0, scale: 0.72 };
     const i = Math.max(0, initialGoals.findIndex((g) => g.id === initialExpanded));
     const p = defaultPos(i);
     const scale = 0.82;
@@ -197,6 +199,7 @@ export function GalaxyMap({
   const [assisting, setAssisting] = React.useState(false);
   const [toast, setToast] = React.useState<string | null>(null);
   const [refine, setRefine] = React.useState<{ goalId: string; prompt: string; clarifiers: Clarifier[] } | null>(null);
+  const [formingPos, setFormingPos] = React.useState<{ x: number; y: number } | null>(null);
 
   const speech = useSpeechInput(setPrompt);
   const pointers = React.useRef<Map<number, { x: number; y: number }>>(new Map());
@@ -213,9 +216,34 @@ export function GalaxyMap({
     [colorIdx]
   );
 
+  // Give every goal a DISTINCT palette slot so no two share a color. Goal ids
+  // are random uuids, so the preferred pick is already varied; we only resolve
+  // collisions into the nearest free slot. Persists (localStorage) so every tab
+  // shows the same color.
+  React.useEffect(() => {
+    setColorIdx((prev) => {
+      const used = new Set<number>();
+      for (const g of goals) if (prev[g.id] !== undefined) used.add(prev[g.id]);
+      let next = prev;
+      const N = GOAL_PALETTE.length;
+      for (const g of goals) {
+        if (prev[g.id] !== undefined) continue;
+        let idx = goalColorIndex(g.id);
+        if (used.has(idx)) {
+          const free = Array.from({ length: N }, (_, i) => i).filter((i) => !used.has(i));
+          idx = free.length ? free[goalColorIndex(g.id) % free.length] : idx;
+        }
+        used.add(idx);
+        if (next === prev) next = { ...prev };
+        next[g.id] = idx;
+      }
+      return next;
+    });
+  }, [goals, setColorIdx]);
+
   const expanded = goals.find((g) => g.id === expandedId) ?? null;
   const selectedNode = expanded?.nodes.find((n) => n.id === selectedNodeId) ?? null;
-  const dirty = view.tx !== 0 || view.ty !== 0 || Math.abs(view.scale - 0.9) > 0.01;
+  const dirty = view.tx !== 0 || view.ty !== 0 || Math.abs(view.scale - 0.72) > 0.01;
 
   const showToast = (m: string) => {
     setToast(m);
@@ -234,7 +262,7 @@ export function GalaxyMap({
 
   const overview = () => {
     setAnimating(true);
-    setView({ tx: 0, ty: 0, scale: 0.9 });
+    setView({ tx: 0, ty: 0, scale: 0.72 });
     setSelectedNodeId(null);
   };
 
@@ -367,10 +395,18 @@ export function GalaxyMap({
   const createGoal = async (text: string, isRefinement = false) => {
     const p = text.trim();
     if (!p || mapping) return;
+    // Fly to the spot the new planet will occupy and coalesce it there (not a
+    // fixed overlay in the middle of the screen).
+    const pos = defaultPos(goals.length);
+    const scale = 0.82;
+    setFormingPos(pos);
     setMapping(true);
     setComposing(false);
     setRefine(null);
     setPrompt("");
+    setAnimating(true);
+    setView({ tx: -pos.x * scale, ty: -pos.y * scale, scale });
+
     const res = await generateGoalMap({ prompt: p });
     let goalId = newId();
     let nodeIds: string[] | undefined;
@@ -379,17 +415,12 @@ export function GalaxyMap({
       if (saved.ok && saved.id) { goalId = saved.id; nodeIds = saved.nodeIds; }
     }
     const goal = toLocalGoal(goalId, res, nodeIds);
-    const pos = defaultPos(goals.length);
     setPositions((pp) => ({ ...pp, [goalId]: pos }));
     setGoals((prev) => [...prev, goal]);
     setMapping(false);
+    setFormingPos(null);
     setExpandedId(goalId);
     setSelectedNodeId(null);
-    // Fly straight to the known position — don't rely on flyTo's findIndex over
-    // the goals array, which hasn't updated yet inside this closure.
-    const scale = 0.82;
-    setAnimating(true);
-    setView({ tx: -pos.x * scale, ty: -pos.y * scale, scale });
     // Only offer clarifiers on the FIRST plan for a goal — a refined plan must
     // not spawn a new round of questions (that's an endless, token-burning loop).
     if (!isRefinement && res.clarifiers && res.clarifiers.length > 0) {
@@ -474,21 +505,24 @@ export function GalaxyMap({
               onPlanetUp={(e) => onPlanetUp(e, g.id)}
               onEnter={() => setHoverId(g.id)}
               onLeave={() => setHoverId((h) => (h === g.id ? null : h))}
-              onSelectNode={(nid) => { if (!moved.current) setSelectedNodeId(nid); }}
+              onSelectNode={(nid) => setSelectedNodeId(nid)}
             />
           ))}
+
+          {/* a planet coalescing at the exact spot the new goal will occupy */}
+          {mapping && formingPos && (
+            <div className="pointer-events-none absolute -translate-x-1/2 -translate-y-1/2" style={{ left: formingPos.x, top: formingPos.y }}>
+              <span className="absolute left-1/2 top-1/2 h-28 w-28 -translate-x-1/2 -translate-y-1/2 animate-ping rounded-full border border-accent/40" />
+              <span className="absolute left-1/2 top-1/2 h-20 w-20 -translate-x-1/2 -translate-y-1/2 animate-pulse-soft rounded-full" style={{ background: "radial-gradient(circle, rgba(230,184,119,0.4), transparent 70%)" }} />
+              <span className="block h-14 w-14 animate-pulse-soft rounded-full" style={{ background: "radial-gradient(circle at 34% 26%, #fdf3e0 0%, #e6b877 46%, #1a130a 100%)", boxShadow: "0 0 44px rgba(230,184,119,0.55)" }} />
+            </div>
+          )}
         </div>
 
         {mapping && (
-          <div className="pointer-events-none absolute inset-0 grid place-items-center">
-            <div className="relative grid place-items-center">
-              <span className="h-24 w-24 animate-ping rounded-full border border-accent/40" />
-              <span className="absolute h-10 w-10 rounded-full" style={{ background: "radial-gradient(circle at 36% 28%, #fdf3e0 0%, #e6b877 46%, #1a130a 100%)", boxShadow: "0 0 30px rgba(230,184,119,0.5)" }} />
-              <div className="absolute top-[calc(100%+18px)] whitespace-nowrap text-center">
-                <p className="font-display text-lg text-ink">Mapping your goal…</p>
-                <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.2em] text-accent/70">Aether is drawing the path</p>
-              </div>
-            </div>
+          <div className="pointer-events-none absolute inset-x-0 bottom-[calc(120px+env(safe-area-inset-bottom))] z-10 text-center md:bottom-24">
+            <p className="font-display text-[15px] text-ink">Mapping your goal…</p>
+            <p className="mt-1 font-mono text-[11px] uppercase tracking-[0.2em] text-accent/70">Aether is drawing the path</p>
           </div>
         )}
 
@@ -717,7 +751,7 @@ function GoalCluster({
         <span className="absolute left-1/2 top-1/2 -z-10 -translate-x-1/2 -translate-y-1/2 animate-pulse-soft rounded-full"
           style={{ background: `radial-gradient(circle, ${hex}55, transparent 68%)`, width: 150, height: 150 }} />
         <span
-          className={cn("grid place-items-center rounded-full transition-transform", expanded ? "h-[92px] w-[92px]" : "h-20 w-20")}
+          className={cn("grid animate-grow-in place-items-center rounded-full transition-transform", expanded ? "h-[92px] w-[92px]" : "h-20 w-20")}
           style={{
             background: `radial-gradient(circle at 34% 26%, #fdf3e0 0%, ${hex} 46%, #1a130a 100%)`,
             boxShadow: `inset 0 -8px 22px rgba(0,0,0,0.5), inset 0 3px 9px rgba(255,255,255,0.35), 0 0 44px ${hex}44`,
