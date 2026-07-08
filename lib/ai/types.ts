@@ -161,6 +161,15 @@ export interface ReplanResult {
   proposals: ReplanProposal[];
 }
 
+// ---------- extract steps (notebook → map) ----------
+export interface ExtractStepsInput {
+  goalTitle: string;
+  notes: string;
+}
+export interface ExtractStepsResult {
+  steps: string[];
+}
+
 // ---------- draft (a co-produced artifact for a desk step) ----------
 export interface DraftInput {
   goalTitle: string;

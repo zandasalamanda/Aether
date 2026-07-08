@@ -219,7 +219,7 @@ export function FocusOverlay({
                     <textarea
                       value={draftBody}
                       onChange={(e) => { setDraftBody(e.target.value); setSaved(false); }}
-                      className="mt-3 min-h-[220px] w-full resize-none rounded-xl bg-white/[0.03] p-3 text-[14px] leading-relaxed text-ink focus:outline-none"
+                      className="mt-3 min-h-[220px] w-full resize-none rounded-xl border border-transparent bg-white/[0.03] p-3 text-[14px] leading-relaxed text-ink transition-colors focus:outline-none focus:border-accent/40 focus-visible:shadow-none"
                     />
                     <div className="mt-3 flex items-center justify-between gap-2">
                       <button onClick={saveDraft} disabled={saved || !draftBody.trim()} className="raised-gold inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-[13px] font-medium disabled:opacity-40">

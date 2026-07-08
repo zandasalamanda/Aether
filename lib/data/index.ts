@@ -5,6 +5,7 @@ import { getScopedClient } from "@/lib/supabase/scoped";
 import { ensureProfile } from "./profile";
 import { rowToGoal, rowToNode, rowToInbox, type GoalRow, type NodeRow, type InboxRow } from "./mappers";
 import { computeFocusStats, type FocusSessionRow } from "./focus-stats";
+import { computeReviewInsights, type ReviewInsights } from "@/lib/kairo/review-insights";
 import type { GoalWithNodes, GoalNode, InboxItem, UserProfile, DailyPlanWithBlocks, FocusStats } from "@/types";
 
 // Data-access seam. In demo mode (no Supabase + Clerk) these serve seeded data
@@ -87,6 +88,13 @@ export async function getTodayPlan(): Promise<DailyPlanWithBlocks | null> {
   // Today's plan is derived on demand from the user's live goals (see
   // TodayBuilder), so there's nothing persisted to read.
   return null;
+}
+
+/** The Mirror: pace-to-deadline + stalled/neglected insights for Review. */
+export async function getReviewInsights(): Promise<ReviewInsights | null> {
+  const goals = await getGoals();
+  if (goals.length === 0) return null;
+  return computeReviewInsights(goals, Date.now());
 }
 
 /** Momentum + focus-time rollup for Review, computed from the user's focus sessions. */
