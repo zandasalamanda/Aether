@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowUp, Check, Timer, X, ChevronDown, Locate, GitBranch, Plus, Palette, Trash2, Sparkles, CalendarPlus, MessageCircle, Loader2, PlayCircle, Dumbbell, BookOpen, ExternalLink, NotebookPen, Wand2, ArrowDownToLine, HelpCircle, LayoutGrid, Share2 } from "lucide-react";
+import { ArrowUp, Check, Timer, X, ChevronDown, Locate, GitBranch, Plus, Palette, Trash2, Sparkles, MessageCircle, Loader2, PlayCircle, Dumbbell, BookOpen, ExternalLink, NotebookPen, Wand2, ArrowDownToLine, HelpCircle, LayoutGrid, Share2 } from "lucide-react";
 import type { GoalWithNodes, GoalNode, NodeStatus, NodeResource, ResourceKind, ResolvedResource } from "@/types";
 import { parseDeadline } from "@/lib/kairo/deadline";
 import { generateGoalMap } from "@/lib/ai/generate-goal-map";
@@ -1426,19 +1426,18 @@ function NodeSheet({
   onResolveResource: (nodeId: string, resolved: ResolvedResource) => void;
 }) {
   const [asking, setAsking] = React.useState(false);
+  const [breakOpen, setBreakOpen] = React.useState(false);
   const [question, setQuestion] = React.useState("");
   const [answer, setAnswer] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
-  const [stuckLoading, setStuckLoading] = React.useState(false);
-  const [stuckAnswer, setStuckAnswer] = React.useState<string | null>(null);
 
   const runStuck = async () => {
-    if (stuckLoading) return;
-    setStuckLoading(true);
-    setStuckAnswer(null);
+    if (loading) return;
+    setLoading(true);
+    setAnswer(null);
     const r = await unblock({ goalTitle, nodeTitle: node.title, context: goalNotes.trim() || undefined });
-    setStuckAnswer(r.answer);
-    setStuckLoading(false);
+    setAnswer(r.answer);
+    setLoading(false);
   };
 
   const ask = async () => {
@@ -1469,23 +1468,24 @@ function NodeSheet({
         <NodeResourceBlock node={node} onResolve={(r) => onResolveResource(node.id, r)} />
       )}
 
+      {/* Two verbs that matter (Focus, Done) + two grouped helpers (Ask, Break down). */}
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <Chip tone="sage" icon={<Check size={14} />} onClick={onDone}>Done</Chip>
         <Chip tone="accent" icon={<Timer size={14} />} onClick={onFocus}>Focus</Chip>
-        <Chip tone="accent" icon={breaking ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} onClick={breaking ? undefined : onBreakDown}>
-          {breaking ? "Breaking down…" : "Go deeper"}
+        <Chip tone="sage" icon={<Check size={14} />} onClick={onDone}>Done</Chip>
+        <Chip tone="accent" icon={<MessageCircle size={14} />} onClick={() => { setAsking((a) => !a); setBreakOpen(false); }}>Ask Aether</Chip>
+        <Chip tone="accent" icon={breaking ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} onClick={breaking ? undefined : () => { setBreakOpen((o) => !o); setAsking(false); }}>
+          {breaking ? "Working…" : "Break it down"}
         </Chip>
-        <Chip icon={<GitBranch size={14} />} onClick={onBranch}>Add branch</Chip>
-        <Chip tone="accent" icon={<MessageCircle size={14} />} onClick={() => setAsking((a) => !a)}>Ask</Chip>
-        <Chip tone="accent" icon={stuckLoading ? <Loader2 size={14} className="animate-spin" /> : <HelpCircle size={14} />} onClick={stuckLoading ? undefined : runStuck}>Stuck?</Chip>
-        <Link href="/app/today" className="raised-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] text-muted transition-colors hover:text-ink">
-          <CalendarPlus size={14} /> Today
-        </Link>
       </div>
 
-      {stuckAnswer && (
-        <div className="mt-3 border-t border-line pt-3">
-          <p className="whitespace-pre-line text-[13px] leading-relaxed text-muted">{stuckAnswer}</p>
+      {breakOpen && (
+        <div className="mt-3 flex flex-wrap gap-2 border-t border-line pt-3">
+          <button onClick={() => { setBreakOpen(false); onBreakDown(); }} className="raised-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] text-accent transition-colors hover:text-ink">
+            <Sparkles size={14} /> Let Aether split it
+          </button>
+          <button onClick={() => { setBreakOpen(false); onBranch(); }} className="raised-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] text-muted transition-colors hover:text-ink">
+            <GitBranch size={14} /> Add a step myself
+          </button>
         </div>
       )}
 
@@ -1503,6 +1503,9 @@ function NodeSheet({
               {loading ? <Loader2 size={15} className="animate-spin" /> : <ArrowUp size={16} />}
             </button>
           </form>
+          <button onClick={() => void runStuck()} disabled={loading} className="mt-2 inline-flex items-center gap-1.5 text-[12.5px] text-muted transition-colors hover:text-ink disabled:opacity-40">
+            <HelpCircle size={13} /> I&apos;m stuck — just tell me how to start
+          </button>
           {answer && <p className="mt-2.5 whitespace-pre-line text-[13px] leading-relaxed text-muted">{answer}</p>}
         </div>
       )}
