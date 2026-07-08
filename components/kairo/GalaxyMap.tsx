@@ -886,6 +886,7 @@ function GoalCluster({
   onSelectNode: (id: string) => void;
 }) {
   const placed = React.useMemo(() => (expanded ? layoutTree(goal.nodes) : []), [expanded, goal.nodes]);
+  const maxDist = React.useMemo(() => Math.max(1, ...placed.map((p) => Math.hypot(p.x, p.y))), [placed]);
   const nId = nextId(goal.nodes);
 
   return (
@@ -906,6 +907,9 @@ function GoalCluster({
             const ey = p.y - (dy / d) * NODE_R;
             const mx = (sx + ex) / 2 + dy * 0.08;
             const my = (sy + ey) / 2 - dx * 0.08;
+            // build animation: branches sweep out from the core, staggered by depth
+            const len = Math.hypot(ex - sx, ey - sy) * 1.15 + 4;
+            const delay = (Math.hypot(p.x, p.y) / maxDist) * 0.5;
             return (
               <path
                 key={p.node.id}
@@ -916,6 +920,7 @@ function GoalCluster({
                 strokeLinecap="round"
                 strokeDasharray={isNext ? "3 7" : undefined}
                 className={isNext ? "animate-flow" : undefined}
+                style={isNext ? undefined : ({ strokeDasharray: len, animation: `draw-in 0.5s ease ${delay.toFixed(2)}s both`, "--len": String(len) } as React.CSSProperties)}
                 opacity={p.node.status === "done" ? 0.85 : p.node.status === "not_started" ? 0.4 : 0.7}
               />
             );
@@ -936,6 +941,7 @@ function GoalCluster({
             selected={p.node.id === selectedNodeId}
             popping={p.node.id === poppedId}
             spine={p.spine}
+            delay={(Math.hypot(p.x, p.y) / maxDist) * 0.5 + 0.14}
             onSelect={() => onSelectNode(p.node.id)}
           />
         ))}
@@ -996,7 +1002,7 @@ function GoalCluster({
 }
 
 function NodeOrb({
-  node, x, y, hex, isNext, selected, popping, spine, onSelect,
+  node, x, y, hex, isNext, selected, popping, spine, delay, onSelect,
 }: {
   node: GoalNode;
   x: number;
@@ -1006,6 +1012,7 @@ function NodeOrb({
   selected: boolean;
   popping: boolean;
   spine: boolean;
+  delay: number;
   onSelect: () => void;
 }) {
   const done = node.status === "done";
@@ -1022,7 +1029,7 @@ function NodeOrb({
     ? `radial-gradient(circle at 38% 30%, #f6faf5 0%, ${hex} 55%, #14231a 100%)`
     : `radial-gradient(circle at 40% 34%, ${hex}33, rgba(12,14,18,0.94) 72%)`;
   return (
-    <div className="absolute -translate-x-1/2 -translate-y-1/2 animate-grow-in" style={{ left: x, top: y }}>
+    <div className="absolute -translate-x-1/2 -translate-y-1/2 animate-grow-in" style={{ left: x, top: y, animationDelay: `${delay.toFixed(2)}s` }}>
       <button
         onClick={(e) => { e.stopPropagation(); onSelect(); }}
         onPointerDown={(e) => e.stopPropagation()}

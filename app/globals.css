@@ -68,6 +68,11 @@
 @keyframes dash {
   to { stroke-dashoffset: -22; }
 }
+/* One-shot line draw-in for the "building" of a tree (branches sweep out). */
+@keyframes draw-in {
+  from { stroke-dashoffset: var(--len, 200); }
+  to { stroke-dashoffset: 0; }
+}
 @keyframes breathe {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.05); }
