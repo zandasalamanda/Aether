@@ -2,12 +2,14 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowUp, Check, Timer, X, ChevronDown, Locate, GitBranch, Plus, Palette, Trash2, Sparkles, MessageCircle, Loader2, PlayCircle, Dumbbell, BookOpen, ExternalLink, NotebookPen, Wand2, ArrowDownToLine, HelpCircle, LayoutGrid, Share2 } from "lucide-react";
+import { ArrowUp, Check, Timer, X, ChevronDown, Locate, GitBranch, Plus, Palette, Trash2, Sparkles, MessageCircle, Loader2, PlayCircle, Dumbbell, BookOpen, ExternalLink, NotebookPen, Wand2, ArrowDownToLine, HelpCircle, LayoutGrid, Share2, Save } from "lucide-react";
 import type { GoalWithNodes, GoalNode, NodeStatus, NodeResource, ResourceKind, ResolvedResource } from "@/types";
 import { parseDeadline } from "@/lib/kairo/deadline";
 import { generateGoalMap } from "@/lib/ai/generate-goal-map";
 import { expandNode, askNode } from "@/lib/ai/node-assist";
 import { unblock } from "@/lib/ai/work-session";
+import { draftForStep } from "@/lib/ai/draft";
+import type { DraftResult } from "@/lib/ai/types";
 import { replanGoal } from "@/lib/ai/replan";
 import { viaRoute } from "@/lib/ai/provider";
 import type { Clarifier, ReplanProposal, ReplanKind, GoalMapResult } from "@/lib/ai/types";
@@ -773,6 +775,7 @@ export function GalaxyMap({
               onBranch={() => setBranchFor(selectedNode.id)}
               onBreakDown={() => setBreakdownFor(selectedNode)}
               onResolveResource={resolveNodeResource}
+              onSaveArtifact={(label, body) => appendGoalNote(expanded.id, `${label} · ${selectedNode.title}`, body)}
             />
           ) : expanded ? (
             <GoalBar
@@ -1423,7 +1426,7 @@ function NodeResourceBlock({ node, onResolve }: { node: GoalNode; onResolve: (r:
 }
 
 function NodeSheet({
-  node, hex, goalTitle, goalNotes, breaking, onClose, onDone, onFocus, onBranch, onBreakDown, onResolveResource,
+  node, hex, goalTitle, goalNotes, breaking, onClose, onDone, onFocus, onBranch, onBreakDown, onResolveResource, onSaveArtifact,
 }: {
   node: GoalNode;
   hex: string;
@@ -1436,12 +1439,26 @@ function NodeSheet({
   onBranch: () => void;
   onBreakDown: () => void;
   onResolveResource: (nodeId: string, resolved: ResolvedResource) => void;
+  onSaveArtifact: (label: string, body: string) => void;
 }) {
   const [asking, setAsking] = React.useState(false);
   const [breakOpen, setBreakOpen] = React.useState(false);
   const [question, setQuestion] = React.useState("");
   const [answer, setAnswer] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(false);
+  const [drafting, setDrafting] = React.useState(false);
+  const [draft, setDraft] = React.useState<DraftResult | null>(null);
+  const [draftBody, setDraftBody] = React.useState("");
+  const [draftLoading, setDraftLoading] = React.useState(false);
+  const [saved, setSaved] = React.useState(false);
+
+  const runDraft = async () => {
+    setDrafting(true); setAsking(false); setBreakOpen(false);
+    if (draft || draftLoading) return;
+    setDraftLoading(true); setSaved(false);
+    const d = await draftForStep({ goalTitle, nodeTitle: node.title, nodeDescription: node.description, context: goalNotes.trim() || undefined });
+    setDraft(d); setDraftBody(d.content); setDraftLoading(false);
+  };
 
   const runStuck = async () => {
     if (loading) return;
@@ -1488,7 +1505,38 @@ function NodeSheet({
         <Chip tone="accent" icon={breaking ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} onClick={breaking ? undefined : () => { setBreakOpen((o) => !o); setAsking(false); }}>
           {breaking ? "Working…" : "Break it down"}
         </Chip>
+        <Chip tone="accent" icon={<Wand2 size={14} />} onClick={() => void runDraft()}>Do it for me</Chip>
       </div>
+
+      {drafting && (
+        <div className="mt-3 border-t border-line pt-3">
+          <div className="flex items-center justify-between">
+            <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-faint">{draft?.title ?? "Sola is on it"}</span>
+            <div className="flex items-center gap-2">
+              {!draftLoading && draft && <button onClick={() => { setDraft(null); void runDraft(); }} className="text-[12px] text-faint transition-colors hover:text-muted">Redo</button>}
+              <button onClick={() => setDrafting(false)} className="text-faint transition-colors hover:text-ink" aria-label="Close draft"><X size={14} /></button>
+            </div>
+          </div>
+          {draftLoading ? (
+            <div className="mt-2 space-y-2">
+              <div className="h-3 w-full animate-pulse rounded bg-white/5" />
+              <div className="h-3 w-3/4 animate-pulse rounded bg-white/5" />
+              <p className="pt-0.5 font-mono text-[11px] uppercase tracking-[0.14em] text-faint">Sola is drafting…</p>
+            </div>
+          ) : (
+            <>
+              <textarea
+                value={draftBody}
+                onChange={(e) => { setDraftBody(e.target.value); setSaved(false); }}
+                className="mt-2 min-h-[160px] w-full resize-none rounded-xl border border-transparent bg-white/[0.03] p-3 text-[13px] leading-relaxed text-ink transition-colors focus:border-accent/40 focus:outline-none focus-visible:shadow-none"
+              />
+              <button onClick={() => { if (draft) { onSaveArtifact(draft.title, draftBody); setSaved(true); } }} disabled={saved || !draftBody.trim()} className="raised-gold mt-2 inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[12.5px] font-medium disabled:opacity-40">
+                {saved ? <><Check size={14} /> Saved to notebook</> : <><Save size={14} /> Save to notebook</>}
+              </button>
+            </>
+          )}
+        </div>
+      )}
 
       {breakOpen && (
         <div className="mt-3 flex flex-wrap gap-2 border-t border-line pt-3">
