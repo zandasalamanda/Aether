@@ -52,9 +52,13 @@ export function HeroCluster() {
       if (!w || !h) { layout(); if (!w || !h) { raf = requestAnimationFrame(frame); return; } }
       const t = (now - t0) / 1000;
       const p = reduce ? 1 : easeOut(clamp((now - t0) / 1600, 0, 1));
-      const cx = w / 2, cy = h * 0.5;
-      const Rx = Math.min(w * 0.34, 400) * (0.2 + 0.8 * p);
-      const Ry = Rx * 0.4;
+      // On mobile the text sits at the top, so the cluster lives in the lower half
+      // (and the planets shrink) — otherwise everything piles onto the centre.
+      const mobile = w < 768;
+      const cx = w / 2, cy = h * (mobile ? 0.66 : 0.5);
+      const Rx = (mobile ? w * 0.42 : Math.min(w * 0.34, 400)) * (0.2 + 0.8 * p);
+      const Ry = Rx * (mobile ? 0.52 : 0.4);
+      const sizeK = mobile ? 0.66 : 1;
 
       if (!dragging) { rot += vel; vel *= 0.95; if (!reduce) rot += 0.0015; }
 
@@ -84,7 +88,7 @@ export function HeroCluster() {
         const x = cx + Math.cos(a) * Rx;
         const y = cy + Math.sin(a) * Ry;
         const hover = hoverRef.current === i ? 1.08 : 1;
-        const scale = (0.62 + 0.38 * depth) * (0.4 + 0.6 * p) * hover;
+        const scale = (0.62 + 0.38 * depth) * (0.4 + 0.6 * p) * hover * sizeK;
         el.style.transform = `translate(${x}px, ${y}px) translate(-50%, -50%) scale(${scale.toFixed(3)})`;
         el.style.opacity = ((0.55 + 0.45 * depth) * p).toFixed(3);
         el.style.zIndex = String(Math.round(depth * 100));
@@ -155,15 +159,15 @@ export function HeroCluster() {
         </div>
       ))}
 
-      {/* catchphrase + CTA, in the eye of the system */}
-      <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-center px-5 text-center">
-        <div className="pointer-events-none absolute left-1/2 top-1/2 h-64 w-[38rem] max-w-[92vw] -translate-x-1/2 -translate-y-1/2 rounded-full bg-canvas/55 blur-3xl" />
-        <h1 className="relative font-display text-6xl font-semibold leading-[1.02] tracking-tight text-ink md:text-8xl">
+      {/* catchphrase + CTA — top on mobile (cluster sits below), centred on desktop */}
+      <div className="pointer-events-none absolute inset-0 z-20 flex flex-col items-center justify-start px-5 pt-[13vh] text-center md:justify-center md:pt-0">
+        <div className="pointer-events-none absolute left-1/2 top-1/2 hidden h-64 w-[38rem] max-w-[92vw] -translate-x-1/2 -translate-y-1/2 rounded-full bg-canvas/55 blur-3xl md:block" />
+        <h1 className="relative font-display text-[2.75rem] font-semibold leading-[1.04] tracking-tight text-ink sm:text-6xl md:text-8xl">
           <span className="inline-block animate-fade-up" style={{ animationDelay: "0.1s" }}>Chart it.</span>{" "}
           <span className="inline-block animate-fade-up" style={{ animationDelay: "0.28s" }}>Focus.</span>{" "}
           <span className="inline-block animate-fade-up" style={{ animationDelay: "0.46s" }}>Arrive.</span>
         </h1>
-        <div className="animate-fade-up relative mt-9 flex flex-col items-center gap-3" style={{ animationDelay: "0.62s" }}>
+        <div className="animate-fade-up relative mt-7 flex flex-col items-center gap-3 md:mt-9" style={{ animationDelay: "0.62s" }}>
           <Link href="/onboarding" className="pointer-events-auto">
             <Button variant="primary" size="lg">Get started</Button>
           </Link>
