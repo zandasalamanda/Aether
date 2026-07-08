@@ -683,12 +683,6 @@ export function GalaxyMap({
           )}
         </div>
 
-        <button
-          onClick={() => { setComposing(true); setExpandedId(null); setSelectedNodeId(null); }}
-          className="raised-gold pointer-events-auto inline-flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-sm font-medium"
-        >
-          <Plus size={15} /> New goal
-        </button>
       </div>
 
       {/* recenter */}
@@ -805,7 +799,7 @@ export function GalaxyMap({
             >
               <Plus size={16} className="text-accent" /> New goal
               <span className="mx-1 text-faint">·</span>
-              <span className="text-faint">tap a planet to open it</span>
+              <span className="text-faint">tap a goal to open it</span>
             </button>
           )}
         </div>

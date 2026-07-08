@@ -103,7 +103,15 @@ export function HeroCluster() {
       rot += dx * 0.006; vel = dx * 0.006;
       if (Math.abs(e.clientX - downX) + Math.abs(e.clientY - downY) > 6) movedRef.current = true;
     };
-    const onUp = () => { dragging = false; };
+    const onUp = (e: PointerEvent) => {
+      const wasDragging = dragging;
+      dragging = false;
+      if (openIdRef.current || movedRef.current || !wasDragging) return;
+      // pointer capture suppresses the child click, so hit-test by coordinates
+      const t = document.elementFromPoint(e.clientX, e.clientY) as HTMLElement | null;
+      const id = t?.closest<HTMLElement>("[data-map-id]")?.dataset.mapId;
+      if (id) setOpenId(id);
+    };
 
     layout();
     wrap.style.cursor = "grab";
@@ -134,11 +142,11 @@ export function HeroCluster() {
         <div
           key={m.id}
           ref={(el) => { planetRefs.current[i] = el; }}
+          data-map-id={m.id}
           className="absolute left-0 top-0 z-10 cursor-pointer"
           style={{ willChange: "transform", opacity: 0 }}
           onMouseEnter={() => { hoverRef.current = i; }}
           onMouseLeave={() => { if (hoverRef.current === i) hoverRef.current = null; }}
-          onClick={() => { if (!movedRef.current) setOpenId(m.id); }}
         >
           <PlanetOrb hex={m.color} size={104} icon={m.icon} seed={m.id} />
           <span className="pointer-events-none absolute left-1/2 top-full mt-2 -translate-x-1/2 whitespace-nowrap font-mono text-[11px] uppercase tracking-[0.14em] text-muted" style={{ textShadow: "0 1px 10px rgba(8,9,11,0.95)" }}>
@@ -159,7 +167,7 @@ export function HeroCluster() {
           <Link href="/onboarding" className="pointer-events-auto">
             <Button variant="primary" size="lg">Get started</Button>
           </Link>
-          <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-faint">Drag to explore · tap a planet</span>
+          <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-faint">Drag to explore · tap a goal</span>
         </div>
       </div>
 

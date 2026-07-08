@@ -4,7 +4,7 @@ import type { Clarifier } from "./types";
 // the whole flow costs exactly one AI call — the answers are folded into that
 // single goal-map prompt. No separate before/after generations.
 
-const DEADLINE: Clarifier = { question: "Deadline?", options: ["1 month", "3 months", "6 months", "1 year", "2+ years"] };
+const DEADLINE: Clarifier = { question: "Target date?", options: ["1 month", "3 months", "6 months", "1 year", "2+ years", "No deadline"] };
 
 interface Rule {
   match: RegExp;

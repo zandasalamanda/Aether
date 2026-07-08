@@ -12,7 +12,7 @@ const BEATS = [
 ];
 
 const FEATURES = [
-  { icon: Waypoints, title: "Living goal maps", desc: "Every goal becomes a planet with a branching path of steps. The next move glows; the rest waits." },
+  { icon: Waypoints, title: "Living goal maps", desc: "Every goal opens into a branching path of steps. The next move glows; the rest waits." },
   { icon: Timer, title: "Working sessions", desc: "A calm timer that sits with you — a first move, a checklist for the session, and drafts it writes alongside you." },
   { icon: PlayCircle, title: "Real resources", desc: "Each step can pull a real, hand-checked video — never a dead link, never a hallucinated one." },
   { icon: Gauge, title: "The honest mirror", desc: "Not just what's done — whether you'll hit your deadline. Solaspace forecasts your pace and flags what's slipping." },
