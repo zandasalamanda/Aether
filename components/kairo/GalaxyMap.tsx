@@ -90,7 +90,7 @@ const SPINE_ARC = 0.17; // gentle, consistent bend so the spine curves instead o
  * along a gently arcing spine, and each milestone's sub-steps hang as ribs on
  * alternating sides — so subtrees stay clear of one another.
  */
-function layoutTree(nodes: GoalNode[]): Placed[] {
+function layoutTree(nodes: GoalNode[], baseDir = -Math.PI / 2): Placed[] {
   const ids = new Set(nodes.map((n) => n.id));
   const kids = new Map<string | null, GoalNode[]>();
   for (const n of nodes) {
@@ -130,7 +130,8 @@ function layoutTree(nodes: GoalNode[]): Placed[] {
   const roots = kids.get(null) ?? [];
   const r = roots.length;
   roots.forEach((root, i) => {
-    const dir = r === 1 ? -Math.PI / 2 : (i / r) * Math.PI * 2 - Math.PI / 2;
+    // Open outward from the galaxy centre (baseDir); fan multiple roots around it.
+    const dir = r === 1 ? baseDir : baseDir + (i / (r - 1) - 0.5) * 1.8;
     const spine = hasKids(root.id);
     const rad = spine ? SPINE_RAD : LEAF_RAD;
     const x = Math.cos(dir) * rad;
@@ -880,7 +881,16 @@ function GoalCluster({
   onLeave: () => void;
   onSelectNode: (id: string) => void;
 }) {
-  const placed = React.useMemo(() => (expanded ? layoutTree(goal.nodes) : []), [expanded, goal.nodes]);
+  // Trees open outward, away from the crowded galaxy centre (goals near the
+  // centre keep opening upward). Snap toward the nearest of 8 directions so the
+  // spine stays legible rather than at an arbitrary angle.
+  const baseDir = React.useMemo(() => {
+    const d = Math.hypot(pos.x, pos.y);
+    if (d < 60) return -Math.PI / 2;
+    const step = Math.PI / 4;
+    return Math.round(Math.atan2(pos.y, pos.x) / step) * step;
+  }, [pos.x, pos.y]);
+  const placed = React.useMemo(() => (expanded ? layoutTree(goal.nodes, baseDir) : []), [expanded, goal.nodes, baseDir]);
   const maxDist = React.useMemo(() => Math.max(1, ...placed.map((p) => Math.hypot(p.x, p.y))), [placed]);
   const nId = nextId(goal.nodes);
 

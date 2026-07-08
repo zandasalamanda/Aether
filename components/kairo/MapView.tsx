@@ -1,0 +1,43 @@
+"use client";
+
+import * as React from "react";
+import { Waypoints, List } from "lucide-react";
+import type { GoalWithNodes } from "@/types";
+import { GalaxyMap } from "./GalaxyMap";
+import { GoalList } from "./GoalList";
+import { usePersistentState } from "@/lib/store/persist";
+import { cn } from "@/lib/utils";
+
+/** The map surface with a Galaxy ↔ List toggle (spatial view + linear view). */
+export function MapView({ goals, initialGoalId, remote }: { goals: GoalWithNodes[]; initialGoalId?: string; remote: boolean }) {
+  const [view, setView] = usePersistentState<"galaxy" | "list">("kairo.mapview.v1", "galaxy");
+  const [openId, setOpenId] = React.useState<string | undefined>(initialGoalId);
+
+  const openInGalaxy = (id: string) => { setOpenId(id); setView("galaxy"); };
+
+  return (
+    <div className="absolute inset-0">
+      {view === "galaxy" ? (
+        <GalaxyMap key={openId ?? "root"} goals={goals} initialGoalId={openId} remote={remote} />
+      ) : (
+        <div className="absolute inset-0 overflow-y-auto">
+          <GoalList goals={goals} onOpen={openInGalaxy} />
+        </div>
+      )}
+
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-40 flex justify-center pt-[max(12px,env(safe-area-inset-top))] md:pt-5">
+        <div className="chrome pointer-events-auto inline-flex gap-1 rounded-full p-1">
+          {([["galaxy", Waypoints, "Galaxy"], ["list", List, "List"]] as const).map(([v, Icon, label]) => (
+            <button
+              key={v}
+              onClick={() => setView(v)}
+              className={cn("inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px] transition-colors", view === v ? "raised-btn text-ink" : "text-muted hover:text-ink")}
+            >
+              <Icon size={14} /> {label}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
