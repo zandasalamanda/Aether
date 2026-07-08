@@ -170,6 +170,44 @@ export interface ExtractStepsResult {
   steps: string[];
 }
 
+// ---------- Ask Sola (agentic plan assistant) ----------
+export type SolaChangeKind = "add" | "edit" | "status" | "deadline" | "split";
+export interface SolaChange {
+  kind: SolaChangeKind;
+  goalId: string;
+  /** target node for edit/status/split */
+  nodeId?: string;
+  /** parent for add (null = top-level under the goal) */
+  parentId?: string | null;
+  title?: string;
+  status?: NodeStatus;
+  /** deadline as plain text ("in 6 weeks") or ISO */
+  date?: string;
+  /** split: the sub-step titles */
+  into?: string[];
+  reason: string;
+}
+export interface SolaPlanNode {
+  id: string;
+  parentId: string | null;
+  title: string;
+  status: NodeStatus;
+}
+export interface SolaPlanGoal {
+  id: string;
+  title: string;
+  targetDate: string | null;
+  nodes: SolaPlanNode[];
+}
+export interface AskSolaInput {
+  message: string;
+  plan: SolaPlanGoal[];
+}
+export interface AskSolaResult {
+  reply: string;
+  changes: SolaChange[];
+}
+
 // ---------- draft (a co-produced artifact for a desk step) ----------
 export interface DraftInput {
   goalTitle: string;

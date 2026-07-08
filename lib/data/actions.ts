@@ -136,6 +136,21 @@ export async function setNodeStatus(input: {
   return { ok: true, id: input.nodeId };
 }
 
+/** Rename / re-describe a node (used by Ask Sola edits). */
+export async function updateNode(input: { nodeId: string; title?: string; description?: string }): Promise<Result> {
+  if (!isRemote) return NO_OP;
+  const scoped = await getScopedClient();
+  if (!scoped) return NO_OP;
+  const patch: { title?: string; description?: string } = {};
+  if (input.title != null) patch.title = input.title.slice(0, 300);
+  if (input.description != null) patch.description = input.description.slice(0, 2000);
+  if (Object.keys(patch).length === 0) return NO_OP;
+  const { error } = await scoped.supabase.from("goal_nodes").update(patch).eq("id", input.nodeId);
+  if (error) return NO_OP;
+  revalidatePath("/app", "layout");
+  return { ok: true, id: input.nodeId };
+}
+
 /** Permanently delete the user's data (Supabase rows cascade) and Clerk account. */
 export async function deleteAccount(): Promise<Result> {
   if (!isRemote) return NO_OP;

@@ -1,10 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { Waypoints, List } from "lucide-react";
+import { Waypoints, List, Sparkles } from "lucide-react";
 import type { GoalWithNodes } from "@/types";
 import { GalaxyMap } from "./GalaxyMap";
 import { GoalList } from "./GoalList";
+import { AskSola } from "./AskSola";
 import { usePersistentState } from "@/lib/store/persist";
 import { cn } from "@/lib/utils";
 
@@ -12,6 +13,7 @@ import { cn } from "@/lib/utils";
 export function MapView({ goals, initialGoalId, remote }: { goals: GoalWithNodes[]; initialGoalId?: string; remote: boolean }) {
   const [view, setView] = usePersistentState<"galaxy" | "list">("kairo.mapview.v1", "galaxy");
   const [openId, setOpenId] = React.useState<string | undefined>(initialGoalId);
+  const [askOpen, setAskOpen] = React.useState(false);
 
   const openInGalaxy = (id: string) => { setOpenId(id); setView("galaxy"); };
 
@@ -38,6 +40,17 @@ export function MapView({ goals, initialGoalId, remote }: { goals: GoalWithNodes
           ))}
         </div>
       </div>
+
+      {/* Ask Sola — agentic plan assistant */}
+      {goals.length > 0 && !askOpen && (
+        <button
+          onClick={() => setAskOpen(true)}
+          className="raised-gold absolute bottom-[calc(96px+env(safe-area-inset-bottom))] right-4 z-40 inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-[14px] font-medium md:bottom-6"
+        >
+          <Sparkles size={16} /> Ask Sola
+        </button>
+      )}
+      {askOpen && <AskSola goals={goals} remote={remote} onClose={() => setAskOpen(false)} />}
     </div>
   );
 }
