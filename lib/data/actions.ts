@@ -214,14 +214,20 @@ export async function deleteGoal(input: { goalId: string }): Promise<Result> {
 /** Update the signed-in user's email-notification preferences (via a scoped RPC). */
 export async function updateNotificationPrefs(prefs: { email: boolean; deadlines: boolean; nudges: boolean; digest: boolean }): Promise<Result> {
   if (!isRemote) return NO_OP;
-  const scoped = await getScopedClient();
-  if (!scoped) return NO_OP;
-  const { error } = await scoped.supabase.rpc("set_notification_prefs", {
-    p_email: prefs.email,
-    p_deadlines: prefs.deadlines,
-    p_nudges: prefs.nudges,
-    p_digest: prefs.digest,
-  });
+  // Write via the service-role client, scoped to the signed-in user's own profile
+  // id — reliable regardless of which Postgres role the Clerk token maps to.
+  const profile = await ensureProfile();
+  const admin = getSupabaseAdmin();
+  if (!profile || !admin) return NO_OP;
+  const { error } = await admin
+    .from("users_profile")
+    .update({
+      notify_email: prefs.email,
+      notify_deadlines: prefs.deadlines,
+      notify_nudges: prefs.nudges,
+      notify_digest: prefs.digest,
+    })
+    .eq("id", profile.id);
   if (error) {
     console.error("[updateNotificationPrefs]", error.message);
     return { ok: false, error: "Couldn't save your preferences. Try again." };

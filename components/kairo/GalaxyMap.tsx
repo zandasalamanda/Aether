@@ -929,8 +929,10 @@ function GoalCluster({
         <svg width={1} height={1} className="absolute" style={{ left: 0, top: 0, overflow: "visible" }} aria-hidden>
           {placed.map((p) => {
             const isNext = p.node.id === nId;
-            const CORE_R = p.px === 0 && p.py === 0 ? 46 : 24;
-            const NODE_R = p.spine ? 25 : 20;
+            // Tuck line ends a few px UNDER each orb (orbs paint on top) so the
+            // connectors join cleanly with no visible gap.
+            const CORE_R = p.px === 0 && p.py === 0 ? 40 : 16;
+            const NODE_R = p.spine ? 20 : 14;
             const dx = p.x - p.px;
             const dy = p.y - p.py;
             const d = Math.hypot(dx, dy) || 1;
