@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowUp, Check, Timer, X, ChevronDown, Locate, GitBranch, Plus, Palette, Trash2, Sparkles, MessageCircle, Loader2, PlayCircle, Dumbbell, BookOpen, ExternalLink, NotebookPen, Wand2, ArrowDownToLine, HelpCircle, LayoutGrid, Share2, Save, Search } from "lucide-react";
+import { ArrowUp, Check, Timer, X, ChevronDown, Locate, GitBranch, Plus, Palette, Trash2, Sparkles, MessageCircle, Loader2, PlayCircle, Dumbbell, BookOpen, ExternalLink, NotebookPen, Wand2, ArrowDownToLine, HelpCircle, LayoutGrid, Share2, Save, Search, Lock } from "lucide-react";
 import type { GoalWithNodes, GoalNode, NodeStatus, NodeResource, ResourceKind, ResolvedResource } from "@/types";
 import { parseDeadline } from "@/lib/kairo/deadline";
 import { generateGoalMap } from "@/lib/ai/generate-goal-map";
@@ -796,7 +796,7 @@ export function GalaxyMap({
               isPro={isPro}
               onToast={showToast}
               onClose={() => setSelectedNodeId(null)}
-              onDone={() => { setStatus(expanded.id, selectedNode.id, "done"); setSelectedNodeId(null); }}
+              onDone={() => setStatus(expanded.id, selectedNode.id, "done")}
               onFocus={() => openFocus(selectedNode)}
               onBranch={() => setBranchFor(selectedNode.id)}
               onBreakDown={() => setBreakdownFor(selectedNode)}
@@ -1457,6 +1457,40 @@ function NodeResourceBlock({ node, onResolve }: { node: GoalNode; onResolve: (r:
   );
 }
 
+// Pre-authored congratulations — a fixed library, so every completion gets a
+// warm, on-brand acknowledgement without spending a single AI output token.
+// One line is chosen deterministically per step (hash of the node id) so the
+// same step always reads the same, and it never feels random or cheesy.
+const DONE_LINES: { title: string; sub: string }[] = [
+  { title: "Well done.", sub: "That's a real step forward — and it's yours." },
+  { title: "Locked in.", sub: "The map moved because you moved it." },
+  { title: "Nice work.", sub: "One clear piece of this goal, in place." },
+  { title: "That's done.", sub: "This is exactly how the goal gets built." },
+  { title: "Step cleared.", sub: "Momentum you can see. Keep it going." },
+  { title: "Good move.", sub: "Another step behind you, the path a little shorter." },
+];
+
+function hashId(s: string): number {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) | 0;
+  return Math.abs(h);
+}
+
+function celebrate(
+  nodeId: string,
+  proofKind: "link" | "note" | "metric" | null,
+): { title: string; sub: string; proof: boolean } {
+  const base = DONE_LINES[hashId(nodeId) % DONE_LINES.length];
+  const sub = proofKind
+    ? proofKind === "metric"
+      ? "Proof saved to your map — a number that counts, just for you."
+      : proofKind === "link"
+        ? "Proof saved to your map — the receipt's there when you want it."
+        : "Proof saved to your map — a note to your future self."
+    : base.sub;
+  return { title: base.title, sub, proof: proofKind !== null };
+}
+
 function NodeSheet({
   node, hex, goalTitle, goalNotes, breaking, isPro, onToast, onClose, onDone, onFocus, onBranch, onBreakDown, onResolveResource, onSaveArtifact,
 }: {
@@ -1493,6 +1527,7 @@ function NodeSheet({
   const [evKind, setEvKind] = React.useState<"link" | "note" | "metric">("link");
   const [evValue, setEvValue] = React.useState("");
   const [savingEv, setSavingEv] = React.useState(false);
+  const [congrats, setCongrats] = React.useState<{ title: string; sub: string; proof: boolean } | null>(null);
 
   const router = useRouter();
   // Blocking AI responses (upgrade / rate-limit / sign-in) surface as a toast —
@@ -1507,15 +1542,18 @@ function NodeSheet({
   };
 
   const markDone = async (withProof: boolean) => {
+    let proofKind: "link" | "note" | "metric" | null = null;
     if (withProof && evValue.trim()) {
       setSavingEv(true);
       await addNodeEvidence({ nodeId: node.id, kind: evKind, value: evValue.trim() });
       setSavingEv(false);
+      proofKind = evKind;
     }
     setProvingDone(false);
     setEvValue("");
-    onDone();
-    router.refresh();
+    onDone();            // mark the step done (optimistic) — the sheet stays open…
+    router.refresh();    // …reload so proof + the verified halo appear on the map
+    setCongrats(celebrate(node.id, proofKind)); // …and land on a congratulation
   };
 
   const runResearch = async () => {
@@ -1582,6 +1620,34 @@ function NodeSheet({
     }
   };
 
+  // A step just got completed — hold the sheet on a quiet celebration before it
+  // closes. This is the reward moment; the proof (if any) is private to the user.
+  if (congrats) {
+    return (
+      <div className="chrome animate-sheet-up rounded-2xl p-6 text-center">
+        <div
+          className="mx-auto grid h-16 w-16 place-items-center rounded-full"
+          style={{
+            background: `radial-gradient(circle at 50% 35%, ${hex}33, transparent 72%)`,
+            boxShadow: `0 0 0 2px rgba(255,240,210,0.85), 0 0 26px ${hex}aa`,
+          }}
+        >
+          <Check size={26} className="text-ink" />
+        </div>
+        <h2 className="mt-4 font-display text-xl font-semibold text-ink">{congrats.title}</h2>
+        <p className="mx-auto mt-1.5 max-w-[16rem] text-[13px] leading-relaxed text-muted">{congrats.sub}</p>
+        {congrats.proof && (
+          <div className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-white/[0.04] px-3 py-1 text-[11px] text-faint">
+            <Lock size={11} /> Private to you
+          </div>
+        )}
+        <button onClick={onClose} className="raised-gold mx-auto mt-5 inline-flex items-center gap-1.5 rounded-lg px-5 py-2 text-[13px] font-medium">
+          Continue
+        </button>
+      </div>
+    );
+  }
+
   return (
     <div className="chrome animate-sheet-up rounded-2xl p-4">
       <div className="flex items-start justify-between gap-3">
@@ -1635,7 +1701,7 @@ function NodeSheet({
             <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-faint">Proof of progress</span>
             <button onClick={() => setProvingDone(false)} className="text-faint transition-colors hover:text-ink" aria-label="Close"><X size={14} /></button>
           </div>
-          <p className="mb-2 text-[12px] text-muted">Attach what you produced (optional) — it stays on your map as real proof.</p>
+          <p className="mb-2 text-[12px] text-muted">Attach what you produced (optional) — kept private on your map, just for you.</p>
           <div className="inset-well mb-2 flex gap-1 rounded-xl p-1">
             {(["link", "note", "metric"] as const).map((k) => (
               <button key={k} onClick={() => setEvKind(k)} className={cn("flex-1 rounded-lg px-2 py-1 text-[12px] capitalize transition-colors", evKind === k ? "raised-btn text-ink" : "text-muted hover:text-ink")}>
