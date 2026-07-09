@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { getScopedClient } from "@/lib/supabase/scoped";
+import { getSupabaseAdmin } from "@/lib/supabase/server";
 import { features } from "@/lib/config";
+import { isAdmin } from "@/lib/auth";
 import { ensureProfile } from "./profile";
 import { isRemote } from "./index";
 import { newId } from "@/lib/utils";
@@ -225,6 +227,29 @@ export async function updateNotificationPrefs(prefs: { email: boolean; deadlines
     return { ok: false, error: "Couldn't save your preferences. Try again." };
   }
   revalidatePath("/app/settings");
+  return { ok: true };
+}
+
+/** Admin-only: clear the signed-in admin's own AI rate-limit counters (for testing). */
+export async function resetMyAiLimits(): Promise<Result> {
+  if (!(await isAdmin())) return NO_OP;
+  const { auth } = await import("@clerk/nextjs/server");
+  const { userId } = await auth();
+  const admin = getSupabaseAdmin();
+  if (!admin || !userId) return NO_OP;
+  await admin.from("rate_limits").delete().in("key", [`ai:cd:${userId}`, `ai:cmo:${userId}`, `ai:m:${userId}`]);
+  return { ok: true };
+}
+
+/** Admin-only: flip the admin's own plan to test the Free vs Pro experience. */
+export async function setTestPlan(plan: "free" | "pro"): Promise<Result> {
+  if (!(await isAdmin())) return NO_OP;
+  const profile = await ensureProfile();
+  const admin = getSupabaseAdmin();
+  if (!admin || !profile) return NO_OP;
+  const { error } = await admin.from("users_profile").update({ plan }).eq("id", profile.id);
+  if (error) return { ok: false, error: error.message };
+  revalidatePath("/app", "layout");
   return { ok: true };
 }
 

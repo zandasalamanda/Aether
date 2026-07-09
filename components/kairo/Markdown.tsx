@@ -163,6 +163,36 @@ function parseBlocks(src: string): React.ReactNode[] {
       continue;
     }
 
+    // table:  | a | b |  /  | :-- | -- |  /  | 1 | 2 |
+    if (
+      /^\s*\|.*\|\s*$/.test(line) &&
+      i + 1 < lines.length &&
+      /^\s*\|?[\s:|-]+\|?\s*$/.test(lines[i + 1]) &&
+      lines[i + 1].includes("-")
+    ) {
+      const cells = (l: string) => l.trim().replace(/^\||\|$/g, "").split("|").map((c) => c.trim());
+      const headers = cells(line);
+      i += 2; // skip header + separator rows
+      const rows: string[][] = [];
+      while (i < lines.length && /^\s*\|.*\|\s*$/.test(lines[i])) { rows.push(cells(lines[i])); i++; }
+      const tk = key++;
+      blocks.push(
+        <div key={tk} className="my-1 overflow-x-auto">
+          <table className="w-full border-collapse text-[0.95em]">
+            <thead>
+              <tr>{headers.map((h, j) => <th key={j} className="border border-line px-2.5 py-1.5 text-left font-semibold text-ink">{renderInline(h, `th${tk}-${j}`)}</th>)}</tr>
+            </thead>
+            <tbody>
+              {rows.map((r, ri) => (
+                <tr key={ri}>{headers.map((_, ci) => <td key={ci} className="border border-line px-2.5 py-1.5 align-top">{renderInline(r[ci] ?? "", `td${tk}-${ri}-${ci}`)}</td>)}</tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+      continue;
+    }
+
     // paragraph: gather until a blank line or a block starter
     const para: string[] = [];
     while (
@@ -172,6 +202,7 @@ function parseBlocks(src: string): React.ReactNode[] {
       !/^(#{1,6})\s+/.test(lines[i]) &&
       !/^\s*(---|\*\*\*|___)\s*$/.test(lines[i]) &&
       !/^\s*>\s?/.test(lines[i]) &&
+      !/^\s*\|.*\|\s*$/.test(lines[i]) &&
       !LIST_RE.test(lines[i])
     ) { para.push(lines[i]); i++; }
     blocks.push(<p key={key++}>{renderInline(para.join(" "), `p${key}`)}</p>);

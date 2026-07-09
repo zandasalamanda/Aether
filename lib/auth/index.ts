@@ -2,7 +2,16 @@ import { redirect } from "next/navigation";
 import type { Plan } from "@/types";
 import { buildSeed } from "@/lib/mock/seed";
 import { features } from "@/lib/config";
+import { isAdminEmail } from "@/lib/admin";
 import { ensureProfile } from "@/lib/data/profile";
+
+/** True only for the signed-in user if their verified Clerk email is allowlisted. */
+export async function isAdmin(): Promise<boolean> {
+  if (!features.clerk) return false;
+  const { currentUser } = await import("@clerk/nextjs/server");
+  const u = await currentUser();
+  return isAdminEmail(u?.primaryEmailAddress?.emailAddress);
+}
 
 export interface SessionUser {
   id: string;

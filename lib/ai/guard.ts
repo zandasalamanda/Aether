@@ -8,7 +8,7 @@ export type Plan = "free" | "pro";
 
 // Weighted AI budgets. `burst` = calls/min (anti-abuse); `day`/`month` = weighted
 // "credits" (an expensive call spends more — see the `weight` on each route).
-const LIMITS: Record<Plan, { burst: number; day: number; month: number }> = {
+export const LIMITS: Record<Plan, { burst: number; day: number; month: number }> = {
   // Free is deliberately generous — a good free experience is what drives upgrades.
   // Flash-Lite is ~$0.0005/call, so a maxed free user still costs pennies; the
   // global daily cap bounds total spend.
