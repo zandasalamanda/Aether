@@ -10,7 +10,9 @@ import { features } from "@/lib/config";
 // app is fully usable with no key and safe even if a response is malformed.
 
 const BASE = (process.env.AI_BASE_URL || "https://generativelanguage.googleapis.com/v1beta/openai").replace(/\/+$/, "");
-const MODEL = process.env.AI_MODEL || "gemini-flash-lite-latest";
+// Pinned to the exact cheapest available model (2.5/2.0 flash-lite are retired) so
+// "…-latest" can't silently drift onto a pricier model. Override with AI_MODEL.
+const MODEL = process.env.AI_MODEL || "gemini-3.1-flash-lite";
 const apiKey = () => process.env.AI_API_KEY || process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY || "";
 
 export function isObj(x: unknown): x is Record<string, unknown> {
