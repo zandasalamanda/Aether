@@ -1,20 +1,26 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import { Check, Zap } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
-import { cn } from "@/lib/utils";
 import type { Plan } from "@/types";
 
-const FREE = ["2 active goals", "Basic goal maps", "Daily planning", "Idea inbox", "Simple review"];
+const FREE = [
+  "2 active goals",
+  "AI goal mapping + focus sessions",
+  "Real resource searches per step",
+  "Pace mirror + momentum streaks",
+  "Templates & shareable maps",
+];
 const PRO = [
   "Unlimited goals",
-  "Advanced AI planning",
-  "Deeper weekly reviews",
-  "AI inbox sorting",
-  "Timeline forecasting",
-  "Custom planning styles",
+  "Ask Sola — your agentic plan assistant",
+  "“Do it for me” drafts + the adapting map",
+  "Real, hand-checked video resources",
+  "Deadline forecasting & the weekly digest",
+  "Priority AI + much higher limits",
 ];
 
 export function BillingPlans({ plan, monthly, yearly }: { plan: Plan; monthly: number; yearly: number }) {
@@ -23,28 +29,32 @@ export function BillingPlans({ plan, monthly, yearly }: { plan: Plan; monthly: n
   const [message, setMessage] = React.useState<string | null>(null);
 
   const price = interval === "monthly" ? monthly : yearly;
+  const per = interval === "monthly" ? "mo" : "yr";
 
-  const upgrade = async () => {
+  const post = async (url: string, body?: unknown) => {
     setLoading(true);
     setMessage(null);
     try {
-      const res = await fetch("/api/stripe/checkout", {
+      const res = await fetch(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ interval }),
+        headers: body ? { "Content-Type": "application/json" } : undefined,
+        body: body ? JSON.stringify(body) : undefined,
       });
       const data = (await res.json()) as { url?: string; error?: string };
       if (data.url) {
         window.location.href = data.url;
         return;
       }
-      setMessage(data.error ?? "Could not start checkout.");
+      setMessage(data.error ?? "Something went wrong. Try again.");
     } catch {
-      setMessage("Could not reach checkout. Try again.");
+      setMessage("Could not reach billing. Try again.");
     } finally {
       setLoading(false);
     }
   };
+
+  const upgrade = () => post("/api/stripe/checkout", { interval });
+  const manage = () => post("/api/stripe/portal");
 
   return (
     <div>
@@ -76,7 +86,7 @@ export function BillingPlans({ plan, monthly, yearly }: { plan: Plan; monthly: n
             {plan === "free" ? (
               <div className="rounded-full border border-line py-2.5 text-center text-sm text-muted">Current plan</div>
             ) : (
-              <Button variant="glass" className="w-full">Downgrade</Button>
+              <Button variant="glass" className="w-full" onClick={manage} disabled={loading}>Cancel or downgrade</Button>
             )}
           </div>
         </div>
@@ -89,9 +99,9 @@ export function BillingPlans({ plan, monthly, yearly }: { plan: Plan; monthly: n
           </div>
           <div className="mt-2 flex items-end gap-1">
             <span className="font-display text-3xl font-semibold text-ink">${price}</span>
-            <span className="mb-1 text-[13px] text-muted">/{interval === "monthly" ? "mo" : "yr"}</span>
+            <span className="mb-1 text-[13px] text-muted">/{per}</span>
           </div>
-          <p className="mt-1 text-[13px] text-muted">For goals that deserve real momentum.</p>
+          <p className="mt-1 text-[13px] text-muted">Everything in Free, plus the AI that does the work with you.</p>
           <ul className="mt-5 space-y-2.5">
             {PRO.map((f) => (
               <li key={f} className="flex items-center gap-2.5 text-[14px] text-ink">
@@ -100,16 +110,26 @@ export function BillingPlans({ plan, monthly, yearly }: { plan: Plan; monthly: n
             ))}
           </ul>
           <div className="mt-6">
-            <Button variant="primary" className="w-full" size="lg" onClick={upgrade} disabled={loading}>
-              {loading ? "Starting…" : `Upgrade to Pro`}
-            </Button>
+            {plan === "pro" ? (
+              <Button variant="primary" className="w-full" size="lg" onClick={manage} disabled={loading}>
+                {loading ? "Opening…" : "Manage billing"}
+              </Button>
+            ) : (
+              <Button variant="primary" className="w-full" size="lg" onClick={upgrade} disabled={loading}>
+                {loading ? "Starting…" : "Upgrade to Pro"}
+              </Button>
+            )}
           </div>
-          {message && (
-            <p className={cn("mt-3 text-center text-[12px]", "text-warn")}>{message}</p>
+          {plan === "free" && (
+            <p className="mt-3 text-center text-[11px] leading-relaxed text-faint">
+              Renews automatically at ${price}/{per} until you cancel. Cancel anytime from Settings. See our{" "}
+              <Link href="/terms" className="underline transition-colors hover:text-muted">Terms</Link>.
+            </p>
           )}
-          <p className="mt-3 text-center font-mono text-[10px] uppercase tracking-wide text-faint">Stripe · test mode</p>
         </div>
       </div>
+
+      {message && <p className="mt-4 text-center text-[13px] text-warn">{message}</p>}
     </div>
   );
 }

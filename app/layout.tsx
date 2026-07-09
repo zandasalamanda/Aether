@@ -4,6 +4,7 @@ import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import { ClerkProvider } from "@clerk/nextjs";
 import { features } from "@/lib/config";
+import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
 const sora = Sora({
@@ -17,15 +18,14 @@ const title = "Solaspace — Chart it. Focus. Arrive.";
 const description =
   "Tell Solaspace what you want done. It turns your goals, ideas, and available time into a clear plan for today.";
 
-const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://kairo-zeta-five.vercel.app";
-
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
+  metadataBase: new URL(SITE_URL),
   title,
   description,
   applicationName: "Solaspace",
+  alternates: { canonical: "/" },
   appleWebApp: { capable: true, title: "Solaspace", statusBarStyle: "black-translucent" },
-  openGraph: { title, description, siteName: "Solaspace", type: "website" },
+  openGraph: { title, description, url: SITE_URL, siteName: "Solaspace", type: "website" },
   twitter: { card: "summary_large_image", title, description },
 };
 

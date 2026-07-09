@@ -2,13 +2,14 @@
 
 import { revalidatePath } from "next/cache";
 import { getScopedClient } from "@/lib/supabase/scoped";
+import { features } from "@/lib/config";
 import { ensureProfile } from "./profile";
 import { isRemote } from "./index";
 import { newId } from "@/lib/utils";
 import type { GoalMapResult } from "@/lib/ai/types";
 import type { NodeStatus, InboxCategory } from "@/types";
 
-type Result = { ok: boolean; id?: string };
+type Result = { ok: boolean; id?: string; error?: string };
 type GoalResult = { ok: boolean; id?: string; nodeIds?: string[] };
 const NO_OP: Result = { ok: false };
 
@@ -157,15 +158,41 @@ export async function deleteAccount(): Promise<Result> {
   const scoped = await getScopedClient();
   const profile = await ensureProfile();
   if (!scoped || !profile) return NO_OP;
-  await scoped.supabase.from("users_profile").delete().eq("id", profile.id);
+
+  // 1) Cancel any live Stripe subscription first, so deleting the account never
+  //    leaves a customer being billed for an account that no longer exists.
+  if (features.stripe && profile.stripeCustomerId) {
+    try {
+      const Stripe = (await import("stripe")).default;
+      const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+      const subs = await stripe.subscriptions.list({ customer: profile.stripeCustomerId, status: "all", limit: 100 });
+      await Promise.all(subs.data.filter((s) => s.status !== "canceled").map((s) => stripe.subscriptions.cancel(s.id)));
+      // Delete the Stripe customer too, so no billing PII (email) lingers after erasure.
+      await stripe.customers.del(profile.stripeCustomerId);
+    } catch (e) {
+      console.error("[deleteAccount] Stripe cancel failed", e instanceof Error ? e.message : e);
+      return { ok: false, error: "We couldn't cancel your subscription. Nothing was deleted — please try again or contact support." };
+    }
+  }
+
+  // 2) Delete their data. If this fails, stop — don't delete the Clerk account
+  //    and orphan the rows.
+  const { error: delErr } = await scoped.supabase.from("users_profile").delete().eq("id", profile.id);
+  if (delErr) {
+    console.error("[deleteAccount] data delete failed", delErr.message);
+    return { ok: false, error: "We couldn't delete your data. Nothing was removed — please try again." };
+  }
+
+  // 3) Delete the Clerk account only after the data is confirmed gone.
   const { auth, clerkClient } = await import("@clerk/nextjs/server");
   const { userId } = await auth();
   if (userId) {
     try {
       const client = await clerkClient();
       await client.users.deleteUser(userId);
-    } catch {
-      /* best effort — the data rows are already gone */
+    } catch (e) {
+      console.error("[deleteAccount] Clerk delete failed", e instanceof Error ? e.message : e);
+      return { ok: false, error: "Your data was deleted, but signing out failed. Please sign out manually." };
     }
   }
   return { ok: true };

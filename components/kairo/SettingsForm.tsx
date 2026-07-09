@@ -23,11 +23,18 @@ function resetDemo() {
 export function SettingsForm({ user }: { user: SessionUser }) {
   const [armed, setArmed] = React.useState(false);
   const [deleting, setDeleting] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
 
   const remove = async () => {
     setDeleting(true);
-    await deleteAccount();
-    window.location.href = "/";
+    setError(null);
+    const res = await deleteAccount();
+    if (res.ok) {
+      window.location.href = "/";
+      return;
+    }
+    setError(res.error ?? "We couldn't delete your account. Please try again.");
+    setDeleting(false);
   };
 
   return (
@@ -78,12 +85,15 @@ export function SettingsForm({ user }: { user: SessionUser }) {
           <div className="mt-6 border-t border-line pt-5">
             <SectionLabel className="mb-2">Danger zone</SectionLabel>
             {armed ? (
-              <div className="flex flex-wrap items-center gap-2.5">
-                <span className="text-[13px] text-warn">This permanently deletes your account, goals, and all data. This can&rsquo;t be undone.</span>
-                <button onClick={() => setArmed(false)} disabled={deleting} className="raised-btn inline-flex h-9 items-center rounded-xl px-4 text-[13px] text-muted hover:text-ink">Cancel</button>
-                <button onClick={remove} disabled={deleting} className="raised-btn inline-flex h-9 items-center gap-1.5 rounded-xl px-4 text-[13px] text-warn">
-                  {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />} Delete everything
-                </button>
+              <div>
+                <div className="flex flex-wrap items-center gap-2.5">
+                  <span className="text-[13px] text-warn">This permanently deletes your account, goals, and all data. This can&rsquo;t be undone.</span>
+                  <button onClick={() => setArmed(false)} disabled={deleting} className="raised-btn inline-flex h-9 items-center rounded-xl px-4 text-[13px] text-muted hover:text-ink">Cancel</button>
+                  <button onClick={remove} disabled={deleting} className="raised-btn inline-flex h-9 items-center gap-1.5 rounded-xl px-4 text-[13px] text-warn">
+                    {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />} Delete everything
+                  </button>
+                </div>
+                {error && <p className="mt-2.5 text-[13px] text-warn">{error}</p>}
               </div>
             ) : (
               <button onClick={() => setArmed(true)} className="raised-btn inline-flex h-10 items-center gap-2 rounded-xl px-5 text-sm text-warn">

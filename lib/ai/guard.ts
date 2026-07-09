@@ -17,11 +17,12 @@ const DAY = 86_400;
 const MONTH = 2_592_000;
 
 async function planFor(userId: string, supabase: SupabaseClient): Promise<Plan> {
-  if (process.env.FORCE_PLAN === "pro") return "pro"; // pre-launch: test Pro without Stripe
+  if (process.env.FORCE_PLAN === "pro" && process.env.NODE_ENV !== "production") return "pro"; // non-prod only: test Pro without Stripe
   try {
     const { data } = await supabase.rpc("plan_for", { p_sub: userId });
     return data === "pro" ? "pro" : "free";
-  } catch {
+  } catch (e) {
+    console.error("[guardAi] plan_for failed:", e instanceof Error ? e.message : e);
     return "free";
   }
 }
@@ -29,8 +30,11 @@ async function planFor(userId: string, supabase: SupabaseClient): Promise<Plan> 
 async function rlHit(supabase: SupabaseClient, key: string, limit: number, windowSec: number, cost: number): Promise<boolean> {
   try {
     const { data } = await supabase.rpc("rate_limit_hit_cost", { p_key: key, p_limit: limit, p_window_seconds: windowSec, p_cost: cost });
-    return data !== false; // fail open on error
-  } catch {
+    return data !== false;
+  } catch (e) {
+    // Fail open so a transient DB blip doesn't block legitimate users — but log
+    // it loudly so sustained failures are visible (durable backstop is a follow-up).
+    console.error("[guardAi] rate_limit_hit_cost failed (allowing call):", e instanceof Error ? e.message : e);
     return true;
   }
 }

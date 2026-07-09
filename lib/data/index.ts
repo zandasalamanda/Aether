@@ -26,7 +26,7 @@ export async function getProfile(): Promise<UserProfile> {
 
 /** The signed-in user's plan (honours FORCE_PLAN=pro for pre-launch testing). */
 export async function getPlan(): Promise<"free" | "pro"> {
-  if (process.env.FORCE_PLAN === "pro") return "pro";
+  if (process.env.FORCE_PLAN === "pro" && process.env.NODE_ENV !== "production") return "pro";
   if (!isRemote) return "free";
   const p = await ensureProfile();
   return p?.plan === "pro" ? "pro" : "free";
