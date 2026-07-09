@@ -1,4 +1,4 @@
-import { generateJson, isObj, isClient, viaRoute, viaRouteResult, aiErrorText } from "./provider";
+import { generateJson, isObj, isClient, viaRoute, viaRouteResult, raiseIfBlocked } from "./provider";
 import type { WorkSessionInput, WorkSessionResult, UnblockInput, UnblockResult } from "./types";
 
 // The Working Session: Solaspace sits down with the user on ONE step and helps them
@@ -68,8 +68,9 @@ function validUnblock(r: unknown): r is UnblockResult {
 export async function unblock(input: UnblockInput): Promise<UnblockResult> {
   if (isClient()) {
     const res = await viaRouteResult<UnblockResult>("/api/ai/unblock", input);
+    raiseIfBlocked(res);
     if (validUnblock(res.data)) return res.data;
-    return { answer: res.status === 402 || res.status === 429 ? aiErrorText(res) : UNBLOCK_FALLBACK };
+    return { answer: UNBLOCK_FALLBACK };
   }
   const r = await generateJson<UnblockResult>(
     UNBLOCK_SYSTEM,

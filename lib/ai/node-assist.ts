@@ -1,4 +1,4 @@
-import { generateJson, isObj, isClient, viaRoute, viaRouteResult, aiErrorText } from "./provider";
+import { generateJson, isObj, isClient, viaRoute, viaRouteResult, raiseIfBlocked } from "./provider";
 import type { ExpandNodeInput, ExpandNodeResult, AskNodeInput, AskNodeResult } from "./types";
 
 // Two small, user-initiated AI helpers on a single step of a plan:
@@ -56,8 +56,9 @@ export async function expandNode(input: ExpandNodeInput): Promise<ExpandNodeResu
 export async function askNode(input: AskNodeInput): Promise<AskNodeResult> {
   if (isClient()) {
     const res = await viaRouteResult<AskNodeResult>("/api/ai/ask-node", input);
+    raiseIfBlocked(res);
     if (validAsk(res.data)) return res.data;
-    return { answer: res.status === 402 || res.status === 429 ? aiErrorText(res) : ASK_FALLBACK };
+    return { answer: ASK_FALLBACK };
   }
   const r = await generateJson<AskNodeResult>(
     ASK_SYSTEM,

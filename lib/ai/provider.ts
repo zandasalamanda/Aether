@@ -62,6 +62,26 @@ export function aiErrorText(r: { status: number; error?: string }): string {
   return r.error || "Sola couldn't respond just now — it may be busy. Try again in a moment.";
 }
 
+/** A typed error for blocking AI responses (sign-in / upgrade / rate-limit) so the
+ *  UI can show a popup or redirect instead of rendering the message inline. */
+export class AiError extends Error {
+  status: number;
+  upgrade: boolean;
+  constructor(status: number, message: string, upgrade = false) {
+    super(message);
+    this.name = "AiError";
+    this.status = status;
+    this.upgrade = upgrade;
+  }
+}
+
+/** Throw an AiError for statuses the UI should surface as a popup / redirect. */
+export function raiseIfBlocked(r: { status: number; error?: string; upgrade?: boolean }): void {
+  if (r.status === 401 || r.status === 402 || r.status === 429) {
+    throw new AiError(r.status, aiErrorText(r), r.status === 402 || !!r.upgrade);
+  }
+}
+
 function extractJson(text: string): unknown {
   const cleaned = text.trim().replace(/^```(?:json)?/i, "").replace(/```$/i, "").trim();
   try {

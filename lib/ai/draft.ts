@@ -1,4 +1,4 @@
-import { generateJson, isObj, isClient, viaRouteResult, aiErrorText } from "./provider";
+import { generateJson, isObj, isClient, viaRouteResult, raiseIfBlocked } from "./provider";
 import type { DraftInput, DraftResult } from "./types";
 
 // Co-produced artifacts: for a desk step, Solaspace writes a real first draft of
@@ -21,8 +21,9 @@ function valid(r: unknown): r is DraftResult {
 export async function draftForStep(input: DraftInput): Promise<DraftResult> {
   if (isClient()) {
     const res = await viaRouteResult<DraftResult>("/api/ai/draft", input);
+    raiseIfBlocked(res);
     if (valid(res.data)) return { title: res.data.title.slice(0, 48), content: res.data.content.slice(0, 6000) };
-    return res.status === 402 || res.status === 429 ? { title: "Sola is at its limit", content: aiErrorText(res) } : FALLBACK;
+    return FALLBACK;
   }
   const r = await generateJson<DraftResult>(
     SYSTEM,

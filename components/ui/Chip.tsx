@@ -22,9 +22,10 @@ export interface ChipProps extends React.ButtonHTMLAttributes<HTMLButtonElement>
   tone?: Tone;
   active?: boolean;
   icon?: React.ReactNode;
+  pro?: boolean;
 }
 
-export function Chip({ tone = "neutral", active = false, icon, className, children, ...props }: ChipProps) {
+export function Chip({ tone = "neutral", active = false, icon, pro = false, className, children, ...props }: ChipProps) {
   return (
     <button
       type="button"
@@ -37,6 +38,9 @@ export function Chip({ tone = "neutral", active = false, icon, className, childr
     >
       {icon}
       {children}
+      {pro && (
+        <span className="ml-0.5 rounded bg-accent/15 px-1 py-px font-mono text-[9px] font-semibold uppercase tracking-wide text-accent">Pro</span>
+      )}
     </button>
   );
 }

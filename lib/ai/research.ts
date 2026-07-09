@@ -1,4 +1,4 @@
-import { isObj, isClient, viaRouteResult, aiErrorText } from "./provider";
+import { isObj, isClient, viaRouteResult, raiseIfBlocked } from "./provider";
 import type { ResearchInput, ResearchResult } from "./types";
 
 // Grounded research (Pro): calls Gemini's NATIVE endpoint with Google Search
@@ -61,10 +61,11 @@ async function runResearch(input: ResearchInput): Promise<ResearchResult> {
 export async function research(input: ResearchInput): Promise<ResearchResult> {
   if (isClient()) {
     const res = await viaRouteResult<ResearchResult>("/api/ai/research", input);
+    raiseIfBlocked(res);
     if (res.data && typeof res.data.answer === "string") {
       return { answer: res.data.answer, sources: Array.isArray(res.data.sources) ? res.data.sources : [] };
     }
-    return { answer: aiErrorText(res), sources: [] };
+    return { answer: "Couldn't complete the research just now — try again.", sources: [] };
   }
   return runResearch(input);
 }

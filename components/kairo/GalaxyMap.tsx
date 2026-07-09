@@ -10,6 +10,8 @@ import { expandNode, askNode } from "@/lib/ai/node-assist";
 import { unblock } from "@/lib/ai/work-session";
 import { draftForStep } from "@/lib/ai/draft";
 import { research } from "@/lib/ai/research";
+import { AiError } from "@/lib/ai/provider";
+import { useRouter } from "next/navigation";
 import type { DraftResult, ResearchResult } from "@/lib/ai/types";
 import { replanGoal } from "@/lib/ai/replan";
 import { viaRoute } from "@/lib/ai/provider";
@@ -488,6 +490,12 @@ export function GalaxyMap({
     if (!p || mapping) return;
     const pos = beginForming();
     const res = await generateGoalMap({ prompt: p });
+    if (res.isMock) {
+      // AI was unavailable / rate-limited — don't persist a junk placeholder map.
+      setMapping(false); setFormingPos(null);
+      showToast("Couldn't map that just now — you may have hit today's AI limit. Try again later, or upgrade to Pro.");
+      return;
+    }
     await commitMap(res, pos);
   };
 
@@ -784,6 +792,8 @@ export function GalaxyMap({
               goalTitle={expanded.title}
               goalNotes={expanded.notes}
               breaking={assisting}
+              isPro={isPro}
+              onToast={showToast}
               onClose={() => setSelectedNodeId(null)}
               onDone={() => { setStatus(expanded.id, selectedNode.id, "done"); setSelectedNodeId(null); }}
               onFocus={() => openFocus(selectedNode)}
@@ -1441,13 +1451,15 @@ function NodeResourceBlock({ node, onResolve }: { node: GoalNode; onResolve: (r:
 }
 
 function NodeSheet({
-  node, hex, goalTitle, goalNotes, breaking, onClose, onDone, onFocus, onBranch, onBreakDown, onResolveResource, onSaveArtifact,
+  node, hex, goalTitle, goalNotes, breaking, isPro, onToast, onClose, onDone, onFocus, onBranch, onBreakDown, onResolveResource, onSaveArtifact,
 }: {
   node: GoalNode;
   hex: string;
   goalTitle: string;
   goalNotes: string;
   breaking: boolean;
+  isPro: boolean;
+  onToast: (m: string) => void;
   onClose: () => void;
   onDone: () => void;
   onFocus: () => void;
@@ -1471,29 +1483,65 @@ function NodeSheet({
   const [researchResult, setResearchResult] = React.useState<ResearchResult | null>(null);
   const [researchLoading, setResearchLoading] = React.useState(false);
 
+  const router = useRouter();
+  // Blocking AI responses (upgrade / rate-limit / sign-in) surface as a toast —
+  // and Pro-gated ones redirect to billing — instead of rendering inline.
+  const handleAiError = (e: unknown): boolean => {
+    if (e instanceof AiError) {
+      onToast(e.message);
+      if (e.upgrade) router.push("/app/billing");
+      return true;
+    }
+    return false;
+  };
+
   const runResearch = async () => {
+    if (!isPro) {
+      onToast("Research is a Pro feature — upgrade for live, cited answers.");
+      router.push("/app/billing");
+      return;
+    }
     setResearching(true); setAsking(false); setBreakOpen(false); setDrafting(false);
     if (researchResult || researchLoading) return;
     setResearchLoading(true);
-    const r = await research({ goalTitle, nodeTitle: node.title, context: goalNotes.trim() || undefined });
-    setResearchResult(r); setResearchLoading(false);
+    try {
+      const r = await research({ goalTitle, nodeTitle: node.title, context: goalNotes.trim() || undefined });
+      setResearchResult(r);
+    } catch (e) {
+      if (!handleAiError(e)) onToast("Couldn't complete research — try again.");
+      setResearching(false);
+    } finally {
+      setResearchLoading(false);
+    }
   };
 
   const runDraft = async () => {
     setDrafting(true); setAsking(false); setBreakOpen(false); setEditingDraft(false);
     if (draft || draftLoading) return;
     setDraftLoading(true); setSaved(false);
-    const d = await draftForStep({ goalTitle, nodeTitle: node.title, nodeDescription: node.description, context: goalNotes.trim() || undefined });
-    setDraft(d); setDraftBody(d.content); setDraftLoading(false);
+    try {
+      const d = await draftForStep({ goalTitle, nodeTitle: node.title, nodeDescription: node.description, context: goalNotes.trim() || undefined });
+      setDraft(d); setDraftBody(d.content);
+    } catch (e) {
+      if (!handleAiError(e)) onToast("Couldn't draft that — try again.");
+      setDrafting(false);
+    } finally {
+      setDraftLoading(false);
+    }
   };
 
   const runStuck = async () => {
     if (loading) return;
     setLoading(true);
     setAnswer(null);
-    const r = await unblock({ goalTitle, nodeTitle: node.title, context: goalNotes.trim() || undefined });
-    setAnswer(r.answer);
-    setLoading(false);
+    try {
+      const r = await unblock({ goalTitle, nodeTitle: node.title, context: goalNotes.trim() || undefined });
+      setAnswer(r.answer);
+    } catch (e) {
+      if (!handleAiError(e)) onToast("Couldn't get help just now — try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const ask = async () => {
@@ -1501,9 +1549,14 @@ function NodeSheet({
     if (!q || loading) return;
     setLoading(true);
     setAnswer(null);
-    const res = await askNode({ goalTitle, nodeTitle: node.title, question: q, context: goalNotes.trim() || undefined });
-    setAnswer(res.answer);
-    setLoading(false);
+    try {
+      const res = await askNode({ goalTitle, nodeTitle: node.title, question: q, context: goalNotes.trim() || undefined });
+      setAnswer(res.answer);
+    } catch (e) {
+      if (!handleAiError(e)) onToast("Couldn't answer that — try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -1533,7 +1586,7 @@ function NodeSheet({
           {breaking ? "Working…" : "Break it down"}
         </Chip>
         <Chip tone="accent" icon={<Wand2 size={14} />} onClick={() => void runDraft()}>Do it for me</Chip>
-        <Chip tone="accent" icon={<Search size={14} />} onClick={() => void runResearch()}>Research</Chip>
+        <Chip tone="accent" pro icon={<Search size={14} />} onClick={() => void runResearch()}>Research</Chip>
       </div>
 
       {researching && (
