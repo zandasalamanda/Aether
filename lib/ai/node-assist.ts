@@ -1,4 +1,4 @@
-import { generateJson, isObj, isClient, viaRoute, viaRouteResult, raiseIfBlocked } from "./provider";
+import { generateJson, isObj, isClient, viaRouteResult, raiseIfBlocked } from "./provider";
 import type { ExpandNodeInput, ExpandNodeResult, AskNodeInput, AskNodeResult } from "./types";
 
 // Two small, user-initiated AI helpers on a single step of a plan:
@@ -43,8 +43,11 @@ function cleanExpand(r: ExpandNodeResult): ExpandNodeResult {
 
 export async function expandNode(input: ExpandNodeInput): Promise<ExpandNodeResult> {
   if (isClient()) {
-    const j = await viaRoute<ExpandNodeResult>("/api/ai/expand-node", input);
-    return validExpand(j) ? cleanExpand(j) : fallbackExpand(input);
+    // Surface rate-limit / upgrade responses (like askNode) instead of silently
+    // injecting generic filler steps and claiming success.
+    const res = await viaRouteResult<ExpandNodeResult>("/api/ai/expand-node", input);
+    raiseIfBlocked(res);
+    return validExpand(res.data) ? cleanExpand(res.data) : fallbackExpand(input);
   }
   const r = await generateJson<ExpandNodeResult>(
     EXPAND_SYSTEM,

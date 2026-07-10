@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getScopedClient } from "@/lib/supabase/scoped";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
-import { features } from "@/lib/config";
+import { features, planLimits } from "@/lib/config";
 import { isAdmin } from "@/lib/auth";
 import { ensureProfile } from "./profile";
 import { isRemote } from "./index";
@@ -12,7 +12,7 @@ import type { GoalMapResult } from "@/lib/ai/types";
 import type { NodeStatus, InboxCategory } from "@/types";
 
 type Result = { ok: boolean; id?: string; error?: string };
-type GoalResult = { ok: boolean; id?: string; nodeIds?: string[] };
+type GoalResult = { ok: boolean; id?: string; nodeIds?: string[]; error?: string; upgrade?: boolean };
 const NO_OP: Result = { ok: false };
 
 /**
@@ -27,6 +27,22 @@ export async function persistGoalFromMap(input: { result: GoalMapResult }): Prom
   if (!scoped || !profile) return NO_OP;
   const { supabase } = scoped;
   const { result } = input;
+
+  // Enforce the Free active-goal cap server-side. The client cap in the map is not
+  // authoritative — /onboarding (which calls this) is reachable directly by an
+  // already-signed-in user, so "unlimited goals" (the headline Pro feature) would
+  // otherwise be free by just revisiting onboarding.
+  if (profile.plan !== "pro") {
+    const { count } = await supabase
+      .from("goals")
+      .select("id", { count: "exact", head: true })
+      .eq("user_id", profile.id)
+      .eq("status", "active")
+      .is("archived_at", null);
+    if ((count ?? 0) >= planLimits.free.activeGoals) {
+      return { ok: false, error: `Free is capped at ${planLimits.free.activeGoals} active goals — upgrade to Pro for unlimited.`, upgrade: true };
+    }
+  }
 
   const goalRes = await supabase
     .from("goals")

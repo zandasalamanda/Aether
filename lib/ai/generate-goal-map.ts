@@ -85,6 +85,8 @@ export async function generateGoalMap(input: GoalMapInput): Promise<GoalMapResul
     return valid(j) ? finish(j, input.prompt) : { ...mockGoalMap(input), isMock: true };
   }
   const today = new Date().toISOString().slice(0, 10);
-  const r = await generateJson<GoalMapResult>(SYSTEM, `Today's date: ${today}\nGoal: ${input.prompt}`);
+  // 14-18 nodes each with a grounded 2-4 sentence description need real headroom —
+  // the default 1600 truncated the JSON mid-string and dead-ended onboarding.
+  const r = await generateJson<GoalMapResult>(SYSTEM, `Today's date: ${today}\nGoal: ${input.prompt}`, { maxTokens: 4096 });
   return valid(r) ? finish(r, input.prompt) : { ...mockGoalMap(input), isMock: true };
 }

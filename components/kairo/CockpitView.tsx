@@ -8,6 +8,7 @@ import { nextNodeForGoal } from "@/lib/kairo/next-move";
 import { goalIcon } from "@/lib/kairo/goal-icon";
 import { useGoalColors } from "@/lib/kairo/use-goal-colors";
 import { setNodeStatus, logFocusSession, setGoalNotes } from "@/lib/data/actions";
+import { track } from "@/lib/analytics";
 import { FocusOverlay } from "./FocusOverlay";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/Button";
@@ -45,11 +46,14 @@ export function CockpitView({ goals: initial, remote }: { goals: GoalWithNodes[]
 
   const markDone = (goalId: string, nodeId: string, minutes?: number) => {
     setStatus(goalId, nodeId, "done");
+    // Activation event: a real step finished (created a goal + completed a step).
+    track("step_completed", { goalId, surface: "today" });
     if (remote && minutes) void logFocusSession({ goalId, nodeId, minutes });
   };
 
   const startFocus = (goalId: string, node: GoalNode) => {
     if (node.status !== "in_motion") setStatus(goalId, node.id, "in_motion");
+    track("focus_started", { goalId, surface: "today" });
     setFocus({ goalId, node });
   };
 

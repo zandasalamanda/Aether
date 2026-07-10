@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, RotateCcw } from "lucide-react";
 import { generateGoalMap } from "@/lib/ai/generate-goal-map";
-import { persistGoalFromMap } from "@/lib/data/actions";
+import { persistGoalFromMap, deleteGoal } from "@/lib/data/actions";
 import type { GoalMapResult } from "@/lib/ai/types";
 import { GoalCore } from "./GoalCore";
 import { Logo } from "./Logo";
@@ -47,6 +47,8 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
       // If the AI fell back to a generic placeholder for a real account, don't
       // save it as their goal — surface the failure and let them retry.
       if (remote && res.isMock) {
+        // Watch this in analytics — it's the first-impression failure rate.
+        track("goal_map_failed", { reason: "mock_fallback" });
         setError("Sola couldn't map that just now — you may have hit a limit, or the service is busy. Give it another go.");
         setStep("input");
         return;
@@ -55,7 +57,10 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
       if (remote) {
         const saved = await persistGoalFromMap({ result: res });
         if (!saved.ok) {
-          setError("Your plan was created but couldn't be saved. Please try again.");
+          // Hit the Free goal cap → the highest-intent upgrade moment; send them
+          // to billing rather than a dead error.
+          if (saved.upgrade) { router.push("/app/billing"); return; }
+          setError(saved.error ?? "Your plan was created but couldn't be saved. Please try again.");
           setStep("input");
           return;
         }
@@ -68,7 +73,7 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
       setError("Something went wrong mapping your goal. Please try again.");
       setStep("input");
     }
-  }, [remote]);
+  }, [remote, router]);
 
   const submit = () => {
     const p = prompt.trim();
@@ -100,13 +105,16 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
   }, [remote, signedIn, runMap]);
 
   const reset = () => {
+    // "Start over" discards the map we just saved — delete it so it doesn't linger
+    // as an abandoned goal (which would also silently burn a Free goal slot).
+    if (remote && goalId) void deleteGoal({ goalId });
     setStep("input");
     setResult(null);
     setGoalId(null);
   };
 
   return (
-    <div className="relative mx-auto flex min-h-screen w-full max-w-2xl flex-col items-center px-5 py-10">
+    <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col items-center px-5 py-10">
       <Link href="/" className="mb-auto self-start"><Logo /></Link>
 
       {step === "input" && (

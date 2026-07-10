@@ -102,7 +102,7 @@ function extractJson(text: string): unknown {
 }
 
 /** Ask the model for JSON matching a shape. Returns null on any failure. */
-export async function generateJson<T>(system: string, user: string): Promise<T | null> {
+export async function generateJson<T>(system: string, user: string, opts?: { maxTokens?: number }): Promise<T | null> {
   if (!features.ai || !apiKey()) return null;
   try {
     const res = await fetch(`${BASE}/chat/completions`, {
@@ -111,7 +111,9 @@ export async function generateJson<T>(system: string, user: string): Promise<T |
       body: JSON.stringify({
         model: MODEL,
         temperature: 0.4,
-        max_tokens: 1600,
+        // Default suits short answers; big structured outputs (the goal map's 14-18
+        // rich nodes) pass a larger budget so the JSON never truncates mid-string.
+        max_tokens: opts?.maxTokens ?? 1600,
         messages: [
           { role: "system", content: `${system}\n\nReturn ONLY a valid minified JSON object — no surrounding prose and no code fences around the JSON. String values inside it may contain rich markdown: headings, bullet and numbered lists, tables, and fenced code blocks (including diagrams tagged mermaid).` },
           { role: "user", content: user },

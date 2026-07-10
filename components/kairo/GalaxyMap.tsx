@@ -11,6 +11,7 @@ import { unblock } from "@/lib/ai/work-session";
 import { draftForStep } from "@/lib/ai/draft";
 import { research } from "@/lib/ai/research";
 import { AiError } from "@/lib/ai/provider";
+import { track } from "@/lib/analytics";
 import { useRouter } from "next/navigation";
 import type { DraftResult, ResearchResult } from "@/lib/ai/types";
 import { replanGoal } from "@/lib/ai/replan";
@@ -202,6 +203,7 @@ export function GalaxyMap({
   const [goals, setGoals] = usePersistentState<GoalWithNodes[]>("kairo.goals.v1", initialGoals, !remote);
   const [positions, setPositions] = usePersistentState<Record<string, { x: number; y: number }>>("kairo.galaxy.v1", {});
   const [colorIdx, setColorIdx] = usePersistentState<Record<string, number>>("kairo.colors.v1", {});
+  const router = useRouter();
 
   const initialExpanded = initialGoalId ?? (initialGoals.length === 1 ? initialGoals[0].id : null);
   const [view, setView] = React.useState(() => {
@@ -533,21 +535,34 @@ export function GalaxyMap({
     setBreakdownText("");
     setAssisting(true);
     const ctx = [context.trim(), expanded.notes.trim()].filter(Boolean).join(" · ").slice(0, 600) || undefined;
-    const res = await expandNode({
-      goalTitle: expanded.title,
-      nodeTitle: node.title,
-      nodeDescription: node.description,
-      context: ctx,
-    });
-    if (res.steps.length) addSteps(expanded.id, node.id, res.steps);
-    setAssisting(false);
-    showToast(`Added ${res.steps.length} step${res.steps.length === 1 ? "" : "s"} under "${truncate(node.title, 20)}"`);
+    try {
+      const res = await expandNode({
+        goalTitle: expanded.title,
+        nodeTitle: node.title,
+        nodeDescription: node.description,
+        context: ctx,
+      });
+      if (res.steps.length) addSteps(expanded.id, node.id, res.steps);
+      showToast(`Added ${res.steps.length} step${res.steps.length === 1 ? "" : "s"} under "${truncate(node.title, 20)}"`);
+    } catch (e) {
+      // A rate-limit / upgrade response now surfaces instead of silently adding
+      // generic filler steps and claiming success.
+      if (e instanceof AiError) {
+        showToast(e.message);
+        if (e.upgrade) router.push("/app/billing");
+      } else {
+        showToast("Couldn't break that down just now — try again.");
+      }
+    } finally {
+      setAssisting(false);
+    }
   };
 
   // Enter a focus session on a step (marks it in-motion; completing marks it done).
   const openFocus = (node: GoalNode) => {
     if (!expanded) return;
     if (node.status !== "done") setStatus(expanded.id, node.id, "in_motion");
+    track("focus_started", { goalId: expanded.id, surface: "map" });
     setFocusNode(node);
   };
 
@@ -796,7 +811,7 @@ export function GalaxyMap({
               isPro={isPro}
               onToast={showToast}
               onClose={() => setSelectedNodeId(null)}
-              onDone={() => setStatus(expanded.id, selectedNode.id, "done")}
+              onDone={() => { setStatus(expanded.id, selectedNode.id, "done"); track("step_completed", { goalId: expanded.id, surface: "map" }); }}
               onFocus={() => openFocus(selectedNode)}
               onBranch={() => setBranchFor(selectedNode.id)}
               onBreakDown={() => setBreakdownFor(selectedNode)}

@@ -20,7 +20,9 @@
   /* Text */
   --color-ink: #f2f3f5;
   --color-muted: #9a9ea8;
-  --color-faint: #595e69;
+  /* Faint carries real info (durations, dates, counts), so it must stay legible:
+     ~#7c8290 clears WCAG AA (~4.5:1) while staying clearly dimmer than muted. */
+  --color-faint: #7c8290;
 
   /* The single accent — used rarely, only for live/next state */
   --color-accent: #e6b877;
