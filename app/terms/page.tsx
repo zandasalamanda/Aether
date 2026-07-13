@@ -37,7 +37,7 @@ export default function TermsPage() {
       <LegalSection heading="Subscriptions &amp; billing">
         <p>
           Solaspace has a free plan and a paid <strong>Pro</strong> subscription. Pro is billed in advance on a recurring
-          basis — monthly ($8/month) or yearly ($60/year) — through our payment processor, Stripe. Applicable taxes may
+          basis — monthly ($12/month) or yearly ($96/year) — through our payment processor, Stripe. Applicable taxes may
           be added.
         </p>
         <p>

@@ -25,7 +25,7 @@ const PRO = [
 ];
 
 export function BillingPlans({ plan, monthly, yearly }: { plan: Plan; monthly: number; yearly: number }) {
-  const [interval, setInterval] = React.useState<"monthly" | "yearly">("monthly");
+  const [interval, setInterval] = React.useState<"monthly" | "yearly">("yearly");
   const [loading, setLoading] = React.useState(false);
   const [message, setMessage] = React.useState<string | null>(null);
 
@@ -63,7 +63,7 @@ export function BillingPlans({ plan, monthly, yearly }: { plan: Plan; monthly: n
         <SegmentedControl
           options={[
             { value: "monthly", label: "Monthly" },
-            { value: "yearly", label: "Yearly", hint: "save 37%" },
+            { value: "yearly", label: "Yearly", hint: "save 33%" },
           ]}
           value={interval}
           onChange={(v) => setInterval(v as "monthly" | "yearly")}
@@ -102,7 +102,8 @@ export function BillingPlans({ plan, monthly, yearly }: { plan: Plan; monthly: n
             <span className="font-display text-3xl font-semibold text-ink">${price}</span>
             <span className="mb-1 text-[13px] text-muted">/{per}</span>
           </div>
-          <p className="mt-1 text-[13px] text-muted">Everything in Free, plus the AI that does the work with you.</p>
+          <p className="mt-0.5 font-mono text-[11px] text-faint">Cents a day for a daily execution engine.</p>
+          <p className="mt-1.5 text-[13px] text-muted">Everything in Free, plus the AI that does the work with you.</p>
           <ul className="mt-5 space-y-2.5">
             {PRO.map((f) => (
               <li key={f} className="flex items-center gap-2.5 text-[14px] text-ink">

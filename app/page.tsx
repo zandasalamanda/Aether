@@ -117,9 +117,10 @@ export default function LandingPage() {
             <div className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 rounded-full bg-accent/20 blur-3xl" />
             <div className="flex items-center gap-2"><div className="text-sm font-semibold text-accent">Pro</div><span className="rounded-full bg-accent/12 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-accent">Most popular</span></div>
             <div className="mt-2 flex items-end gap-1">
-              <span className="font-display text-4xl font-semibold text-ink">$8</span>
+              <span className="font-display text-4xl font-semibold text-ink">$12</span>
               <span className="mb-1.5 text-sm text-muted">/mo</span>
             </div>
+            <p className="mt-1 text-[12.5px] text-faint">or $96/yr — save 33%. Cents a day for a daily execution engine.</p>
             <p className="mt-2 text-sm text-muted">Everything in Free, plus the AI that does the work with you.</p>
             <ul className="mt-6 space-y-2.5">
               {PRO.map((f) => (

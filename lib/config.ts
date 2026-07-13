@@ -25,8 +25,8 @@ export const clerkPublic = !!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY;
 
 export const pricing = {
   currency: "usd",
-  monthly: { amount: 8, priceId: process.env.STRIPE_PRICE_MONTHLY ?? "price_monthly_test" },
-  yearly: { amount: 60, priceId: process.env.STRIPE_PRICE_YEARLY ?? "price_yearly_test" },
+  monthly: { amount: 12, priceId: process.env.STRIPE_PRICE_MONTHLY ?? "price_monthly_test" },
+  yearly: { amount: 96, priceId: process.env.STRIPE_PRICE_YEARLY ?? "price_yearly_test" },
 } as const;
 
 export const planLimits = {
