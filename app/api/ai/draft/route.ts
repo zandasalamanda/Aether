@@ -3,7 +3,9 @@ import { draftForStep } from "@/lib/ai/draft";
 import { guardAi, clampText } from "@/lib/ai/guard";
 
 export async function POST(req: Request) {
-  const denied = await guardAi({ weight: 2 });
+  // Free users get 2 "Do it for me" drafts/day (matches the plan matrix, caps cost);
+  // Pro is unlimited.
+  const denied = await guardAi({ weight: 2, feature: "draft", featureFreeDaily: 2, featureLabel: '"Do it for me" drafts' });
   if (denied) return denied;
   const b = (await req.json().catch(() => ({}))) as Record<string, unknown>;
   const result = await draftForStep({

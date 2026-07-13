@@ -49,6 +49,11 @@ export interface GuardOptions {
   weight?: number;
   /** if true, only Pro users may call this route */
   pro?: boolean;
+  /** per-feature daily cap for FREE users only (e.g. drafts). Pro is uncapped. */
+  feature?: string;
+  featureFreeDaily?: number;
+  /** human name for the feature in the limit message (e.g. "Do it for me" drafts) */
+  featureLabel?: string;
 }
 
 /**
@@ -112,6 +117,19 @@ export async function guardAi(opts: GuardOptions = {}): Promise<NextResponse | n
       },
       { status: 429 }
     );
+  }
+
+  // Per-feature daily cap — FREE users only (e.g. 2 "Do it for me" drafts/day).
+  // Pro is uncapped. Checked before the global counter so a feature-denied request
+  // doesn't inflate global spend.
+  if (opts.feature && opts.featureFreeDaily && plan !== "pro") {
+    const featOk = await rlHit(supabase, `ai:f:${opts.feature}:${userId}`, opts.featureFreeDaily, DAY, 1);
+    if (!featOk) {
+      return NextResponse.json(
+        { error: `You've used today's free ${opts.featureLabel ?? opts.feature} (${opts.featureFreeDaily}/day). Upgrade to Pro for unlimited.`, upgrade: true },
+        { status: 429 }
+      );
+    }
   }
 
   // Global daily backstop: bounds total AI spend no matter how many accounts are
