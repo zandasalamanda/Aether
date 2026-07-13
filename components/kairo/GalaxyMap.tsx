@@ -194,11 +194,14 @@ export function GalaxyMap({
   initialGoalId,
   remote = false,
   isPro = false,
+  onSheetChange,
 }: {
   goals: GoalWithNodes[];
   initialGoalId?: string;
   remote?: boolean;
   isPro?: boolean;
+  /** Fires when a node detail sheet opens/closes, so the parent can hide overlapping UI. */
+  onSheetChange?: (open: boolean) => void;
 }) {
   const [goals, setGoals] = usePersistentState<GoalWithNodes[]>("kairo.goals.v1", initialGoals, !remote);
   const [positions, setPositions] = usePersistentState<Record<string, { x: number; y: number }>>("kairo.galaxy.v1", {});
@@ -216,6 +219,8 @@ export function GalaxyMap({
   const [animating, setAnimating] = React.useState(false);
   const [expandedId, setExpandedId] = React.useState<string | null>(initialExpanded);
   const [selectedNodeId, setSelectedNodeId] = React.useState<string | null>(null);
+  // Let the parent (MapView) hide the Ask Sola button while a node sheet covers it.
+  React.useEffect(() => { onSheetChange?.(!!selectedNodeId); }, [selectedNodeId, onSheetChange]);
   const [hoverId, setHoverId] = React.useState<string | null>(null);
   const [poppedId, setPoppedId] = React.useState<string | null>(null);
   const [menu, setMenu] = React.useState(false);
@@ -703,7 +708,7 @@ export function GalaxyMap({
           <button
             onClick={() => setMenu((m) => !m)}
             disabled={empty}
-            className="chrome pointer-events-auto inline-flex max-w-[64vw] items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium text-ink disabled:opacity-40"
+            className="chrome pointer-events-auto inline-flex max-w-[40vw] items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium text-ink disabled:opacity-40 sm:max-w-[56vw]"
           >
             <span className="truncate">{expanded ? truncate(expanded.title, 30) : empty ? "No goals yet" : "All goals"}</span>
             {!empty && <ChevronDown size={14} className="shrink-0 text-faint" />}
@@ -1420,7 +1425,7 @@ function PreGenClarifier({ clarifiers, loading, onCreate, onCancel }: { clarifie
  * there's no key or no result — or for "read" steps — it falls back to today's
  * live search link, so the link is never dead and never hallucinated.
  */
-function NodeResourceBlock({ node, onResolve }: { node: GoalNode; onResolve: (r: ResolvedResource) => void }) {
+export function NodeResourceBlock({ node, onResolve }: { node: GoalNode; onResolve: (r: ResolvedResource) => void }) {
   const resource = node.resource!;
   const resMeta = RESOURCE_META[resource.kind];
   const [resolved, setResolved] = React.useState<ResolvedResource | null>(resource.resolved ?? null);
@@ -1538,6 +1543,7 @@ function NodeSheet({
   const [researching, setResearching] = React.useState(false);
   const [researchResult, setResearchResult] = React.useState<ResearchResult | null>(null);
   const [researchLoading, setResearchLoading] = React.useState(false);
+  const [helpOpen, setHelpOpen] = React.useState(false);
   const [provingDone, setProvingDone] = React.useState(false);
   const [evKind, setEvKind] = React.useState<"link" | "note" | "metric">("link");
   const [evValue, setEvValue] = React.useState("");
@@ -1698,17 +1704,25 @@ function NodeSheet({
         </div>
       )}
 
-      {/* Two verbs that matter (Focus, Done) + two grouped helpers (Ask, Break down). */}
+      {/* Lead with the two verbs that matter; the four AI helpers live behind one
+          reveal so the sheet reads as a calm command surface, not a 6-button toolbar. */}
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <Chip tone="accent" icon={<Timer size={14} />} onClick={onFocus}>Focus</Chip>
         <Chip tone="sage" icon={<Check size={14} />} onClick={() => setProvingDone((p) => !p)}>Done</Chip>
-        <Chip tone="accent" icon={<MessageCircle size={14} />} onClick={() => { setAsking((a) => !a); setBreakOpen(false); }}>Ask Solaspace</Chip>
-        <Chip tone="accent" icon={breaking ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} onClick={breaking ? undefined : () => { setBreakOpen((o) => !o); setAsking(false); }}>
-          {breaking ? "Working…" : "Break it down"}
+        <Chip tone="accent" active={helpOpen} icon={<Sparkles size={14} />} onClick={() => setHelpOpen((o) => !o)}>
+          Sola can help <ChevronDown size={13} className={cn("transition-transform", helpOpen && "rotate-180")} />
         </Chip>
-        <Chip tone="accent" icon={<Wand2 size={14} />} onClick={() => void runDraft()}>Do it for me</Chip>
-        <Chip tone="accent" pro icon={<Search size={14} />} onClick={() => void runResearch()}>Research</Chip>
       </div>
+      {helpOpen && (
+        <div className="mt-2 flex flex-wrap items-center gap-2 border-l border-line pl-3 animate-sheet-up">
+          <Chip tone="accent" icon={<MessageCircle size={14} />} onClick={() => { setAsking((a) => !a); setBreakOpen(false); }}>Ask Solaspace</Chip>
+          <Chip tone="accent" icon={breaking ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} onClick={breaking ? undefined : () => { setBreakOpen((o) => !o); setAsking(false); }}>
+            {breaking ? "Working…" : "Break it down"}
+          </Chip>
+          <Chip tone="accent" icon={<Wand2 size={14} />} onClick={() => void runDraft()}>Do it for me</Chip>
+          <Chip tone="accent" pro icon={<Search size={14} />} onClick={() => void runResearch()}>Research</Chip>
+        </div>
+      )}
 
       {provingDone && (
         <div className="mt-3 border-t border-line pt-3">

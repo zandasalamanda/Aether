@@ -7,6 +7,8 @@ import { useGoalColors } from "@/lib/kairo/use-goal-colors";
 import { goalIcon } from "@/lib/kairo/goal-icon";
 import { nextNodeForGoal } from "@/lib/kairo/next-move";
 import { cn, formatDuration } from "@/lib/utils";
+import { Markdown } from "./Markdown";
+import { NodeResourceBlock } from "./GalaxyMap";
 
 // The linear alternate to the galaxy — a fast, scannable outline of every goal
 // and its steps (research's "one spatial view for delight, one list for scale").
@@ -64,18 +66,51 @@ function GoalRow({ goal, hex, onOpen }: { goal: GoalWithNodes; hex: string; onOp
 }
 
 function NodeRow({ node, hex, isNext, onOpen, sub }: { node: GoalNode; hex: string; isNext: boolean; onOpen: () => void; sub?: boolean }) {
+  const [open, setOpen] = React.useState(false);
   const done = node.status === "done";
+  // The list is a full alternate to the map — a step carries the same detail
+  // (description, resource, proof), revealed inline on tap. Detail-less steps
+  // just jump to the map instead.
+  const hasDetail = !!(node.description?.trim() || node.resource || (node.evidence && node.evidence.length > 0));
   return (
-    <button onClick={onOpen} className={cn("flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left transition-colors hover:bg-white/[0.03]", sub && "pl-9")}>
-      <span
-        className={cn("grid h-4 w-4 shrink-0 place-items-center rounded-full", !done && "border border-line")}
-        style={done ? { background: hex } : isNext ? { boxShadow: `0 0 0 2px ${hex}66` } : undefined}
+    <div>
+      <button
+        onClick={() => (hasDetail ? setOpen((o) => !o) : onOpen())}
+        className={cn("flex w-full items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left transition-colors hover:bg-white/[0.03]", sub && "pl-9")}
       >
-        {done && <Check size={11} className="text-canvas" />}
-      </span>
-      <span className={cn("min-w-0 flex-1 truncate text-[14px]", done ? "text-faint line-through" : isNext ? "font-medium text-ink" : "text-muted")}>{node.title}</span>
-      {isNext && <span className="shrink-0 rounded-full bg-accent/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-accent">next</span>}
-      <span className="shrink-0 font-mono text-[11px] text-faint">{formatDuration(node.estimatedMinutes)}</span>
-    </button>
+        <span
+          className={cn("grid h-4 w-4 shrink-0 place-items-center rounded-full", !done && "border border-line")}
+          style={done ? { background: hex } : isNext ? { boxShadow: `0 0 0 2px ${hex}66` } : undefined}
+        >
+          {done && <Check size={11} className="text-canvas" />}
+        </span>
+        <span className={cn("min-w-0 flex-1 truncate text-[14px]", done ? "text-faint line-through" : isNext ? "font-medium text-ink" : "text-muted")}>{node.title}</span>
+        {isNext && <span className="shrink-0 rounded-full bg-accent/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-accent">next</span>}
+        <span className="shrink-0 font-mono text-[11px] text-faint">{formatDuration(node.estimatedMinutes)}</span>
+        {hasDetail && <ChevronDown size={14} className={cn("shrink-0 text-faint transition-transform", open && "rotate-180")} />}
+      </button>
+
+      {open && hasDetail && (
+        <div className={cn("mb-1.5 animate-sheet-up rounded-xl bg-white/[0.02] px-3 py-2.5", sub ? "ml-9" : "ml-2")}>
+          {node.description?.trim() && (
+            <div className="text-[13px] leading-relaxed text-muted"><Markdown>{node.description}</Markdown></div>
+          )}
+          {node.resource && <NodeResourceBlock node={node} onResolve={() => {}} />}
+          {node.evidence && node.evidence.length > 0 && (
+            <div className="mt-2.5 flex flex-col gap-1.5 border-t border-line pt-2.5">
+              <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-accent">Proof</div>
+              {node.evidence.map((ev) =>
+                ev.kind === "link" ? (
+                  <a key={ev.id} href={ev.value.startsWith("http") ? ev.value : `https://${ev.value}`} target="_blank" rel="noopener noreferrer" className="truncate text-[12.5px] text-accent underline decoration-accent/30 underline-offset-2">{ev.value}</a>
+                ) : (
+                  <div key={ev.id} className="text-[12.5px] text-ink/90"><span className="mr-1.5 font-mono text-[10px] uppercase text-faint">{ev.kind === "metric" ? "metric" : "note"}</span>{ev.value}</div>
+                )
+              )}
+            </div>
+          )}
+          <button onClick={onOpen} className="mt-2.5 inline-flex items-center gap-1.5 text-[11.5px] text-faint transition-colors hover:text-ink"><Waypoints size={12} /> Open in map</button>
+        </div>
+      )}
+    </div>
   );
 }

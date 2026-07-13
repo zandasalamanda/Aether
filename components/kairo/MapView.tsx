@@ -15,13 +15,16 @@ export function MapView({ goals, initialGoalId, remote, isPro }: { goals: GoalWi
   const [view, setView] = usePersistentState<"galaxy" | "list">("kairo.mapview.v1", "galaxy");
   const [openId, setOpenId] = React.useState<string | undefined>(initialGoalId);
   const [askOpen, setAskOpen] = React.useState(false);
+  const [sheetOpen, setSheetOpen] = React.useState(false);
 
   const openInGalaxy = (id: string) => { setOpenId(id); setView("galaxy"); };
+  // A node sheet only exists in the map view; hide the Ask Sola button under it there.
+  const askHidden = askOpen || (view === "galaxy" && sheetOpen);
 
   return (
     <div className="absolute inset-0">
       {view === "galaxy" ? (
-        <GalaxyMap key={openId ?? "root"} goals={goals} initialGoalId={openId} remote={remote} isPro={isPro} />
+        <GalaxyMap key={openId ?? "root"} goals={goals} initialGoalId={openId} remote={remote} isPro={isPro} onSheetChange={setSheetOpen} />
       ) : (
         <div className="absolute inset-0 overflow-y-auto">
           <GoalList goals={goals} onOpen={openInGalaxy} />
@@ -42,8 +45,8 @@ export function MapView({ goals, initialGoalId, remote, isPro }: { goals: GoalWi
         </div>
       </div>
 
-      {/* Ask Sola — agentic plan assistant (Pro) */}
-      {goals.length > 0 && !askOpen && (
+      {/* Ask Sola — plan assistant (Pro). Hidden while a node sheet covers it. */}
+      {goals.length > 0 && !askHidden && (
         isPro ? (
           <button
             onClick={() => setAskOpen(true)}
