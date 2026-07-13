@@ -6,6 +6,10 @@ import type { ExpandNodeInput, ExpandNodeResult, AskNodeInput, AskNodeResult } f
 
 const EXPAND_SYSTEM = `You are Solaspace. Break ONE step of a plan into 2-4 concrete, do-this-now sub-steps the user can follow with zero further thinking. Return JSON: {"steps":[{"title":string,"estimatedMinutes":number,"aiReason":string}]}. Each title is imperative and specific — a single sitting of work, in the order it should be done. estimatedMinutes is realistic (10-90). "aiReason" is a short phrase. No fluff.`;
 
+// "Make it smaller" — kill activation energy (Fogg / Goblin Tools): the FIRST step
+// should be so tiny it's almost silly, so an overwhelmed user can just start.
+const TINY_EXPAND_SYSTEM = `You are Solaspace helping someone who feels stuck START. Break ONE step into 5-6 TINY, sequential micro-steps — each so small it's almost silly (5-15 minutes), removing every excuse not to begin. The FIRST micro-step must be a 2-5 minute "just open it / just look" action. Return JSON: {"steps":[{"title":string,"estimatedMinutes":number,"aiReason":string}]}. Titles are imperative and concrete ("Open a blank doc and title it", not "Prepare"). estimatedMinutes 5-15. "aiReason" is a short phrase. No fluff.`;
+
 const ASK_SYSTEM = `You are Solaspace, a sharp, direct execution coach. Answer the user's question about a specific step thoroughly and practically, in clean markdown: a direct answer first, then the concrete how as short numbered steps or bullets, and end with the exact next action. Use a table when comparing options, and include a diagram in a fenced code block tagged mermaid ONLY when a process or structure genuinely makes it clearer. No fluff, no hedging, no disclaimers. Return JSON: {"answer":string} where "answer" is the markdown.`;
 
 const ASK_FALLBACK = "Break this into the smallest possible first action and start there — momentum makes the rest obvious.";
@@ -28,14 +32,14 @@ function fallbackExpand(input: ExpandNodeInput): ExpandNodeResult {
   };
 }
 
-/** Clamp the model's steps to something sane (≤4 steps, realistic minutes). */
-function cleanExpand(r: ExpandNodeResult): ExpandNodeResult {
+/** Clamp the model's steps to something sane. Tiny mode allows more, smaller steps. */
+function cleanExpand(r: ExpandNodeResult, tiny = false): ExpandNodeResult {
   const steps = r.steps
     .filter((s) => s && typeof s.title === "string" && s.title.trim())
-    .slice(0, 4)
+    .slice(0, tiny ? 6 : 4)
     .map((s) => ({
       title: String(s.title).trim(),
-      estimatedMinutes: Math.min(120, Math.max(10, Math.round(Number(s.estimatedMinutes) || 30))),
+      estimatedMinutes: Math.min(tiny ? 20 : 120, Math.max(tiny ? 5 : 10, Math.round(Number(s.estimatedMinutes) || (tiny ? 10 : 30)))),
       aiReason: typeof s.aiReason === "string" ? s.aiReason : "",
     }));
   return { steps };
@@ -47,13 +51,13 @@ export async function expandNode(input: ExpandNodeInput): Promise<ExpandNodeResu
     // injecting generic filler steps and claiming success.
     const res = await viaRouteResult<ExpandNodeResult>("/api/ai/expand-node", input);
     raiseIfBlocked(res);
-    return validExpand(res.data) ? cleanExpand(res.data) : fallbackExpand(input);
+    return validExpand(res.data) ? cleanExpand(res.data, input.tiny) : fallbackExpand(input);
   }
   const r = await generateJson<ExpandNodeResult>(
-    EXPAND_SYSTEM,
+    input.tiny ? TINY_EXPAND_SYSTEM : EXPAND_SYSTEM,
     `Goal: ${input.goalTitle}\nStep to break down: ${input.nodeTitle}\nStep detail: ${input.nodeDescription || "(none)"}${input.context ? `\nPersonalize for: ${input.context}` : ""}`
   );
-  return validExpand(r) && r.steps.length > 0 ? cleanExpand(r) : fallbackExpand(input);
+  return validExpand(r) && r.steps.length > 0 ? cleanExpand(r, input.tiny) : fallbackExpand(input);
 }
 
 export async function askNode(input: AskNodeInput): Promise<AskNodeResult> {

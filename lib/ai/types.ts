@@ -110,6 +110,8 @@ export interface ExpandNodeInput {
   nodeDescription: string;
   /** optional personalization: the user's inline detail + the goal's notebook context */
   context?: string;
+  /** "make it smaller": break into tiny, almost-silly micro-steps to kill activation energy */
+  tiny?: boolean;
 }
 export interface ExpandNodeResult {
   steps: { title: string; estimatedMinutes: number; aiReason: string }[];

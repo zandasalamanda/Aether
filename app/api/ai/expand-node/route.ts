@@ -11,6 +11,7 @@ export async function POST(req: Request) {
     nodeTitle: clampText(b.nodeTitle, 300),
     nodeDescription: clampText(b.nodeDescription, 600),
     context: clampText(b.context, 600),
+    tiny: b.tiny === true,
   });
   return NextResponse.json(result);
 }

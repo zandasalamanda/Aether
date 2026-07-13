@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowUp, Check, Timer, X, ChevronDown, Locate, GitBranch, Plus, Palette, Trash2, Sparkles, MessageCircle, Loader2, PlayCircle, Dumbbell, BookOpen, ExternalLink, NotebookPen, Wand2, ArrowDownToLine, HelpCircle, LayoutGrid, Share2, Save, Search, Lock } from "lucide-react";
+import { ArrowUp, Check, Timer, X, ChevronDown, Locate, GitBranch, Plus, Palette, Trash2, Sparkles, MessageCircle, Loader2, PlayCircle, Dumbbell, BookOpen, ExternalLink, NotebookPen, Wand2, ArrowDownToLine, HelpCircle, LayoutGrid, Share2, Save, Search, Lock, Scissors } from "lucide-react";
 import type { GoalWithNodes, GoalNode, NodeStatus, NodeResource, ResourceKind, ResolvedResource } from "@/types";
 import { parseDeadline } from "@/lib/kairo/deadline";
 import { generateGoalMap } from "@/lib/ai/generate-goal-map";
@@ -567,6 +567,28 @@ export function GalaxyMap({
     }
   };
 
+  // "Make it smaller" — one tap breaks a daunting step into tiny, almost-silly
+  // micro-steps so an overwhelmed user can just start (Fogg / Goblin Tools).
+  const runMakeSmaller = async (node: GoalNode) => {
+    if (!expanded || assisting) return;
+    setAssisting(true);
+    const ctx = expanded.notes.trim().slice(0, 600) || undefined;
+    try {
+      const res = await expandNode({ goalTitle: expanded.title, nodeTitle: node.title, nodeDescription: node.description, context: ctx, tiny: true });
+      if (res.steps.length) addSteps(expanded.id, node.id, res.steps);
+      showToast(`Broke "${truncate(node.title, 16)}" into ${res.steps.length} tiny step${res.steps.length === 1 ? "" : "s"}`);
+    } catch (e) {
+      if (e instanceof AiError) {
+        showToast(e.message);
+        if (e.upgrade) router.push("/app/billing");
+      } else {
+        showToast("Couldn't do that just now — try again.");
+      }
+    } finally {
+      setAssisting(false);
+    }
+  };
+
   // Enter a focus session on a step (marks it in-motion; completing marks it done).
   const openFocus = (node: GoalNode) => {
     if (!expanded) return;
@@ -824,6 +846,7 @@ export function GalaxyMap({
               onFocus={() => openFocus(selectedNode)}
               onBranch={() => setBranchFor(selectedNode.id)}
               onBreakDown={() => setBreakdownFor(selectedNode)}
+              onMakeSmaller={() => void runMakeSmaller(selectedNode)}
               onResolveResource={resolveNodeResource}
               onSaveArtifact={(label, body) => appendGoalNote(expanded.id, `${label} · ${selectedNode.title}`, body)}
             />
@@ -1518,7 +1541,7 @@ function celebrate(
 }
 
 function NodeSheet({
-  node, hex, goalTitle, goalNotes, breaking, isPro, onToast, onClose, onDone, onFocus, onBranch, onBreakDown, onResolveResource, onSaveArtifact,
+  node, hex, goalTitle, goalNotes, breaking, isPro, onToast, onClose, onDone, onFocus, onBranch, onBreakDown, onMakeSmaller, onResolveResource, onSaveArtifact,
 }: {
   node: GoalNode;
   hex: string;
@@ -1532,6 +1555,7 @@ function NodeSheet({
   onFocus: () => void;
   onBranch: () => void;
   onBreakDown: () => void;
+  onMakeSmaller: () => void;
   onResolveResource: (nodeId: string, resolved: ResolvedResource) => void;
   onSaveArtifact: (label: string, body: string) => void;
 }) {
@@ -1725,6 +1749,7 @@ function NodeSheet({
           <Chip tone="accent" icon={breaking ? <Loader2 size={14} className="animate-spin" /> : <Sparkles size={14} />} onClick={breaking ? undefined : () => { setBreakOpen((o) => !o); setAsking(false); }}>
             {breaking ? "Working…" : "Break it down"}
           </Chip>
+          <Chip tone="accent" icon={<Scissors size={14} />} onClick={breaking ? undefined : onMakeSmaller}>Make it smaller</Chip>
           <Chip tone="accent" icon={<Wand2 size={14} />} onClick={() => void runDraft()}>Do it for me</Chip>
           <Chip tone="accent" pro icon={<Search size={14} />} onClick={() => void runResearch()}>Research</Chip>
         </div>
