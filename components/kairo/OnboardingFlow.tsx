@@ -3,13 +3,15 @@
 import * as React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowRight, RotateCcw } from "lucide-react";
+import { ArrowRight, RotateCcw, Sparkles, Loader2, Plus } from "lucide-react";
 import { generateGoalMap } from "@/lib/ai/generate-goal-map";
+import { clarifyGoal } from "@/lib/ai/clarify";
 import { persistGoalFromMap, deleteGoal } from "@/lib/data/actions";
-import type { GoalMapResult } from "@/lib/ai/types";
+import type { GoalMapResult, Clarifier } from "@/lib/ai/types";
 import { GoalCore } from "./GoalCore";
 import { Logo } from "./Logo";
 import { Button } from "@/components/ui/Button";
+import { Chip } from "@/components/ui/Chip";
 import { MicButton } from "@/components/ui/MicButton";
 import { useSpeechInput } from "@/lib/hooks/use-speech-input";
 import { nodeStatusMeta } from "@/lib/kairo/status";
@@ -22,7 +24,7 @@ const CHIPS = ["Launch a project", "Study better", "Get organized", "Save money"
 // sessionStorage (never a URL) so the goal text stays private and same-origin.
 const PENDING_KEY = "solaspace:pending-goal";
 
-type Step = "input" | "mapping" | "result";
+type Step = "input" | "questions" | "mapping" | "result";
 
 export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: boolean; signedIn?: boolean }) {
   const [step, setStep] = React.useState<Step>("input");
@@ -30,6 +32,13 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
   const [result, setResult] = React.useState<GoalMapResult | null>(null);
   const [goalId, setGoalId] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  // The same couple of tailored questions the in-app map asks — so the first map
+  // through "Get started" isn't a worse, question-less version of the real flow.
+  const [clarifiers, setClarifiers] = React.useState<Clarifier[]>([]);
+  const [answers, setAnswers] = React.useState<Record<string, string>>({});
+  const [extra, setExtra] = React.useState("");
+  const [showMore, setShowMore] = React.useState(false);
+  const [qLoading, setQLoading] = React.useState(false);
   const speech = useSpeechInput(setPrompt);
   const router = useRouter();
 
@@ -75,19 +84,48 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
     }
   }, [remote, router]);
 
+  // Step 1 → ask a couple of tailored questions before generating (one small AI
+  // call), just like the in-app map. Only runs when signed in, so no anonymous AI.
+  const askQuestions = React.useCallback(async (raw: string) => {
+    const p = raw.trim();
+    if (!p) return;
+    setError(null);
+    setPrompt(p);
+    setAnswers({}); setExtra(""); setShowMore(false); setClarifiers([]);
+    setQLoading(true);
+    setStep("questions");
+    try {
+      const cs = await clarifyGoal(p);
+      if (cs.length === 0) { void runMap(p); return; } // nothing worth asking — just map
+      setClarifiers(cs);
+    } catch {
+      void runMap(p); // clarify hiccup — map without questions rather than dead-end
+      return;
+    } finally {
+      setQLoading(false);
+    }
+  }, [runMap]);
+
+  // Step 2 → fold the answers into the prompt and generate, exactly like the map.
+  const finishQuestions = () => {
+    const parts = Object.entries(answers).filter(([, a]) => a).map(([q, a]) => `${q.replace(/\?$/, "")}: ${a}`);
+    if (extra.trim()) parts.push(extra.trim());
+    void runMap(parts.length ? `${prompt} — ${parts.join("; ")}` : prompt);
+  };
+  const pick = (q: string, o: string) => setAnswers((a) => ({ ...a, [q]: a[q] === o ? "" : o }));
+
   const submit = () => {
     const p = prompt.trim();
     if (!p) return;
-    // Capture the goal first, then send them to make a free account — we map it
-    // the moment they land back here. No anonymous AI calls (which would just
-    // fail with a confusing limit error and be a way around the per-account limits).
+    // Capture the goal first, then send them to make a free account — we ask the
+    // questions and map the moment they land back here. No anonymous AI calls.
     if (remote && !signedIn) {
       try { window.sessionStorage.setItem(PENDING_KEY, p); } catch { /* private mode */ }
       track("goal_capture_signup");
       router.push("/sign-up");
       return;
     }
-    void runMap(p);
+    void askQuestions(p);
   };
 
   // Returning from sign-up (now signed in): pick up the goal they typed and map
@@ -100,9 +138,8 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
     if (!pending) return;
     claimed.current = true;
     try { window.sessionStorage.removeItem(PENDING_KEY); } catch { /* ignore */ }
-    setPrompt(pending);
-    void runMap(pending);
-  }, [remote, signedIn, runMap]);
+    void askQuestions(pending);
+  }, [remote, signedIn, askQuestions]);
 
   const reset = () => {
     // "Start over" discards the map we just saved — delete it so it doesn't linger
@@ -156,6 +193,57 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
                 {c}
               </button>
             ))}
+          </div>
+        </div>
+      )}
+
+      {step === "questions" && (
+        <div className="my-auto w-full max-w-md animate-fade-up text-center">
+          <GoalCore size={104} className="mx-auto mb-6" />
+          <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">A couple quick things</h1>
+          <p className="mx-auto mt-2 max-w-sm text-[14px] text-muted">
+            So Sola maps <span className="text-ink">{prompt}</span> for you specifically — all optional.
+          </p>
+
+          <div className="panel-2 mt-7 rounded-2xl p-4 text-left">
+            {qLoading ? (
+              <div className="flex items-center gap-2 py-3 text-[13px] text-muted">
+                <Loader2 size={15} className="animate-spin text-accent" /> Thinking of a couple questions…
+              </div>
+            ) : (
+              <div className="space-y-3.5">
+                {clarifiers.map((c, qi) => (
+                  <div key={qi}>
+                    <div className="mb-1.5 text-[13px] text-ink/80">{c.question}</div>
+                    <div className="flex flex-wrap gap-1.5">
+                      {c.options.map((o) => (
+                        <Chip key={o} tone="accent" active={answers[c.question] === o} onClick={() => pick(c.question, o)}>{o}</Chip>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+                {showMore ? (
+                  <textarea
+                    autoFocus
+                    value={extra}
+                    onChange={(e) => setExtra(e.target.value)}
+                    placeholder="Anything else? Your level, constraints, what you already have…"
+                    className="inset-well min-h-[64px] w-full resize-none rounded-xl px-3.5 py-2.5 text-[13px] text-ink placeholder:text-faint focus-visible:outline-none"
+                  />
+                ) : (
+                  <button onClick={() => setShowMore(true)} className="inline-flex items-center gap-1.5 text-[12.5px] text-muted transition-colors hover:text-ink">
+                    <Plus size={13} /> Tell me more
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+
+          <div className="mt-5 flex items-center justify-center gap-2.5">
+            <Button variant="glass" onClick={() => void runMap(prompt)} disabled={qLoading}>Skip</Button>
+            <Button variant="primary" onClick={finishQuestions} disabled={qLoading}>
+              <Sparkles size={15} /> Map my goal
+            </Button>
           </div>
         </div>
       )}
