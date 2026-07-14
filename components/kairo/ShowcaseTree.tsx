@@ -77,8 +77,11 @@ function relax(placed: Placed[]): Placed[] {
 export function ShowcaseTree({ map }: { map: ShowcaseMap }) {
   const hex = map.color;
   const wrapRef = React.useRef<HTMLDivElement>(null);
+  const boxRef = React.useRef<HTMLDivElement>(null);
+  const treeRef = React.useRef<HTMLDivElement>(null);
   const [cw, setCw] = React.useState(0);
   const [on, setOn] = React.useState(false);
+  const [offset, setOffset] = React.useState({ x: 0, y: 0 });
 
   React.useEffect(() => {
     const el = wrapRef.current;
@@ -115,10 +118,25 @@ export function ShowcaseTree({ map }: { map: ShowcaseMap }) {
   const MAXH = 420;
   const s = cw > 0 ? Math.min(cw / W0, MAXH / H0) : 0;
 
+  // Computed bounds get the tree close; a one-pass measurement of the actually
+  // rendered orbs (glows, truncated labels, and all) recenters it exactly.
+  React.useEffect(() => {
+    const tree = treeRef.current, box = boxRef.current;
+    if (!tree || !box || !s) return;
+    const kids = [...tree.children].filter((c): c is HTMLElement => c instanceof HTMLElement && c.tagName === "DIV");
+    let L = Infinity, T = Infinity, R = -Infinity, B = -Infinity;
+    for (const k of kids) { const b = k.getBoundingClientRect(); if (b.width && b.height) { L = Math.min(L, b.left); T = Math.min(T, b.top); R = Math.max(R, b.right); B = Math.max(B, b.bottom); } }
+    if (!isFinite(L)) return;
+    const bb = box.getBoundingClientRect();
+    const dx = (bb.left + bb.right) / 2 - (L + R) / 2;
+    const dy = (bb.top + bb.bottom) / 2 - (T + B) / 2;
+    if (Math.abs(dx) > 0.5 || Math.abs(dy) > 0.5) setOffset((o) => ({ x: o.x + dx, y: o.y + dy }));
+  }, [placed, s, offset]);
+
   return (
     <div ref={wrapRef} className="w-full">
-      <div className="relative mx-auto" style={{ width: W0 * s, height: H0 * s }}>
-        <div className="absolute left-0 top-0" style={{ transform: `translate(${-minX * s}px, ${-minY * s}px) scale(${s})`, transformOrigin: "0 0" }}>
+      <div ref={boxRef} className="relative mx-auto" style={{ width: W0 * s, height: H0 * s }}>
+        <div ref={treeRef} className="absolute left-0 top-0" style={{ transform: `translate(${offset.x.toFixed(2)}px, ${offset.y.toFixed(2)}px) translate(${(-minX * s).toFixed(2)}px, ${(-minY * s).toFixed(2)}px) scale(${s})`, transformOrigin: "0 0" }}>
           {/* connectors — same math and offsets as the live map, so lines meet the orbs */}
           <svg width={1} height={1} className="absolute left-0 top-0" style={{ overflow: "visible" }} aria-hidden>
             {placed.map((p) => {
