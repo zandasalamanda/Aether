@@ -17,7 +17,7 @@ describe("templateToShowcaseMap", () => {
     const map = templateToShowcaseMap(t, "#000");
     map.milestones.forEach((m, i) => {
       expect(m.title).toBe(t.milestones[i].title);
-      expect(m.subs).toEqual((t.milestones[i].subs ?? []).map((s) => s.title));
+      expect(m.subs.map((s) => s.title)).toEqual((t.milestones[i].subs ?? []).map((s) => s.title));
     });
   });
 });

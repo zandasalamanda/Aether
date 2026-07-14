@@ -24,7 +24,7 @@ export function templateToShowcaseMap(t: GoalTemplate, colorHex: string): Showca
     color: colorHex,
     milestones: t.milestones.map((m) => ({
       title: m.title,
-      subs: (m.subs ?? []).map((s) => s.title),
+      subs: (m.subs ?? []).map((s) => ({ title: s.title })),
     })),
   };
 }

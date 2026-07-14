@@ -18,7 +18,7 @@ export function LiveMapDemo() {
 
   React.useEffect(() => {
     if (paused) return; // don't cycle while someone is exploring a step's research
-    const id = window.setInterval(() => setI((p) => (p + 1) % SHOWCASE_MAPS.length), 6500);
+    const id = window.setInterval(() => setI((p) => (p + 1) % SHOWCASE_MAPS.length), 8500);
     return () => window.clearInterval(id);
   }, [paused]);
 
