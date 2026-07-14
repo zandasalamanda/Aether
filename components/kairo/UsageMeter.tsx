@@ -48,13 +48,13 @@ export function UsageMeter({ plan, dayUsed, dayLimit, monthUsed, monthLimit, pro
         <div className="mt-2 flex flex-wrap items-center gap-2 text-[12px]">
           <span className="rounded-full bg-accent/15 px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-wide text-accent">With Pro</span>
           <span className="text-muted">
-            {proDay} / day · {proMonth} / mo — <Link href="/app/billing" className="text-accent hover:underline">upgrade</Link>
+            {proDay} / day · {proMonth} / mo · <Link href="/app/billing" className="text-accent hover:underline">upgrade</Link>
           </span>
         </div>
       )}
 
       <p className={cn("mt-2 text-[12px]", over ? "text-warn" : "text-faint")}>
-        {over ? "You've hit today's limit — it resets within a day." : `${dayLimit - dayUsed} left today`} · {monthUsed} / {monthLimit} this month
+        {over ? "You've hit today's limit. It resets within a day." : `${dayLimit - dayUsed} left today`} · {monthUsed} / {monthLimit} this month
       </p>
     </div>
   );

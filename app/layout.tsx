@@ -15,7 +15,7 @@ const sora = Sora({
   display: "swap",
 });
 
-const title = "Solaspace — Chart it. Focus. Arrive.";
+const title = "Solaspace · Chart it. Focus. Arrive.";
 const description =
   "Tell Solaspace what you want done. It turns your goals, ideas, and available time into a clear plan for today.";
 

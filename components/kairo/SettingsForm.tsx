@@ -87,7 +87,7 @@ export function SettingsForm({ user }: { user: SessionUser }) {
             {armed ? (
               <div>
                 <div className="flex flex-wrap items-center gap-2.5">
-                  <span className="text-[13px] text-warn">This permanently deletes your account, goals, and all data. This can&rsquo;t be undone.</span>
+                  <span className="text-[13px] text-warn">Permanently deletes your account, goals, and all data. Can&rsquo;t be undone.</span>
                   <button onClick={() => setArmed(false)} disabled={deleting} className="raised-btn inline-flex h-9 items-center rounded-xl px-4 text-[13px] text-muted hover:text-ink">Cancel</button>
                   <button onClick={remove} disabled={deleting} className="raised-btn inline-flex h-9 items-center gap-1.5 rounded-xl px-4 text-[13px] text-warn">
                     {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />} Delete everything

@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-export const alt = "Solaspace — Chart it. Focus. Arrive.";
+export const alt = "Solaspace · Chart it. Focus. Arrive.";
 
 export default function OpengraphImage() {
   return new ImageResponse(

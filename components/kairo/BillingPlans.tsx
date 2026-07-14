@@ -17,7 +17,7 @@ const FREE = [
 ];
 const PRO = [
   "Unlimited goals",
-  "Ask Sola — coaching on any step",
+  "Ask Sola for coaching on any step",
   "Deep research with cited sources",
   "Reminders & a weekly digest",
   "Accountability: share your progress",

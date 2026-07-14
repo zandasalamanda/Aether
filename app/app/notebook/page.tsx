@@ -11,7 +11,7 @@ export default async function NotebookPage({ searchParams }: { searchParams: Pro
   const [goals, user, { goal }] = await Promise.all([getGoals(), getSessionUser(), searchParams]);
   return (
     <PageContainer user={user}>
-      <PageHeader title="Notebook" description="Context and thoughts for each goal — Solaspace uses these when you ask or break down a step." />
+      <PageHeader title="Notebook" description="Context and thoughts for each goal. Solaspace uses these when you ask or break down a step." />
       <Notebook goals={goals} remote={isRemote} initialGoalId={goal} />
     </PageContainer>
   );

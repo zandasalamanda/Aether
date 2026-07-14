@@ -7,21 +7,21 @@ import { Button } from "@/components/ui/Button";
 
 // The three beats of the real loop — this IS a sequence, so numbering earns its place.
 const BEATS = [
-  { icon: Waypoints, k: "Map the goal", desc: "Tell Solaspace what you want done. It maps the whole path — milestones, concrete steps, and your first move — in about a minute." },
+  { icon: Waypoints, k: "Map the goal", desc: "Tell Solaspace what you want done. It maps the whole path in about a minute, from milestones to your first move." },
   { icon: Sunrise, k: "Build your day", desc: "Give it the time and energy you actually have. It builds one calm, focused plan for today and keeps the goal moving." },
   { icon: CircleCheck, k: "Prove & arrive", desc: "Mark steps done with real proof. Reminders, weekly reports, and your true pace keep you honest all the way to the finish." },
 ];
 
 // The four things Solaspace is built around.
 const PILLARS = [
-  { icon: Search, title: "Research, done for you", desc: "Each step pulls hand-checked videos and cited answers — real links you can act on, never a dead or made-up one." },
-  { icon: Bell, title: "Reminders that keep you moving", desc: "Calm nudges for what's due and what's next. Never noisy, never guilt — just the one thing to do today." },
-  { icon: ShieldCheck, title: "Accountability, your way", desc: "Attach real proof to finished steps and share your progress. The map becomes a record of actual work, not just checkboxes." },
-  { icon: Activity, title: "Progress you can see", desc: "A weekly report of what you produced and your true pace to every deadline — a clear picture, every week." },
+  { icon: Search, title: "Research, done for you", desc: "Each step pulls hand-checked videos and cited answers. Real links you can act on, never a dead or made-up one." },
+  { icon: Bell, title: "Reminders that keep you moving", desc: "Calm nudges for what's due and what's next. Never noisy, never guilt. One thing to do today." },
+  { icon: ShieldCheck, title: "Real accountability", desc: "Attach real proof to finished steps and share your progress. The map becomes a record of actual work, not just checkboxes." },
+  { icon: Activity, title: "Progress you can see", desc: "A weekly report of what you produced and your true pace to every deadline. A clear picture, every week." },
 ];
 
 const FREE = ["Up to 2 active goals", "AI goal maps & a daily focus plan", "Guidance and video picks for each step", "Proof of progress on completed steps", "Weekly progress review"];
-const PRO = ["Unlimited goals", "Ask Sola — coaching on any step", "Deep research with cited sources", "Reminders & a weekly digest", "Accountability: share your progress", "Priority AI + much higher limits"];
+const PRO = ["Unlimited goals", "Ask Sola for coaching on any step", "Deep research with cited sources", "Reminders & a weekly digest", "Accountability: share your progress", "Priority AI + much higher limits"];
 
 export default function LandingPage() {
   return (
@@ -50,7 +50,7 @@ export default function LandingPage() {
         <div className="mb-10">
           <SectionLabel className="mb-3">How it works</SectionLabel>
           <h2 className="max-w-2xl font-display text-3xl font-semibold tracking-tight text-ink md:text-4xl">One loop, from a spark to done.</h2>
-          <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-muted">No setup, no columns to configure. Say the goal — Solaspace does the mapping, the planning, and the follow-through with you.</p>
+          <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-muted">No setup, no columns to configure. Say the goal. Solaspace handles the mapping, the planning, and the follow-through with you.</p>
         </div>
         <div className="grid gap-4 md:grid-cols-3">
           {BEATS.map((b, i) => {
@@ -74,7 +74,7 @@ export default function LandingPage() {
         <div className="mb-10">
           <SectionLabel className="mb-3">Built to get you there</SectionLabel>
           <h2 className="max-w-2xl font-display text-3xl font-semibold tracking-tight text-ink md:text-4xl">A guide that stays with you.</h2>
-          <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-muted">Most apps hand you a plan and walk away. Solaspace keeps showing up — with the research, the reminders, the proof, and the honest picture of where you stand.</p>
+          <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-muted">Most apps hand you a plan and walk away. Solaspace stays with you: research, reminders, proof, and an honest picture of where you stand.</p>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           {PILLARS.map((f) => {
@@ -120,7 +120,7 @@ export default function LandingPage() {
               <span className="font-display text-4xl font-semibold text-ink">$12</span>
               <span className="mb-1.5 text-sm text-muted">/mo</span>
             </div>
-            <p className="mt-1 text-[12.5px] text-faint">or $96/yr — save 33%. Cents a day for a daily execution engine.</p>
+            <p className="mt-1 text-[12.5px] text-faint">or $96/yr, save 33%. Cents a day for a daily execution engine.</p>
             <p className="mt-2 text-sm text-muted">Everything in Free, plus the AI that does the work with you.</p>
             <ul className="mt-6 space-y-2.5">
               {PRO.map((f) => (
@@ -139,7 +139,7 @@ export default function LandingPage() {
             <div className="absolute left-1/2 top-0 h-64 w-64 -translate-x-1/2 rounded-full bg-accent/20 blur-[90px]" />
           </div>
           <h2 className="mx-auto max-w-2xl font-display text-4xl font-semibold tracking-tight text-ink md:text-5xl">Pick a goal. Watch the path appear.</h2>
-          <p className="mx-auto mt-4 max-w-md text-[15px] text-muted">Chart it. Focus. Arrive. The first map takes about a minute — free, no card.</p>
+          <p className="mx-auto mt-4 max-w-md text-[15px] text-muted">Chart it. Focus. Arrive. The first map takes about a minute. Free, no card.</p>
           <Link href="/onboarding" className="mt-8 inline-block">
             <Button variant="primary" size="lg">Start your map <ArrowRight size={18} /></Button>
           </Link>

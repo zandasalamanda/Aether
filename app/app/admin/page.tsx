@@ -16,7 +16,7 @@ export default async function AdminPage() {
   const usage = await getAiUsage(user.id, plan);
   return (
     <PageContainer user={user}>
-      <PageHeader eyebrow="Dev" title="Admin" description="Testing tools — visible only to you." />
+      <PageHeader eyebrow="Dev" title="Admin" description="Testing tools. Visible only to you." />
       <AdminPanel usage={usage} email={user.email} />
     </PageContainer>
   );

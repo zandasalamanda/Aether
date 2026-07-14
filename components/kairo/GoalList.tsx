@@ -17,7 +17,7 @@ export function GoalList({ goals, onOpen }: { goals: GoalWithNodes[]; onOpen: (i
   const color = useGoalColors();
   const active = goals.filter((g) => g.status === "active");
   if (active.length === 0) {
-    return <div className="grid h-full place-items-center px-6 text-center text-[14px] text-muted">No goals yet — switch to Map to map your first one.</div>;
+    return <div className="grid h-full place-items-center px-6 text-center text-[14px] text-muted">No goals yet. Switch to Map to add your first.</div>;
   }
   return (
     <div className="mx-auto max-w-2xl space-y-3 px-5 pb-28 pt-[calc(72px+env(safe-area-inset-top))]">

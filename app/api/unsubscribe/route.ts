@@ -26,7 +26,7 @@ export async function GET(req: Request) {
   const { error } = await admin.from("users_profile").update({ notify_email: false }).eq("unsubscribe_token", token);
   if (error) {
     console.error("[unsubscribe]", error.message);
-    return page("Something went wrong — you can turn emails off from Settings.");
+    return page("Something went wrong. You can turn emails off in Settings.");
   }
   return page("You're unsubscribed from Solaspace emails. You can re-enable them anytime in Settings.");
 }

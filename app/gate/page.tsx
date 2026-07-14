@@ -54,7 +54,7 @@ export default function GatePage() {
               {loading ? <Loader2 size={16} className="animate-spin" /> : <ArrowRight size={16} />}
             </Button>
           </div>
-          {err && <p className="mt-3 text-[13px] text-warn">That code isn&apos;t right — try again.</p>}
+          {err && <p className="mt-3 text-[13px] text-warn">That code isn&apos;t right. Try again.</p>}
         </form>
       </div>
     </div>

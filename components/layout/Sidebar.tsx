@@ -77,7 +77,7 @@ export function Sidebar({ user, nextMove, usage, className }: { user: SessionUse
                 style={{ width: `${usePct}%`, background: useOver ? "linear-gradient(180deg,#f0a36a,#d9784a)" : "linear-gradient(180deg,#f3d6a0,#e6b877)" }}
               />
             </div>
-            {useOver && <p className="mt-1.5 text-[11px] leading-snug text-faint">You&apos;ve used today&apos;s free AI. It resets tomorrow — or go Pro.</p>}
+            {useOver && <p className="mt-1.5 text-[11px] leading-snug text-faint">You&apos;ve used today&apos;s free AI. Resets tomorrow, or go Pro.</p>}
           </div>
         )}
         {user.plan === "free" && (

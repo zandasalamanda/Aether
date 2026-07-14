@@ -10,7 +10,7 @@ export async function POST(req: Request) {
   if (!profile) return NextResponse.json({ error: "Sign in to upgrade." }, { status: 401 });
   // Already Pro? Don't let a direct POST create a second (double-billed) subscription.
   if (profile.plan === "pro") {
-    return NextResponse.json({ error: "You're already on Pro — manage your plan from the billing portal.", alreadyPro: true }, { status: 400 });
+    return NextResponse.json({ error: "You're already on Pro. Manage your plan in the billing portal.", alreadyPro: true }, { status: 400 });
   }
 
   const { interval } = (await req.json().catch(() => ({}))) as { interval?: "monthly" | "yearly" };
@@ -40,6 +40,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ url: session.url });
   } catch (e) {
     console.error("[stripe.checkout]", e instanceof Error ? e.message : e);
-    return NextResponse.json({ error: "Checkout is temporarily unavailable — please try again shortly." }, { status: 500 });
+    return NextResponse.json({ error: "Checkout is temporarily unavailable. Try again shortly." }, { status: 500 });
   }
 }

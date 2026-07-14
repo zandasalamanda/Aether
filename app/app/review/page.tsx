@@ -16,7 +16,7 @@ export default async function ReviewPage() {
   const [goals, user, focus, insights] = await Promise.all([getGoals(), getSessionUser(), getFocusStats(), getReviewInsights()]);
   return (
     <PageContainer user={user}>
-      <PageHeader eyebrow="The honest mirror" title="Will you make it?" description="What the map can't show you — your pace to each deadline, what's stalled, and what you've stopped touching." />
+      <PageHeader eyebrow="The honest mirror" title="Will you make it?" description="Your pace to each deadline, what's stalled, and what you've stopped touching." />
       {goals.length === 0 || !insights ? (
         <EmptyState
           icon={<Compass size={22} />}

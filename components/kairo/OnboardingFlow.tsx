@@ -58,7 +58,7 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
       if (remote && res.isMock) {
         // Watch this in analytics — it's the first-impression failure rate.
         track("goal_map_failed", { reason: "mock_fallback" });
-        setError("Sola couldn't map that just now — you may have hit a limit, or the service is busy. Give it another go.");
+        setError("Sola couldn't map that. You may have hit a limit, or the service is busy. Try again.");
         setStep("input");
         return;
       }

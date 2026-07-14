@@ -58,7 +58,7 @@ export function deadlineEmail(name: string, goalTitle: string, daysLeft: number,
     subject: `“${goalTitle}” ${when}`,
     html: shell(
       `Your goal ${when}`,
-      para(`Hi ${esc(name)}, a heads-up: <strong style="color:#e8eaed;">${esc(goalTitle)}</strong> ${when}. Open your map and take the next step while there's time.`) + cta("Open my map", `${SITE_URL}/app/map`),
+      para(`Hi ${esc(name)}, <strong style="color:#e8eaed;">${esc(goalTitle)}</strong> ${when}. Open your map and take the next step.`) + cta("Open my map", `${SITE_URL}/app/map`),
       unsubUrl
     ),
   };
@@ -69,7 +69,7 @@ export function nudgeEmail(name: string, goalTitle: string, unsubUrl: string) {
     subject: `Still with you on “${goalTitle}”`,
     html: shell(
       "It's been a quiet week",
-      para(`Hi ${esc(name)}, no focus sessions on <strong style="color:#e8eaed;">${esc(goalTitle)}</strong> in a while. One small step today keeps the momentum — even ten minutes counts.`) + cta("Pick up where I left off", `${SITE_URL}/app/map`),
+      para(`Hi ${esc(name)}, no focus sessions on <strong style="color:#e8eaed;">${esc(goalTitle)}</strong> in a while. One small step today keeps it moving. Even ten minutes counts.`) + cta("Pick up where I left off", `${SITE_URL}/app/map`),
       unsubUrl
     ),
   };

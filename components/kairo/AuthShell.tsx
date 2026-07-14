@@ -27,7 +27,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
             Arrive.
           </h1>
           <p className="mt-5 text-[15px] leading-relaxed text-muted">
-            Tell Solaspace a goal. It maps the whole path — then walks it with you, step by step.
+            Tell Solaspace a goal. It maps the whole path, then walks it with you, step by step.
           </p>
         </div>
         <p className="relative font-mono text-[12px] uppercase tracking-[0.18em] text-faint">Your best next move, mapped.</p>

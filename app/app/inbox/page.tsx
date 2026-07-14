@@ -11,7 +11,7 @@ export default async function InboxPage() {
   const [items, user] = await Promise.all([getInbox(), getSessionUser()]);
   return (
     <PageContainer user={user}>
-      <PageHeader title="Inbox" description="Capture now. Let Solaspace organize later." />
+      <PageHeader title="Inbox" description="Capture now. Solaspace organizes it later." />
       <InboxBoard initialItems={items} remote={isRemote} />
     </PageContainer>
   );

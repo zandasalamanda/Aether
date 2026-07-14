@@ -67,7 +67,7 @@ export function Notebook({ goals, remote, initialGoalId }: { goals: GoalWithNode
       <EmptyState
         icon={<NotebookPen size={22} />}
         title="Nothing to note yet"
-        description="Map a goal first — then jot context and thoughts for it here."
+        description="Map a goal first, then add context and thoughts here."
         action={<Link href="/app/map"><Button variant="primary" size="lg">Create a goal</Button></Link>}
       />
     );
@@ -135,7 +135,7 @@ export function Notebook({ goals, remote, initialGoalId }: { goals: GoalWithNode
         </div>
         {preview ? (
           <div className="min-h-[320px] w-full px-3.5 py-3 text-[15px] leading-relaxed text-ink">
-            {notes.trim() ? <Markdown>{notes}</Markdown> : <p className="text-faint">Nothing to preview yet — switch to Edit and jot some notes. Markdown works: **bold**, - lists, # headings, tables.</p>}
+            {notes.trim() ? <Markdown>{notes}</Markdown> : <p className="text-faint">Nothing to preview yet. Switch to Edit and add notes. Markdown works: **bold**, - lists, # headings, tables.</p>}
           </div>
         ) : (
           <textarea
@@ -157,7 +157,7 @@ export function Notebook({ goals, remote, initialGoalId }: { goals: GoalWithNode
             <button onClick={() => setPicks(null)} className="grid h-6 w-6 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Cancel"><X size={13} /></button>
           </div>
           {picks.length === 0 ? (
-            <p className="px-0.5 pb-1 text-[13px] text-muted">No clear action steps in these notes yet — jot a few to-dos and try again.</p>
+            <p className="px-0.5 pb-1 text-[13px] text-muted">No clear action steps in these notes yet. Add a few to-dos and try again.</p>
           ) : (
             <>
               <ul className="space-y-1.5">

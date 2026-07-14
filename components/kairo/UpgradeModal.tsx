@@ -4,7 +4,7 @@ import * as React from "react";
 import Link from "next/link";
 import { X, Zap, Check } from "lucide-react";
 
-const PRO_LINES = ["Unlimited goals", "Ask Sola — coaching on any step", "Deep research, cited", "Reminders & a weekly digest"];
+const PRO_LINES = ["Unlimited goals", "Ask Sola on any step", "Deep research, cited", "Reminders & a weekly digest"];
 
 /**
  * The moment-of-intent upgrade prompt — shown when a free user hits the goal cap
@@ -35,9 +35,9 @@ export function UpgradeModal({ reason, onClose }: { reason: string | null; onClo
       });
       const data = (await res.json()) as { url?: string; error?: string };
       if (data.url) { window.location.href = data.url; return; }
-      setErr(data.error ?? "Couldn't start checkout — try again.");
+      setErr(data.error ?? "Couldn't start checkout. Try again.");
     } catch {
-      setErr("Couldn't reach billing — try again.");
+      setErr("Couldn't reach billing. Try again.");
     } finally {
       setLoading(false);
     }

@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Solaspace — Chart it. Focus. Arrive.",
+    name: "Solaspace · Chart it. Focus. Arrive.",
     short_name: "Solaspace",
     description: "Turn goals, ideas, and available time into a clear plan for today.",
     start_url: "/app/today",

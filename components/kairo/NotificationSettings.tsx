@@ -73,7 +73,7 @@ export function NotificationSettings({ initial }: { initial: Prefs }) {
         <Row label="All emails" desc="Master switch for everything below" on={prefs.email} onChange={set("email")} />
         <Row label="Deadline reminders" desc="When a goal is due within a few days" on={prefs.deadlines} disabled={!prefs.email} onChange={set("deadlines")} />
         <Row label="Weekly digest" desc="A short summary of your progress" on={prefs.digest} disabled={!prefs.email} onChange={set("digest")} />
-        <Row label="Nudges" desc="A gentle poke after a quiet week" on={prefs.nudges} disabled={!prefs.email} onChange={set("nudges")} />
+        <Row label="Nudges" desc="A reminder after a quiet week" on={prefs.nudges} disabled={!prefs.email} onChange={set("nudges")} />
       </div>
       {error && <p className="mt-3 text-[12px] text-warn">{error}</p>}
     </div>

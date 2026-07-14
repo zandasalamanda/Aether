@@ -112,7 +112,7 @@ export function LivingGoalMap({
             onClick={() => onSelect?.(node)}
             className={onSelect ? "cursor-pointer" : undefined}
             role="button"
-            aria-label={`${node.title} — ${meta.label}`}
+            aria-label={`${node.title}, ${meta.label}`}
           >
             {(isNext || selected) && (
               <circle r={rNode + 12} fill="none" stroke={meta.hex} strokeWidth={selected ? 1.75 : 1.25} opacity={0.45} className={isNext ? "animate-pulse-soft" : undefined} />

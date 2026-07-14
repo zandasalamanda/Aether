@@ -15,9 +15,9 @@ export default function PrivacyPage() {
 
       <LegalSection heading="What we collect">
         <ul className="ml-5 list-disc space-y-1.5">
-          <li><span className="text-ink">Account details</span> — your name and email address, handled by our authentication provider, Clerk.</li>
-          <li><span className="text-ink">Your content</span> — the goals, steps, deadlines, and inbox notes you create in the app.</li>
-          <li><span className="text-ink">Basic technical data</span> — standard server logs needed to run and secure the service.</li>
+          <li><span className="text-ink">Account details</span>: your name and email address, handled by our authentication provider, Clerk.</li>
+          <li><span className="text-ink">Your content</span>: the goals, steps, deadlines, and inbox notes you create in the app.</li>
+          <li><span className="text-ink">Basic technical data</span>: standard server logs needed to run and secure the service.</li>
         </ul>
         <p>We do not collect payment card details directly; if you subscribe, payments are handled by Stripe.</p>
       </LegalSection>

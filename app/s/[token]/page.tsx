@@ -10,7 +10,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
   const shared = await getSharedGoal(token);
   if (!shared) return { title: "Shared plan · Solaspace" };
   const title = `${shared.goal.title} · a plan on Solaspace`;
-  const description = shared.goal.description || `A step-by-step goal plan mapped with Solaspace — map your own version free.`;
+  const description = shared.goal.description || `A step-by-step goal plan mapped with Solaspace. Map your own version free.`;
   return {
     title,
     description,

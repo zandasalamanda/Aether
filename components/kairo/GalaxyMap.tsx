@@ -417,7 +417,7 @@ export function GalaxyMap({
 
   const setDeadline = (goalId: string, text: string) => {
     const parsed = parseDeadline(text);
-    if (!parsed) { showToast("Couldn't read that date — try \"by March\" or \"in 6 weeks\""); return false; }
+    if (!parsed) { showToast("Couldn't read that date. Try \"by March\" or \"in 6 weeks\"."); return false; }
     setGoals((prev) => prev.map((g) => (g.id === goalId ? { ...g, targetDate: parsed.iso } : g)));
     if (remote) void setGoalDeadline({ goalId, iso: parsed.iso });
     showToast(`Deadline set · ${parsed.label}`);
@@ -442,7 +442,7 @@ export function GalaxyMap({
     if (isPro) return false;
     if (goals.filter((g) => g.status === "active").length < FREE_GOAL_CAP) return false;
     // The strongest buy signal in the app — meet it with a one-tap upgrade, not a toast.
-    setUpgradeReason(`You've reached the free limit of ${FREE_GOAL_CAP} active goals. Go Pro for unlimited goals and the full engine.`);
+    setUpgradeReason(`You've reached the free limit of ${FREE_GOAL_CAP} active goals. Go Pro for unlimited goals and every AI tool.`);
     return true;
   };
 
@@ -505,7 +505,7 @@ export function GalaxyMap({
     if (res.isMock) {
       // AI was unavailable / rate-limited — don't persist a junk placeholder map.
       setMapping(false); setFormingPos(null);
-      showToast("Couldn't map that just now — you may have hit today's AI limit. Try again later, or upgrade to Pro.");
+      showToast("Couldn't map that. You may have hit today's AI limit. Try later or upgrade.");
       return;
     }
     await commitMap(res, pos);
@@ -560,7 +560,7 @@ export function GalaxyMap({
         showToast(e.message);
         if (e.upgrade) router.push("/app/billing");
       } else {
-        showToast("Couldn't break that down just now — try again.");
+        showToast("Couldn't break that down. Try again.");
       }
     } finally {
       setAssisting(false);
@@ -582,7 +582,7 @@ export function GalaxyMap({
         showToast(e.message);
         if (e.upgrade) router.push("/app/billing");
       } else {
-        showToast("Couldn't do that just now — try again.");
+        showToast("Couldn't do that. Try again.");
       }
     } finally {
       setAssisting(false);
@@ -903,7 +903,7 @@ export function GalaxyMap({
             if (remote) void logFocusSession({ goalId: expanded.id, nodeId: focusNode.id, minutes: mins });
             setFocusNode(null);
             setSelectedNodeId(null);
-            showToast("Nice — step complete");
+            showToast("Step complete");
           }}
           onClose={() => setFocusNode(null)}
           onSaveArtifact={(label, body) => appendGoalNote(expanded.id, `${label} · ${focusNode.title}`, body)}
@@ -1173,7 +1173,7 @@ function TemplateGallery({ onPick, onClose }: { onPick: (t: GoalTemplate) => voi
         <div className="text-center">
           <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-faint">Starter goals</span>
           <h2 className="mt-2 font-display text-2xl font-semibold text-ink">Pick a proven path</h2>
-          <p className="mt-1.5 text-[14px] text-muted">A full plan in one tap — steps, resources, and a finish line. Tweak anything after.</p>
+          <p className="mt-1.5 text-[14px] text-muted">A full plan in one tap. Steps, resources, a finish line. Tweak anything after.</p>
         </div>
         <div className="mt-8 grid gap-3 sm:grid-cols-2">
           {TEMPLATES.map((t) => {
@@ -1217,9 +1217,9 @@ function NewGoalBar({
     <div className="animate-sheet-up">
       {empty && (
         <p className="mb-3 text-center text-[15px] text-muted">
-          <span className="font-display text-ink">What are we making happen?</span>
+          <span className="font-display text-ink">What&apos;s the goal?</span>
           <br />
-          Tell Solaspace a goal — it maps the whole path.
+          Name a goal. Solaspace maps the whole path.
         </p>
       )}
       <form
@@ -1340,7 +1340,7 @@ function ReplanSheet({ hex, loading, proposals, onAccept, onDismiss, onClose }: 
           <p className="pt-0.5 font-mono text-[11px] uppercase tracking-[0.16em] text-faint">Reading where you are…</p>
         </div>
       ) : proposals.length === 0 ? (
-        <p className="px-1 pb-1.5 text-[13px] text-muted">Your plan&apos;s in good shape — nothing to change right now.</p>
+        <p className="px-1 pb-1.5 text-[13px] text-muted">Your plan looks solid. Nothing to change right now.</p>
       ) : (
         <div className="space-y-2">
           {proposals.map((p) => (
@@ -1499,7 +1499,7 @@ export function NodeResourceBlock({ node, onResolve }: { node: GoalNode; onResol
       {resolving ? <Loader2 size={18} className="shrink-0 animate-spin text-accent" /> : <resMeta.Icon size={18} className="shrink-0 text-accent" />}
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[13px] font-medium text-ink">{resMeta.verb}: {resource.label}</span>
-        <span className="block text-[11px] text-faint">{resolving ? "Finding the best video…" : "Opens a search — pick the best result"}</span>
+        <span className="block text-[11px] text-faint">{resolving ? "Finding the best video…" : "Opens a search. Pick the best result."}</span>
       </span>
       <ExternalLink size={14} className="shrink-0 text-faint" />
     </a>
@@ -1512,7 +1512,7 @@ export function NodeResourceBlock({ node, onResolve }: { node: GoalNode; onResol
 // same step always reads the same, and it never feels random or cheesy.
 const DONE_LINES: { title: string; sub: string }[] = [
   { title: "Beautiful.", sub: "A real step, done." },
-  { title: "Yes — done.", sub: "You moved the map today." },
+  { title: "Yes, done.", sub: "You moved the map today." },
   { title: "Love to see it.", sub: "One piece closer." },
   { title: "That's the way.", sub: "The momentum's yours." },
   { title: "Nicely done.", sub: "That one counts." },
@@ -1532,10 +1532,10 @@ function celebrate(
   const base = DONE_LINES[hashId(nodeId) % DONE_LINES.length];
   const sub = proofKind
     ? proofKind === "metric"
-      ? "Logged — that number's yours."
+      ? "Logged. That number's yours."
       : proofKind === "link"
-        ? "Saved — the proof's on your map."
-        : "Saved — a note to future you."
+        ? "Saved. The proof's on your map."
+        : "Saved. A note to future you."
     : base.sub;
   return { title: base.title, sub, proof: proofKind !== null };
 }
@@ -1609,7 +1609,7 @@ function NodeSheet({
 
   const runResearch = async () => {
     if (!isPro) {
-      onToast("Research is a Pro feature — upgrade for live, cited answers.");
+      onToast("Research is a Pro feature. Upgrade for live, cited answers.");
       router.push("/app/billing");
       return;
     }
@@ -1620,7 +1620,7 @@ function NodeSheet({
       const r = await research({ goalTitle, nodeTitle: node.title, context: goalNotes.trim() || undefined });
       setResearchResult(r);
     } catch (e) {
-      if (!handleAiError(e)) onToast("Couldn't complete research — try again.");
+      if (!handleAiError(e)) onToast("Couldn't complete research. Try again.");
       setResearching(false);
     } finally {
       setResearchLoading(false);
@@ -1635,7 +1635,7 @@ function NodeSheet({
       const d = await draftForStep({ goalTitle, nodeTitle: node.title, nodeDescription: node.description, context: goalNotes.trim() || undefined });
       setDraft(d); setDraftBody(d.content);
     } catch (e) {
-      if (!handleAiError(e)) onToast("Couldn't draft that — try again.");
+      if (!handleAiError(e)) onToast("Couldn't draft that. Try again.");
       setDrafting(false);
     } finally {
       setDraftLoading(false);
@@ -1650,7 +1650,7 @@ function NodeSheet({
       const r = await unblock({ goalTitle, nodeTitle: node.title, context: goalNotes.trim() || undefined });
       setAnswer(r.answer);
     } catch (e) {
-      if (!handleAiError(e)) onToast("Couldn't get help just now — try again.");
+      if (!handleAiError(e)) onToast("Couldn't get help. Try again.");
     } finally {
       setLoading(false);
     }
@@ -1665,7 +1665,7 @@ function NodeSheet({
       const res = await askNode({ goalTitle, nodeTitle: node.title, question: q, context: goalNotes.trim() || undefined });
       setAnswer(res.answer);
     } catch (e) {
-      if (!handleAiError(e)) onToast("Couldn't answer that — try again.");
+      if (!handleAiError(e)) onToast("Couldn't answer that. Try again.");
     } finally {
       setLoading(false);
     }
@@ -1761,7 +1761,7 @@ function NodeSheet({
             <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-faint">Proof of progress</span>
             <button onClick={() => setProvingDone(false)} className="text-faint transition-colors hover:text-ink" aria-label="Close"><X size={14} /></button>
           </div>
-          <p className="mb-2 text-[12px] text-muted">Attach what you produced (optional) — kept private on your map, just for you.</p>
+          <p className="mb-2 text-[12px] text-muted">Attach what you produced (optional). Private to you.</p>
           <div className="inset-well mb-2 flex gap-1 rounded-xl p-1">
             {(["link", "note", "metric"] as const).map((k) => (
               <button key={k} onClick={() => setEvKind(k)} className={cn("flex-1 rounded-lg px-2 py-1 text-[12px] capitalize transition-colors", evKind === k ? "raised-btn text-ink" : "text-muted hover:text-ink")}>
@@ -1773,7 +1773,7 @@ function NodeSheet({
             autoFocus
             value={evValue}
             onChange={(e) => setEvValue(e.target.value)}
-            placeholder={evKind === "link" ? "Paste a link — a doc, PR, post…" : evKind === "metric" ? "e.g. 1,400 words · 3 miles · 12 reps" : "A quick note on what you did"}
+            placeholder={evKind === "link" ? "Paste a link: a doc, PR, or post…" : evKind === "metric" ? "e.g. 1,400 words · 3 miles · 12 reps" : "A quick note on what you did"}
             className="inset-well w-full rounded-xl px-3.5 py-2.5 text-[13px] text-ink placeholder:text-faint focus-visible:outline-none"
           />
           <div className="mt-2.5 flex items-center gap-3">

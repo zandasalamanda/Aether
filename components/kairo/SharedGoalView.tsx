@@ -74,7 +74,7 @@ export function SharedGoalView({ shared }: { shared: SharedGoal }) {
 
         {/* CTA — the growth loop */}
         <div className="mt-14 flex flex-col items-center gap-3 text-center">
-          <p className="text-[14px] text-muted">Map your own goal — Solaspace draws the whole path and helps you walk it.</p>
+          <p className="text-[14px] text-muted">Map your own goal. Solaspace draws the whole path and helps you walk it.</p>
           <Link href="/" className="raised-gold inline-flex items-center gap-2 rounded-xl px-5 py-3 text-[15px] font-medium">
             Start your map <ArrowRight size={17} />
           </Link>

@@ -73,12 +73,12 @@ export function ReviewMirror({ insights, goals }: { insights: ReviewInsights; go
           <div className="mt-3 space-y-2">
             {insights.stalled.map((s, i) => (
               <Callout key={`s${i}`} goalId={s.goalId} icon={<PauseCircle size={15} className="text-warn" />}>
-                <span className="text-ink">{s.nodeTitle}</span> — stuck {s.days} days in {s.goalTitle}
+                <span className="text-ink">{s.nodeTitle}</span>, stuck {s.days} days in {s.goalTitle}
               </Callout>
             ))}
             {insights.neglected.map((n, i) => (
               <Callout key={`n${i}`} goalId={n.goalId} icon={<Moon size={15} className="text-muted" />}>
-                <span className="text-ink">{n.title}</span> — untouched for {n.days} days
+                <span className="text-ink">{n.title}</span>, untouched for {n.days} days
               </Callout>
             ))}
           </div>
@@ -91,7 +91,7 @@ export function ReviewMirror({ insights, goals }: { insights: ReviewInsights; go
           <div className="mt-3 space-y-2">
             {noDeadline.map((p) => (
               <Callout key={p.goalId} goalId={p.goalId} icon={<AlarmClock size={15} className="text-faint" />}>
-                <span className="text-ink">{p.title}</span> — set a deadline to track your pace
+                <span className="text-ink">{p.title}</span>. Set a deadline to track your pace
               </Callout>
             ))}
           </div>

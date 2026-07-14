@@ -12,7 +12,7 @@ export default async function TodayPage() {
   const today = new Date().toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" });
   return (
     <PageContainer user={user}>
-      <PageHeader eyebrow={today} title="Your move" description="The next real step in each goal — pick one and run a focus session, right here." />
+      <PageHeader eyebrow={today} title="Your move" description="The next real step in each goal. Pick one and run a focus session." />
       <CockpitView goals={goals} remote={isRemote} />
     </PageContainer>
   );

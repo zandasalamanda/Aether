@@ -13,7 +13,7 @@ export default function NotFound() {
         </div>
         <div className="mt-10 font-mono text-[13px] uppercase tracking-[0.2em] text-faint">404</div>
         <h1 className="mt-3 font-display text-4xl font-semibold tracking-tight text-ink md:text-5xl">Off the map</h1>
-        <p className="mx-auto mt-3 max-w-sm text-[15px] text-muted">This path doesn&apos;t lead anywhere yet. Let&apos;s get you back on track.</p>
+        <p className="mx-auto mt-3 max-w-sm text-[15px] text-muted">This page doesn&apos;t exist. Head back to Today.</p>
         <Link
           href="/app/today"
           className="mt-8 inline-flex h-11 items-center gap-2 rounded-xl bg-accent px-6 text-sm font-semibold text-[#1b1206] transition-all hover:brightness-105"
