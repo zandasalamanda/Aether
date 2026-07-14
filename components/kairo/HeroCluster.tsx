@@ -205,7 +205,7 @@ export function HeroCluster() {
               </div>
               {/* the real 2D goal map, exactly as it looks in the app */}
               <div className="mt-3">
-                <ShowcaseTree map={openMap} />
+                <ShowcaseTree map={openMap} interactive />
               </div>
             </div>
             <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-6 py-4">

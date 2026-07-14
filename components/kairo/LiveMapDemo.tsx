@@ -2,50 +2,53 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { ArrowRight } from "lucide-react";
 import { SHOWCASE_MAPS } from "@/lib/kairo/showcase-maps";
 import { PlanetOrb } from "./PlanetOrb";
 import { ShowcaseTree } from "./ShowcaseTree";
 import { Button } from "@/components/ui/Button";
-import { ArrowRight } from "lucide-react";
 
-// The landing's "show, don't tell" moment: a real goal map that draws itself, then
-// cycles to the next sample — so a visitor sees the product working before they lift
-// a finger. Reuses the exact ShowcaseTree the app renders (self-framing, self-
-// centring); re-keying it replays the build animation each cycle.
+// The landing's "show, don't tell" moment: a real goal map floating in space (grid +
+// core glow, like the app itself — not a boxed card), drawing itself and cycling
+// through sample goals. Every node is tappable to reveal the research behind that
+// step, so a visitor sees the product working before they lift a finger.
 export function LiveMapDemo() {
   const [i, setI] = React.useState(0);
+  const [paused, setPaused] = React.useState(false);
 
   React.useEffect(() => {
-    const id = window.setInterval(() => setI((p) => (p + 1) % SHOWCASE_MAPS.length), 5600);
+    if (paused) return; // don't cycle while someone is exploring a step's research
+    const id = window.setInterval(() => setI((p) => (p + 1) % SHOWCASE_MAPS.length), 6500);
     return () => window.clearInterval(id);
-  }, []);
+  }, [paused]);
 
   const map = SHOWCASE_MAPS[i];
 
   return (
-    <div className="panel-2 relative overflow-hidden rounded-[28px] p-6 md:p-8">
-      <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full blur-3xl" style={{ background: `${map.color}1f`, transition: "background 1s ease" }} />
-      <div className="relative flex flex-col items-center gap-3 text-center">
-        <span className="font-mono text-[11px] uppercase tracking-[0.2em] text-faint">Watch a goal become a plan</span>
-        <div className="flex items-center gap-2.5">
+    <div className="relative isolate overflow-hidden rounded-[32px] px-3 py-10 md:py-14">
+      {/* space backdrop — a faint grid + a soft core glow tinted to the goal's colour */}
+      <div className="grid-veil pointer-events-none absolute inset-0 -z-10 opacity-30" />
+      <div
+        className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[520px] w-[520px] max-w-[92%] -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl"
+        style={{ background: `${map.color}14`, transition: "background 1s ease" }}
+      />
+
+      <div className="text-center">
+        <div className="font-mono text-[11px] uppercase tracking-[0.22em] text-faint">Watch a goal become a plan</div>
+        <div className="mt-2.5 flex items-center justify-center gap-2.5">
           <PlanetOrb hex={map.color} size={26} icon={map.icon} seed={map.id} />
           <h3 className="font-display text-xl font-semibold text-ink transition-colors md:text-2xl">{map.title}</h3>
         </div>
+        <p className="mx-auto mt-2 max-w-sm text-[13px] text-muted">Tap any step to see the research picked for it — real videos and guides.</p>
       </div>
 
-      <div className="relative mt-4 min-h-[300px]">
-        <ShowcaseTree map={map} />
+      <div className="mt-6 min-h-[320px]">
+        <ShowcaseTree map={map} interactive onOpenChange={setPaused} />
       </div>
 
-      {/* the sample selector — dots that also let a visitor jump to a plan */}
-      <div className="relative mt-4 flex items-center justify-center gap-2">
+      <div className="mt-5 flex items-center justify-center gap-2">
         {SHOWCASE_MAPS.map((m, idx) => (
-          <button
-            key={m.id}
-            onClick={() => setI(idx)}
-            aria-label={`Show ${m.short} plan`}
-            className="grid place-items-center p-1"
-          >
+          <button key={m.id} onClick={() => setI(idx)} aria-label={`Show ${m.short} plan`} className="grid place-items-center p-1">
             <span
               className="block h-1.5 rounded-full transition-all duration-300"
               style={{ width: idx === i ? 22 : 6, background: idx === i ? m.color : "rgba(255,255,255,0.18)" }}
@@ -54,7 +57,7 @@ export function LiveMapDemo() {
         ))}
       </div>
 
-      <div className="relative mt-5 flex justify-center">
+      <div className="mt-6 flex justify-center">
         <Link href="/build">
           <Button variant="primary" size="lg">Map your goal <ArrowRight size={16} /></Button>
         </Link>

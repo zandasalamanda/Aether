@@ -242,7 +242,7 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
               <button
                 key={c}
                 onClick={() => setPrompt(c)}
-                className="rounded-full border border-line px-3.5 py-1.5 text-[13px] text-muted transition-colors hover:border-accent/40 hover:text-ink"
+                className="rounded-full border border-line px-3.5 py-2 text-[13px] text-muted transition-colors hover:border-accent/40 hover:text-ink"
               >
                 {c}
               </button>

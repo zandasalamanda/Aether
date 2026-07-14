@@ -1,31 +1,29 @@
 "use client";
 
 import * as React from "react";
+import { Play, BookOpen, X, ArrowUpRight } from "lucide-react";
 import type { ShowcaseMap } from "@/lib/kairo/showcase-maps";
 import { PlanetOrb } from "./PlanetOrb";
 import { cn, truncate } from "@/lib/utils";
 
-// A static rendering of the real in-app goal map, drawn EXACTLY as the live map
-// draws it: the same fishbone layout + collision relaxation, DOM node orbs and an
-// SVG connector layer sharing one coordinate space, connector offsets matching the
-// real orb radii, and the whole tree scaled as a single unit to fit the popup — so
-// orbs and lines stay connected and proportional at any size (no oversized core).
+// A static rendering of the real in-app goal map, drawn EXACTLY as the live map draws
+// it: the same fishbone layout + collision relaxation, DOM node orbs and an SVG
+// connector layer in one coordinate space, the whole tree measured and framed so it
+// sits centred at any size. `interactive` makes every node tappable, opening a
+// research sheet (real Watch + Read links) — a live showcase of the app's research.
 //
-// The live app never *frames* a tree — it just centres the goal core in a pannable
-// viewport and lets the branches spill into empty space. A fixed popup can't do
-// that, so instead of guessing the tree's extent from hardcoded radii (which never
-// match the real DOM), we MEASURE the rendered content — orb rings, real label ink,
-// the core — in layout units and frame exactly that. The result is genuinely centred
-// at any size.
+// Orientation: the spine flows UP on narrow screens (a tall trunk) and to the RIGHT
+// on wide screens (a roadmap), matching the app's own map on each form factor.
 
-// A near-straight spine (barely-there arc) keeps the trunk rising vertically above
-// the centred core, so the showcase tree reads as balanced rather than leaning off.
 const SPINE_RAD = 168, LEAF_RAD = 128, SPINE_ARC = 0.04;
 
 type LNode = { id: string; parentId: string | null; title: string; sub: boolean };
 interface Placed { node: LNode; x: number; y: number; px: number; py: number; spine: boolean }
 
-function layout(nodes: LNode[]): Placed[] {
+const ytUrl = (q: string) => `https://www.youtube.com/results?search_query=${encodeURIComponent(q)}`;
+const readUrl = (q: string) => `https://www.google.com/search?q=${encodeURIComponent(q)}`;
+
+function layout(nodes: LNode[], baseDir: number): Placed[] {
   const ids = new Set(nodes.map((n) => n.id));
   const kids = new Map<string | null, LNode[]>();
   for (const n of nodes) {
@@ -35,8 +33,7 @@ function layout(nodes: LNode[]): Placed[] {
   const hasKids = (id: string) => (kids.get(id)?.length ?? 0) > 0;
   const out: Placed[] = [];
   // `lead` sets which side a milestone's FIRST sub-step hangs on; it flips at every
-  // milestone so single-sub milestones alternate left/right instead of all leaning
-  // the same way — keeping the tree balanced around the centred trunk.
+  // milestone so single-sub milestones alternate sides, keeping the tree balanced.
   const place = (parentId: string | null, cx: number, cy: number, dir: number, lead: number) => {
     const children = kids.get(parentId) ?? [];
     const leaves = children.filter((c) => !hasKids(c.id));
@@ -57,13 +54,10 @@ function layout(nodes: LNode[]): Placed[] {
   };
   const roots = kids.get(null) ?? [];
   roots.forEach((root) => {
-    // Flow the spine straight up — exactly the app's centred single-goal default
-    // (baseDir -π/2) — so ribs fan symmetrically to the left and right and the
-    // core sits horizontally centred, instead of leaning off to one side.
-    const spine = hasKids(root.id), rad = spine ? SPINE_RAD : LEAF_RAD, dir = -Math.PI / 2;
-    const x = Math.cos(dir) * rad, y = Math.sin(dir) * rad;
+    const spine = hasKids(root.id), rad = spine ? SPINE_RAD : LEAF_RAD;
+    const x = Math.cos(baseDir) * rad, y = Math.sin(baseDir) * rad;
     out.push({ node: root, x, y, px: 0, py: 0, spine });
-    if (spine) place(root.id, x, y, dir, 1);
+    if (spine) place(root.id, x, y, baseDir, 1);
   });
   return relax(out);
 }
@@ -90,7 +84,7 @@ function relax(placed: Placed[]): Placed[] {
 
 interface Frame { minX: number; minY: number; w: number; h: number }
 
-export function ShowcaseTree({ map }: { map: ShowcaseMap }) {
+export function ShowcaseTree({ map, interactive = false, onOpenChange }: { map: ShowcaseMap; interactive?: boolean; onOpenChange?: (open: boolean) => void }) {
   const hex = map.color;
   const wrapRef = React.useRef<HTMLDivElement>(null);
   const treeRef = React.useRef<HTMLDivElement>(null);
@@ -98,6 +92,11 @@ export function ShowcaseTree({ map }: { map: ShowcaseMap }) {
   const [cw, setCw] = React.useState(0);
   const [on, setOn] = React.useState(false);
   const [frame, setFrame] = React.useState<Frame | null>(null);
+  const [selectedId, setSelectedId] = React.useState<string | null>(null);
+
+  // Wide → flow right (a roadmap); narrow → flow up (a trunk). Matches the real app.
+  const orientation: "up" | "right" = cw >= 640 ? "right" : "up";
+  const baseDir = orientation === "right" ? 0 : -Math.PI / 2;
 
   const { placed, maxDist } = React.useMemo(() => {
     const nodes: LNode[] = [];
@@ -105,15 +104,21 @@ export function ShowcaseTree({ map }: { map: ShowcaseMap }) {
       nodes.push({ id: `m${i}`, parentId: i > 0 ? `m${i - 1}` : null, title: m.title, sub: false });
       m.subs.slice(0, 2).forEach((sub, j) => nodes.push({ id: `m${i}s${j}`, parentId: `m${i}`, title: sub, sub: true }));
     });
-    const p = layout(nodes);
+    const p = layout(nodes, baseDir);
     const md = Math.max(1, ...p.map((n) => Math.hypot(n.x, n.y)));
     return { placed: p, maxDist: md };
-  }, [map]);
+  }, [map, baseDir]);
 
-  // Measure the real rendered content in LAYOUT units. Every visual piece is tagged
-  // [data-vis]; we take the union of their client rects relative to the (untransformed)
-  // tree origin and divide by the current scale, so the frame is exact regardless of
-  // scale. Runs in a layout effect before paint, so the tree is only ever shown framed.
+  // Derive the open node from its id, so a map/orientation change (which rebuilds
+  // `placed`) can't leave a stale sheet — no reset effect needed.
+  const selected = selectedId ? placed.find((p) => p.node.id === selectedId)?.node ?? null : null;
+
+  // Let a parent pause its auto-cycle while a research sheet is open, so exploring a
+  // step is never yanked out from under the reader.
+  React.useEffect(() => { onOpenChange?.(selectedId !== null); }, [selectedId, onOpenChange]);
+
+  // Measure the real rendered content in LAYOUT units (every visual piece is tagged
+  // [data-vis]), divide by the current scale, and frame exactly that.
   React.useLayoutEffect(() => {
     const tree = treeRef.current;
     if (!tree) return;
@@ -137,10 +142,7 @@ export function ShowcaseTree({ map }: { map: ShowcaseMap }) {
       );
     };
     measure();
-    // The first pass can run before layout has settled (e.g. mounted below the fold on
-    // initial page load), so measure again on the next frame when positions are final.
     const raf = requestAnimationFrame(measure);
-    // Web fonts can settle later and shift label widths — re-measure once more.
     if (document.fonts && document.fonts.status !== "loaded") {
       document.fonts.ready.then(() => requestAnimationFrame(measure)).catch(() => {});
     }
@@ -150,37 +152,31 @@ export function ShowcaseTree({ map }: { map: ShowcaseMap }) {
   React.useEffect(() => {
     const el = wrapRef.current;
     if (!el) return;
-    // Read the width synchronously first — a ResizeObserver's first callback can be
-    // deferred (or not fire) for an element mounted below the fold, which would leave
-    // the tree unframed forever. The observer then keeps it responsive to resizes.
     const apply = () => setCw(el.getBoundingClientRect().width);
     apply();
     const ro = new ResizeObserver(apply);
     ro.observe(el);
-    // Trigger the build-in; a timer backs up the rAF in case it's throttled off-screen.
     const raf = requestAnimationFrame(() => setOn(true));
     const timer = window.setTimeout(() => setOn(true), 80);
     return () => { ro.disconnect(); cancelAnimationFrame(raf); clearTimeout(timer); };
   }, []);
 
-  const MAXH = 420, PAD = 16;
+  const MAXH = orientation === "right" ? 460 : 420, PAD = 16;
   const ready = !!frame && cw > 0;
-  // Frame vertically to the measured content, but anchor the box HORIZONTALLY on the
-  // core (layout x = 0) so the trunk sits dead-centre and the tree rises straight
-  // above it — rather than centring the label bounding box, which drifts off-core
-  // whenever one side carries longer text.
+  // Anchor the box on the CORE along the flow axis so the trunk stays centred, and
+  // frame the perpendicular axis to the measured content.
+  const isRight = orientation === "right";
   const halfW = frame ? Math.max(-frame.minX, frame.minX + frame.w) + PAD : 0;
-  const W0 = halfW * 2;
-  const H0 = frame ? frame.h + PAD * 2 : 0;
+  const halfH = frame ? Math.max(-frame.minY, frame.minY + frame.h) + PAD : 0;
+  const W0 = isRight ? (frame ? frame.w + PAD * 2 : 0) : halfW * 2;
+  const H0 = isRight ? halfH * 2 : (frame ? frame.h + PAD * 2 : 0);
   const s = ready ? Math.min(cw / W0, MAXH / H0) : 1;
-  // Keep the current scale available to the measure effect (which converts screen
-  // rects back to layout units) without reading a ref during render.
   React.useLayoutEffect(() => { sRef.current = s; });
-  const tx = halfW * s;
-  const ty = frame ? (PAD - frame.minY) * s : 0;
+  const tx = isRight ? (frame ? (PAD - frame.minX) * s : 0) : halfW * s;
+  const ty = isRight ? halfH * s : (frame ? (PAD - frame.minY) * s : 0);
 
   return (
-    <div ref={wrapRef} className="w-full">
+    <div ref={wrapRef} className="relative w-full">
       <div className="relative mx-auto" style={ready ? { width: W0 * s, height: H0 * s } : { height: MAXH }}>
         <div
           ref={treeRef}
@@ -212,23 +208,30 @@ export function ShowcaseTree({ map }: { map: ShowcaseMap }) {
             })}
           </svg>
 
-          {/* node orbs — the app's NodeOrb styling (spine 50px, leaf 38px). Fade in on
-              opacity alone (no scale) so the measured geometry is always the final one. */}
+          {/* node orbs — the app's NodeOrb styling. Tappable when interactive. */}
           {placed.map((p) => {
             const isNext = p.node.id === "m0";
             const size = p.spine ? 50 : 38;
-            const glow = isNext ? `0 0 26px ${hex}80` : `0 0 13px ${hex}3a`;
+            const isSel = selectedId === p.node.id;
+            const glow = isNext || isSel ? `0 0 26px ${hex}80` : `0 0 13px ${hex}3a`;
             const bg = `radial-gradient(circle at 40% 34%, ${hex}33, rgba(12,14,18,0.94) 72%)`;
             const delay = (Math.hypot(p.x, p.y) / maxDist) * 0.55 + 0.16;
             return (
               <div
                 key={p.node.id}
-                className="absolute -translate-x-1/2 -translate-y-1/2"
+                className={cn("group absolute -translate-x-1/2 -translate-y-1/2", interactive && "cursor-pointer")}
                 style={{ left: p.x, top: p.y, opacity: on ? 1 : 0, transition: `opacity .45s ease ${delay.toFixed(2)}s` }}
+                onClick={interactive ? (e) => { e.stopPropagation(); setSelectedId(p.node.id); } : undefined}
+                role={interactive ? "button" : undefined}
+                aria-label={interactive ? `Research: ${p.node.title}` : undefined}
               >
                 <div className="relative grid place-items-center" style={{ width: size, height: size }}>
-                  {isNext && <span className="absolute inset-0 animate-pulse-soft rounded-full" style={{ boxShadow: `0 0 0 4px ${hex}22, 0 0 24px ${hex}66`, margin: -4 }} />}
-                  <span data-vis className="grid place-items-center rounded-full border" style={{ width: size, height: size, borderColor: isNext ? hex : `${hex}88`, background: bg, boxShadow: glow, opacity: isNext ? 1 : 0.94 }}>
+                  {(isNext || isSel) && <span className="absolute inset-0 animate-pulse-soft rounded-full" style={{ boxShadow: `0 0 0 4px ${hex}22, 0 0 24px ${hex}66`, margin: -4 }} />}
+                  <span
+                    data-vis
+                    className={cn("grid place-items-center rounded-full border transition-transform", interactive && "group-hover:scale-110")}
+                    style={{ width: size, height: size, borderColor: isNext || isSel ? hex : `${hex}88`, background: bg, boxShadow: glow, opacity: isNext || isSel ? 1 : 0.94 }}
+                  >
                     <span className="rounded-full" style={{ width: p.spine ? 9 : 7, height: p.spine ? 9 : 7, background: hex, boxShadow: `0 0 8px ${hex}` }} />
                   </span>
                   <span className="pointer-events-none absolute left-1/2 top-full mt-1.5 max-w-[110px] -translate-x-1/2 text-center leading-tight">
@@ -241,7 +244,7 @@ export function ShowcaseTree({ map }: { map: ShowcaseMap }) {
             );
           })}
 
-          {/* the goal core — the real glossy planet, at (0,0), scaling with everything else */}
+          {/* the goal core — the real glossy planet, scaling with everything else */}
           <div className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: 0, top: 0, opacity: on ? 1 : 0, transition: "opacity .5s ease" }}>
             <div data-vis className="grid">
               <PlanetOrb hex={hex} size={92} icon={map.icon} seed={map.id} />
@@ -249,6 +252,42 @@ export function ShowcaseTree({ map }: { map: ShowcaseMap }) {
           </div>
         </div>
       </div>
+
+      {/* research sheet — tapping a node opens real, step-specific Watch + Read links,
+          the same "every step comes with research" capability the app ships. */}
+      {interactive && selected && (
+        <div className="absolute inset-0 z-20 flex items-end justify-center p-3" onClick={() => setSelectedId(null)}>
+          <div className="absolute inset-0 bg-canvas/50 backdrop-blur-[2px]" />
+          <div className="chrome animate-sheet-up relative w-full max-w-sm rounded-2xl p-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0">
+                <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-faint">{selected.sub ? "Step" : "Milestone"} · research</div>
+                <h4 className="mt-0.5 font-display text-[15px] font-semibold leading-snug text-ink">{selected.title}</h4>
+              </div>
+              <button onClick={() => setSelectedId(null)} className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-faint transition-colors hover:text-ink" aria-label="Close"><X size={15} /></button>
+            </div>
+            <div className="mt-3 space-y-2">
+              <a href={ytUrl(selected.title)} target="_blank" rel="noopener noreferrer" className="raised-btn flex items-center gap-3 rounded-xl px-3 py-2.5">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg" style={{ background: "#ff000018", color: "#ff4d4d" }}><Play size={15} fill="currentColor" /></span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[13px] font-medium text-ink">Watch a hand-picked video</span>
+                  <span className="block truncate text-[11px] text-faint">Best of YouTube for this step</span>
+                </span>
+                <ArrowUpRight size={15} className="shrink-0 text-faint" />
+              </a>
+              <a href={readUrl(`${selected.title} guide`)} target="_blank" rel="noopener noreferrer" className="raised-btn flex items-center gap-3 rounded-xl px-3 py-2.5">
+                <span className="grid h-8 w-8 shrink-0 place-items-center rounded-lg" style={{ background: `${hex}1f`, color: hex }}><BookOpen size={15} /></span>
+                <span className="min-w-0 flex-1">
+                  <span className="block text-[13px] font-medium text-ink">Read the guides</span>
+                  <span className="block truncate text-[11px] text-faint">Cited articles &amp; how-tos</span>
+                </span>
+                <ArrowUpRight size={15} className="shrink-0 text-faint" />
+              </a>
+            </div>
+            <p className="mt-3 text-center text-[11px] leading-relaxed text-faint">Every step in your map comes with research picked for it.</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

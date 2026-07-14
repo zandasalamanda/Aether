@@ -44,13 +44,13 @@ export default function LandingPage() {
         </a>
       </section>
 
-      {/* Live proof — a real plan drawing itself, before the visitor lifts a finger */}
-      <section className="mx-auto -mt-4 max-w-3xl px-5 pb-4">
+      {/* Live proof — a real plan drawing itself in space, before the visitor lifts a finger */}
+      <section className="mx-auto -mt-4 max-w-5xl px-5 pb-4">
         <LiveMapDemo />
       </section>
 
       {/* How it works — the loop */}
-      <section id="how" className="mx-auto max-w-6xl px-5 py-24">
+      <section id="how" className="mx-auto max-w-6xl px-5 py-20">
         <div className="mb-10">
           <SectionLabel className="mb-3">How it works</SectionLabel>
           <h2 className="max-w-2xl font-display text-3xl font-semibold tracking-tight text-ink md:text-4xl">One loop, from a spark to done.</h2>
@@ -74,7 +74,7 @@ export default function LandingPage() {
       </section>
 
       {/* The four pillars */}
-      <section id="features" className="mx-auto max-w-6xl px-5 py-16">
+      <section id="features" className="mx-auto max-w-6xl px-5 py-20">
         <div className="mb-10">
           <SectionLabel className="mb-3">Built to get you there</SectionLabel>
           <h2 className="max-w-2xl font-display text-3xl font-semibold tracking-tight text-ink md:text-4xl">A guide that stays with you.</h2>
@@ -99,7 +99,7 @@ export default function LandingPage() {
       </section>
 
       {/* Pricing */}
-      <section id="pricing" className="mx-auto max-w-6xl px-5 py-16">
+      <section id="pricing" className="mx-auto max-w-6xl px-5 py-20">
         <div className="mb-10 text-center">
           <SectionLabel className="mb-3 flex justify-center">Pricing</SectionLabel>
           <h2 className="font-display text-3xl font-semibold tracking-tight text-ink md:text-4xl">Start free. Upgrade when it&apos;s moving.</h2>

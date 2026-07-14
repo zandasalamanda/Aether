@@ -62,7 +62,7 @@ export function GuestBuild({ remote }: { remote: boolean }) {
               aria-pressed={active}
               className={cn(
                 "inline-flex items-center gap-2 rounded-full border px-3.5 py-2 text-[13px] transition-colors",
-                active ? "border-accent/50 bg-accent/10 text-ink" : "border-line text-muted hover:border-accent/30 hover:text-ink"
+                active ? "border-accent/50 bg-accent/10 text-ink" : "border-line text-muted hover:border-accent/40 hover:text-ink"
               )}
             >
               <Icon size={14} style={active ? { color: hex } : undefined} /> {tp.title}
@@ -81,7 +81,7 @@ export function GuestBuild({ remote }: { remote: boolean }) {
           <h2 className="mt-1.5 font-display text-xl font-semibold text-ink">{t.title}</h2>
         </div>
         <div className="relative mt-3 min-h-[300px]">
-          <ShowcaseTree map={map} />
+          <ShowcaseTree map={map} interactive />
         </div>
         {/* make it yours — colour */}
         <div className="relative mt-2 flex items-center justify-center gap-2">
