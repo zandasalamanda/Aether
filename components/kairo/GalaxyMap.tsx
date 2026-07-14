@@ -90,8 +90,8 @@ interface Placed {
   spine: boolean; // a milestone (has children) vs a leaf sub-step
 }
 
-const SPINE_RAD = 224; // distance to the next milestone along the spine
-const LEAF_RAD = 150; // distance to a rib (leaf sub-step)
+const SPINE_RAD = 252; // distance to the next milestone along the spine
+const LEAF_RAD = 166; // distance to a rib (leaf sub-step)
 const SPINE_ARC = 0.11; // a slight, consistent bend — keeps the spine a clear, readable path
 
 /**
@@ -148,7 +148,55 @@ function layoutTree(nodes: GoalNode[], baseDir = -Math.PI / 2): Placed[] {
     out.push({ node: root, x, y, px: 0, py: 0, depth: 0, spine });
     if (spine) place(root.id, x, y, dir, 1);
   });
-  return out;
+  return relaxOverlaps(out);
+}
+
+/**
+ * Deterministic collision relaxation. The fishbone gives a clean starting shape,
+ * but dense trees still jumble; this pushes any overlapping nodes apart (and keeps
+ * them clear of the core), then re-anchors every connector to its parent's final
+ * position so the tree reads as a legible diagram instead of a tangle. No
+ * randomness, so the same goal always lays out the same way.
+ */
+function relaxOverlaps(placed: Placed[]): Placed[] {
+  if (placed.length < 2) return placed;
+  const pts = placed.map((p) => ({ ...p }));
+  const idx = new Map<string, number>();
+  pts.forEach((p, i) => idx.set(p.node.id, i));
+  const MIN_SPINE = 142; // milestones are bigger and carry wider labels
+  const MIN_LEAF = 108;
+  const CORE_CLEAR = 156;
+  for (let iter = 0; iter < 90; iter++) {
+    let moved = false;
+    for (let i = 0; i < pts.length; i++) {
+      for (let j = i + 1; j < pts.length; j++) {
+        const a = pts[i], b = pts[j];
+        const min = a.spine || b.spine ? MIN_SPINE : MIN_LEAF;
+        const dx = b.x - a.x, dy = b.y - a.y;
+        const d = Math.hypot(dx, dy) || 0.001;
+        if (d < min) {
+          const push = (min - d) / 2, ux = dx / d, uy = dy / d;
+          a.x -= ux * push; a.y -= uy * push;
+          b.x += ux * push; b.y += uy * push;
+          moved = true;
+        }
+      }
+    }
+    // Keep every node clear of the goal core at (0,0), which never moves.
+    for (const p of pts) {
+      const d = Math.hypot(p.x, p.y) || 0.001;
+      if (d < CORE_CLEAR) { const push = CORE_CLEAR - d; p.x += (p.x / d) * push; p.y += (p.y / d) * push; moved = true; }
+    }
+    if (!moved) break;
+  }
+  // Re-anchor connectors to each parent's final position (core = 0,0).
+  for (const p of pts) {
+    const parentId = p.node.parentId;
+    const pi = parentId ? idx.get(parentId) : undefined;
+    if (pi !== undefined) { p.px = pts[pi].x; p.py = pts[pi].y; }
+    else { p.px = 0; p.py = 0; }
+  }
+  return pts;
 }
 
 function toLocalGoal(goalId: string, res: Awaited<ReturnType<typeof generateGoalMap>>, nodeIds?: string[]): GoalWithNodes {

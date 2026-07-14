@@ -5,7 +5,6 @@ import Link from "next/link";
 import { X } from "lucide-react";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { SHOWCASE_MAPS } from "@/lib/kairo/showcase-maps";
-import { ShowcaseMiniMap } from "./ShowcaseMiniMap";
 import { PlanetOrb } from "./PlanetOrb";
 
 // The landing hero: real glossy goal-planets (embossed icons, same as the map)
@@ -171,32 +170,47 @@ export function HeroCluster() {
           <span className="inline-block animate-fade-up" style={{ animationDelay: "0.28s" }}>Focus.</span>{" "}
           <span className="inline-block animate-fade-up" style={{ animationDelay: "0.46s" }}>Arrive.</span>
         </h1>
-        <p className="animate-fade-up relative mt-5 max-w-md text-[15px] leading-relaxed text-muted md:mt-6 md:text-[16.5px]" style={{ animationDelay: "0.56s" }}>
-          One calm home for every goal. Solaspace maps the path, builds your day, and keeps you moving.
-        </p>
-        <div className="animate-fade-up relative mt-7 flex flex-col items-center gap-3 md:mt-9" style={{ animationDelay: "0.68s" }}>
+        <div className="animate-fade-up relative mt-7 flex flex-col items-center gap-3 md:mt-9" style={{ animationDelay: "0.56s" }}>
           <Link href="/onboarding" className={buttonVariants({ variant: "primary", size: "lg", className: "pointer-events-auto" })}>Get started</Link>
           <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-faint">Drag to explore · tap a goal</span>
         </div>
       </div>
 
-      {/* opened showcase map */}
+      {/* opened showcase map — a clean, legible preview of the plan */}
       {openMap && (
         <div className="fixed inset-0 z-[110] grid place-items-center bg-canvas/95 p-5 backdrop-blur-md" onClick={() => setOpenId(null)}>
-          <div className="animate-sheet-up relative w-full max-w-2xl rounded-3xl border border-line-strong p-6 shadow-2xl" style={{ background: "#0f1116" }} onClick={(e) => e.stopPropagation()}>
+          <div className="animate-sheet-up relative flex max-h-[86vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-line-strong shadow-2xl" style={{ background: "#0f1116" }} onClick={(e) => e.stopPropagation()}>
             <button onClick={() => setOpenId(null)} className="absolute right-4 top-4 z-10 grid h-8 w-8 place-items-center rounded-lg text-faint transition-colors hover:text-ink" aria-label="Close">
               <X size={17} />
             </button>
-            <div className="mb-4 flex items-center gap-3">
-              <PlanetOrb hex={openMap.color} size={44} icon={openMap.icon} seed={openMap.id} />
-              <div className="min-w-0">
-                <div className="truncate font-display text-lg font-semibold text-ink">{openMap.title}</div>
-                <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-faint">Starter map · {openMap.milestones.length} milestones</div>
+            <div className="overflow-y-auto px-6 pb-4 pt-8">
+              {/* centered goal core */}
+              <div className="flex flex-col items-center text-center">
+                <PlanetOrb hex={openMap.color} size={72} icon={openMap.icon} seed={openMap.id} />
+                <h3 className="mt-4 font-display text-xl font-semibold text-ink">{openMap.title}</h3>
+                <div className="mt-1 font-mono text-[10px] uppercase tracking-[0.18em] text-faint">Starter map · {openMap.milestones.length} milestones</div>
               </div>
+              {/* the path, as a clean numbered list */}
+              <ol className="mt-6 space-y-2.5">
+                {openMap.milestones.map((m, i) => (
+                  <li key={i} className="rounded-2xl border border-line bg-white/[0.02] p-3.5">
+                    <div className="flex items-center gap-2.5">
+                      <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full font-mono text-[11px] font-semibold" style={{ color: openMap.color, background: `${openMap.color}1f` }}>{i + 1}</span>
+                      <span className="font-display text-[15px] font-medium text-ink">{m.title}</span>
+                    </div>
+                    {m.subs.length > 0 && (
+                      <div className="mt-2.5 flex flex-wrap gap-1.5 pl-[34px]">
+                        {m.subs.map((s, j) => (
+                          <span key={j} className="rounded-full border border-line px-2.5 py-1 text-[12px] text-muted">{s}</span>
+                        ))}
+                      </div>
+                    )}
+                  </li>
+                ))}
+              </ol>
             </div>
-            <ShowcaseMiniMap map={openMap} />
-            <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-line pt-4">
-              <span className="text-[13px] text-muted">A proven starter map — adopt it and make it yours in seconds.</span>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-line px-6 py-4">
+              <span className="text-[13px] text-muted">A proven starter map. Yours in seconds.</span>
               <Link href="/onboarding"><Button variant="primary" size="sm">Start your map</Button></Link>
             </div>
           </div>
