@@ -3,15 +3,15 @@
 import * as React from "react";
 import type { ShowcaseMap } from "@/lib/kairo/showcase-maps";
 import { PlanetOrb } from "./PlanetOrb";
-import { truncate } from "@/lib/utils";
+import { cn, truncate } from "@/lib/utils";
 
-// A static, faithful rendering of the real in-app goal map: the same fishbone
-// layout + collision relaxation the live map uses, so the starter-map preview
-// looks exactly like /app/map — a goal core with a branching tree of milestones
-// and sub-steps, curved connectors, glowing orbs, drawn in on open.
+// A static rendering of the real in-app goal map, drawn EXACTLY as the live map
+// draws it: the same fishbone layout + collision relaxation, DOM node orbs and an
+// SVG connector layer sharing one coordinate space, connector offsets matching the
+// real orb radii, and the whole tree scaled as a single unit to fit the popup — so
+// orbs and lines stay connected and proportional at any size (no oversized core).
 
-const SPINE_RAD = 200, LEAF_RAD = 150, SPINE_ARC = 0.11;
-const M_R = 21, S_R = 13, CORE_R = 40;
+const SPINE_RAD = 168, LEAF_RAD = 128, SPINE_ARC = 0.11;
 
 type LNode = { id: string; parentId: string | null; title: string; sub: boolean };
 interface Placed { node: LNode; x: number; y: number; px: number; py: number; spine: boolean }
@@ -32,7 +32,7 @@ function layout(nodes: LNode[]): Placed[] {
     leaves.forEach((leaf, i) => {
       const side = i % 2 === 0 ? 1 : -1, rank = Math.floor(i / 2);
       const angle = dir + side * (Math.PI / 2 - 0.08) + side * rank * 0.32;
-      const rad = LEAF_RAD + rank * 54;
+      const rad = LEAF_RAD + rank * 46;
       out.push({ node: leaf, x: cx + Math.cos(angle) * rad, y: cy + Math.sin(angle) * rad, px: cx, py: cy, spine: false });
     });
     spineKids.forEach((cont, i) => {
@@ -45,8 +45,7 @@ function layout(nodes: LNode[]): Placed[] {
   };
   const roots = kids.get(null) ?? [];
   roots.forEach((root) => {
-    // Flow the spine rightward (and gently arcing) so the tree is a wide roadmap
-    // that fits a popup, rather than the tall vertical the in-app map opens as.
+    // Flow the spine rightward, gently arcing, so the tree reads as a wide roadmap.
     const spine = hasKids(root.id), rad = spine ? SPINE_RAD : LEAF_RAD, dir = -0.32;
     const x = Math.cos(dir) * rad, y = Math.sin(dir) * rad;
     out.push({ node: root, x, y, px: 0, py: 0, spine });
@@ -60,7 +59,7 @@ function relax(placed: Placed[]): Placed[] {
   const pts = placed.map((p) => ({ ...p }));
   const idx = new Map<string, number>();
   pts.forEach((p, i) => idx.set(p.node.id, i));
-  const MIN_SPINE = 138, MIN_LEAF = 104, CORE_CLEAR = 150;
+  const MIN_SPINE = 122, MIN_LEAF = 92, CORE_CLEAR = 128;
   for (let iter = 0; iter < 90; iter++) {
     let moved = false;
     for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {
@@ -75,83 +74,101 @@ function relax(placed: Placed[]): Placed[] {
   return pts;
 }
 
-/** Curved connector from a to b, trimmed to each node's rim. */
-function curve(ax: number, ay: number, ar: number, bx: number, by: number, br: number) {
-  const dx = bx - ax, dy = by - ay, d = Math.hypot(dx, dy) || 1;
-  const sx = ax + (dx / d) * ar, sy = ay + (dy / d) * ar;
-  const ex = bx - (dx / d) * br, ey = by - (dy / d) * br;
-  const mx = (sx + ex) / 2 + dy * 0.09, my = (sy + ey) / 2 - dx * 0.09;
-  return `M ${sx.toFixed(1)} ${sy.toFixed(1)} Q ${mx.toFixed(1)} ${my.toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}`;
-}
-
 export function ShowcaseTree({ map }: { map: ShowcaseMap }) {
   const hex = map.color;
+  const wrapRef = React.useRef<HTMLDivElement>(null);
+  const [cw, setCw] = React.useState(0);
   const [on, setOn] = React.useState(false);
-  React.useEffect(() => { const id = requestAnimationFrame(() => setOn(true)); return () => cancelAnimationFrame(id); }, []);
 
-  const { placed, vb, core } = React.useMemo(() => {
+  React.useEffect(() => {
+    const el = wrapRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver((e) => setCw(e[0].contentRect.width));
+    ro.observe(el);
+    const id = requestAnimationFrame(() => setOn(true));
+    return () => { ro.disconnect(); cancelAnimationFrame(id); };
+  }, []);
+
+  const { placed, minX, minY, W0, H0, maxDist } = React.useMemo(() => {
     const nodes: LNode[] = [];
     map.milestones.slice(0, 5).forEach((m, i) => {
       nodes.push({ id: `m${i}`, parentId: i > 0 ? `m${i - 1}` : null, title: m.title, sub: false });
-      m.subs.slice(0, 3).forEach((s, j) => nodes.push({ id: `m${i}s${j}`, parentId: `m${i}`, title: s, sub: true }));
+      m.subs.slice(0, 2).forEach((s, j) => nodes.push({ id: `m${i}s${j}`, parentId: `m${i}`, title: s, sub: true }));
     });
     const p = layout(nodes);
-    // bounding box including the core at (0,0) and room for labels
-    const PAD = 118;
+    const PAD = 78;
     const xs = [0, ...p.map((n) => n.x)], ys = [0, ...p.map((n) => n.y)];
     const minx = Math.min(...xs) - PAD, maxx = Math.max(...xs) + PAD;
-    const miny = Math.min(...ys) - PAD, maxy = Math.max(...ys) + PAD;
-    return { placed: p, vb: { x: minx, y: miny, w: maxx - minx, h: maxy - miny }, core: { x: 0, y: 0 } };
+    const miny = Math.min(...ys) - PAD, maxy = Math.max(...ys) + PAD + 26; // extra room for bottom labels
+    const md = Math.max(1, ...p.map((n) => Math.hypot(n.x, n.y)));
+    return { placed: p, minX: minx, minY: miny, W0: maxx - minx, H0: maxy - miny, maxDist: md };
   }, [map]);
 
-  const gid = `st-${map.id}`;
-  const corePctX = ((core.x - vb.x) / vb.w) * 100;
-  const corePctY = ((core.y - vb.y) / vb.h) * 100;
+  const MAXH = 420;
+  const s = cw > 0 ? Math.min(cw / W0, MAXH / H0) : 0;
 
   return (
-    <div className="relative w-full" style={{ aspectRatio: `${vb.w} / ${vb.h}` }}>
-      <svg viewBox={`${vb.x} ${vb.y} ${vb.w} ${vb.h}`} className="absolute inset-0 h-full w-full overflow-visible" role="img" aria-label={`${map.title} map`}>
-        <defs>
-          <radialGradient id={gid} cx="0.4" cy="0.32" r="0.85">
-            <stop offset="0%" stopColor="#2b3140" />
-            <stop offset="70%" stopColor="#161a22" />
-            <stop offset="100%" stopColor="#10131a" />
-          </radialGradient>
-        </defs>
+    <div ref={wrapRef} className="w-full">
+      <div className="relative mx-auto" style={{ width: W0 * s, height: H0 * s }}>
+        <div className="absolute left-0 top-0" style={{ transform: `translate(${-minX * s}px, ${-minY * s}px) scale(${s})`, transformOrigin: "0 0" }}>
+          {/* connectors — same math and offsets as the live map, so lines meet the orbs */}
+          <svg width={1} height={1} className="absolute left-0 top-0" style={{ overflow: "visible" }} aria-hidden>
+            {placed.map((p) => {
+              const isNext = p.node.id === "m0";
+              const CORE_R = p.px === 0 && p.py === 0 ? 44 : 22;
+              const NODE_R = p.spine ? 23 : 17;
+              const dx = p.x - p.px, dy = p.y - p.py, d = Math.hypot(dx, dy) || 1;
+              const sx = p.px + (dx / d) * CORE_R, sy = p.py + (dy / d) * CORE_R;
+              const ex = p.x - (dx / d) * NODE_R, ey = p.y - (dy / d) * NODE_R;
+              const mx = (sx + ex) / 2 + dy * 0.08, my = (sy + ey) / 2 - dx * 0.08;
+              const len = Math.hypot(ex - sx, ey - sy) * 1.15 + 4;
+              const delay = (Math.hypot(p.x, p.y) / maxDist) * 0.55;
+              return (
+                <path
+                  key={p.node.id}
+                  d={`M ${sx.toFixed(1)} ${sy.toFixed(1)} Q ${mx.toFixed(1)} ${my.toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}`}
+                  fill="none" stroke={hex} strokeWidth={isNext ? 1.9 : p.spine ? 1.6 : 1.0} strokeLinecap="round"
+                  strokeDasharray={isNext ? "3 7" : len}
+                  className={isNext ? "animate-flow" : undefined}
+                  style={isNext ? { opacity: 0.85 } : { strokeDashoffset: on ? 0 : len, transition: `stroke-dashoffset 0.5s ease ${delay.toFixed(2)}s`, opacity: 0.5 }}
+                />
+              );
+            })}
+          </svg>
 
-        {/* connectors — draw in from the core outward */}
-        {placed.map((n, i) => (
-          <path
-            key={`c${i}`}
-            d={curve(n.px, n.py, n.px === 0 && n.py === 0 ? CORE_R : M_R, n.x, n.y, n.node.sub ? S_R : M_R)}
-            fill="none" stroke={hex} strokeWidth={n.spine ? 1.7 : 1.2} strokeLinecap="round" strokeOpacity={n.spine ? 0.5 : 0.32}
-            style={{ strokeDasharray: 700, strokeDashoffset: on ? 0 : 700, transition: `stroke-dashoffset 0.6s ease ${0.2 + i * 0.05}s` }}
-          />
-        ))}
+          {/* node orbs — exactly the app's NodeOrb styling (spine 50px, leaf 38px) */}
+          {placed.map((p) => {
+            const isNext = p.node.id === "m0";
+            const size = p.spine ? 50 : 38;
+            const glow = isNext ? `0 0 26px ${hex}80` : `0 0 13px ${hex}3a`;
+            const bg = `radial-gradient(circle at 40% 34%, ${hex}33, rgba(12,14,18,0.94) 72%)`;
+            const delay = (Math.hypot(p.x, p.y) / maxDist) * 0.55 + 0.16;
+            return (
+              <div
+                key={p.node.id}
+                className="absolute -translate-x-1/2 -translate-y-1/2"
+                style={{ left: p.x, top: p.y, opacity: on ? 1 : 0, transform: `translate(-50%,-50%) scale(${on ? 1 : 0.4})`, transition: `opacity .4s ease ${delay.toFixed(2)}s, transform .5s cubic-bezier(0.34,1.56,0.64,1) ${delay.toFixed(2)}s` }}
+              >
+                <div className="relative grid place-items-center" style={{ width: size, height: size }}>
+                  {isNext && <span className="absolute inset-0 animate-pulse-soft rounded-full" style={{ boxShadow: `0 0 0 4px ${hex}22, 0 0 24px ${hex}66`, margin: -4 }} />}
+                  <span className="grid place-items-center rounded-full border" style={{ width: size, height: size, borderColor: isNext ? hex : `${hex}88`, background: bg, boxShadow: glow, opacity: isNext ? 1 : 0.94 }}>
+                    <span className="rounded-full" style={{ width: p.spine ? 9 : 7, height: p.spine ? 9 : 7, background: hex, boxShadow: `0 0 8px ${hex}` }} />
+                  </span>
+                  <span className="pointer-events-none absolute left-1/2 top-full mt-1.5 w-[120px] -translate-x-1/2 text-center leading-tight">
+                    <span className={cn("block truncate", p.spine ? "text-[13px] font-semibold text-ink" : "text-[11px] text-muted")} style={{ textShadow: "0 1px 10px rgba(8,9,11,0.96), 0 0 4px rgba(8,9,11,0.9)" }}>
+                      {truncate(p.node.title, p.spine ? 20 : 24)}
+                    </span>
+                  </span>
+                </div>
+              </div>
+            );
+          })}
 
-        {/* node orbs + labels */}
-        {placed.map((n, i) => {
-          const r = n.node.sub ? S_R : M_R;
-          const isNext = n.node.id === "m0";
-          const delay = 0.3 + i * 0.05;
-          return (
-            <g key={`n${i}`} style={{ opacity: on ? 1 : 0, transform: on ? "scale(1)" : "scale(0.3)", transformOrigin: `${n.x}px ${n.y}px`, transition: `opacity .4s ease ${delay}s, transform .5s cubic-bezier(0.34,1.56,0.64,1) ${delay}s` }}>
-              {isNext && <circle cx={n.x} cy={n.y} r={r + 7} fill="none" stroke={hex} strokeOpacity={0.55} strokeWidth={1.5} className="lt-pulse" style={{ transformOrigin: `${n.x}px ${n.y}px` }} />}
-              <circle cx={n.x} cy={n.y} r={r} fill={`url(#${gid})`} stroke={hex} strokeOpacity={isNext ? 0.85 : 0.42} strokeWidth={1} style={{ filter: isNext ? `drop-shadow(0 0 11px ${hex}aa)` : `drop-shadow(0 0 6px ${hex}44)` }} />
-              <circle cx={n.x} cy={n.y - r * 0.28} r={r * 0.5} fill={hex} fillOpacity={0.16} />
-              <text x={n.x} y={n.y + r + (n.node.sub ? 15 : 19)} textAnchor="middle" fill={n.node.sub ? "#c7cbd3" : "#f2f3f5"} fontSize={n.node.sub ? 13.5 : 16} fontWeight={n.node.sub ? 400 : 600}
-                style={{ fontFamily: "var(--font-sans)", paintOrder: "stroke", stroke: "#0a0b0d", strokeWidth: 4, strokeLinejoin: "round" }}>
-                {truncate(n.node.title, n.node.sub ? 22 : 20)}
-              </text>
-            </g>
-          );
-        })}
-      </svg>
-
-      {/* the goal core — a real glossy planet with the embossed icon, like the app */}
-      <div className="absolute -translate-x-1/2 -translate-y-1/2"
-        style={{ left: `${corePctX}%`, top: `${corePctY}%`, opacity: on ? 1 : 0, transform: `translate(-50%,-50%) scale(${on ? 1 : 0.4})`, transition: "opacity .5s ease, transform .6s cubic-bezier(0.34,1.56,0.64,1)" }}>
-        <PlanetOrb hex={hex} size={CORE_R * 2} icon={map.icon} seed={map.id} />
+          {/* the goal core — the real glossy planet, at (0,0), scaling with everything else */}
+          <div className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: 0, top: 0, opacity: on ? 1 : 0, transform: `translate(-50%,-50%) scale(${on ? 1 : 0.5})`, transition: "opacity .5s ease, transform .6s cubic-bezier(0.34,1.56,0.64,1)" }}>
+            <PlanetOrb hex={hex} size={92} icon={map.icon} seed={map.id} />
+          </div>
+        </div>
       </div>
     </div>
   );
