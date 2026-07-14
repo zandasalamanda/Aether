@@ -55,7 +55,7 @@ export function LiveMapDemo() {
       </div>
 
       <div className="relative mt-5 flex justify-center">
-        <Link href="/onboarding">
+        <Link href="/build">
           <Button variant="primary" size="lg">Map your goal <ArrowRight size={16} /></Button>
         </Link>
       </div>
