@@ -101,14 +101,14 @@ function NodeRow({ node, hex, isNext, onOpen, sub }: { node: GoalNode; hex: stri
               <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-accent">Proof</div>
               {node.evidence.map((ev) =>
                 ev.kind === "link" ? (
-                  <a key={ev.id} href={ev.value.startsWith("http") ? ev.value : `https://${ev.value}`} target="_blank" rel="noopener noreferrer" className="truncate text-[12.5px] text-accent underline decoration-accent/30 underline-offset-2">{ev.value}</a>
+                  <a key={ev.id} href={ev.value.startsWith("http") ? ev.value : `https://${ev.value}`} target="_blank" rel="noopener noreferrer" className="truncate text-[13px] text-accent underline decoration-accent/30 underline-offset-2">{ev.value}</a>
                 ) : (
-                  <div key={ev.id} className="text-[12.5px] text-ink/90"><span className="mr-1.5 font-mono text-[10px] uppercase text-faint">{ev.kind === "metric" ? "metric" : "note"}</span>{ev.value}</div>
+                  <div key={ev.id} className="text-[13px] text-ink/90"><span className="mr-1.5 font-mono text-[10px] uppercase text-faint">{ev.kind === "metric" ? "metric" : "note"}</span>{ev.value}</div>
                 )
               )}
             </div>
           )}
-          <button onClick={onOpen} className="mt-2.5 inline-flex items-center gap-1.5 text-[11.5px] text-faint transition-colors hover:text-ink"><Waypoints size={12} /> Open in map</button>
+          <button onClick={onOpen} className="mt-2.5 inline-flex items-center gap-1.5 text-[12px] text-faint transition-colors hover:text-ink"><Waypoints size={12} /> Open in map</button>
         </div>
       )}
     </div>

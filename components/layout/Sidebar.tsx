@@ -59,7 +59,7 @@ export function Sidebar({ user, nextMove, usage, className }: { user: SessionUse
               <span className="h-1.5 w-1.5 rounded-full" style={{ background: moveHex, boxShadow: `0 0 8px ${moveHex}` }} />
               <span className="text-[10px] font-medium uppercase tracking-[0.16em]" style={{ color: moveHex }}>Next move</span>
             </div>
-            <p className="mt-1.5 truncate text-[13.5px] font-medium text-ink">{nextMove.title}</p>
+            <p className="mt-1.5 truncate text-[14px] font-medium text-ink">{nextMove.title}</p>
           </Link>
         )}
       </div>

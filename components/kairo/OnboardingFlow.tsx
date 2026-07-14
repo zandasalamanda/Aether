@@ -180,7 +180,7 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
           {error && <p className="mt-4 text-[13px] text-warn">{error}</p>}
 
           {remote && !signedIn && !error && (
-            <p className="mt-3 text-[12.5px] text-faint">Free to start — you&apos;ll make your account next, and your goal will be waiting.</p>
+            <p className="mt-3 text-[13px] text-faint">Free to start — you&apos;ll make your account next, and your goal will be waiting.</p>
           )}
 
           <div className="mt-5 flex flex-wrap justify-center gap-2">
@@ -231,7 +231,7 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
                     className="inset-well min-h-[64px] w-full resize-none rounded-xl px-3.5 py-2.5 text-[13px] text-ink placeholder:text-faint focus-visible:outline-none"
                   />
                 ) : (
-                  <button onClick={() => setShowMore(true)} className="inline-flex items-center gap-1.5 text-[12.5px] text-muted transition-colors hover:text-ink">
+                  <button onClick={() => setShowMore(true)} className="inline-flex items-center gap-1.5 text-[13px] text-muted transition-colors hover:text-ink">
                     <Plus size={13} /> Tell me more
                   </button>
                 )}

@@ -142,7 +142,7 @@ export function LivingGoalMap({
             {/* label */}
             <foreignObject x={-70} y={rNode + 12} width={140} height={56} style={{ overflow: "visible" }}>
               <div className="text-center leading-tight">
-                <div className={cn("truncate text-[12.5px]", selected ? "font-semibold text-ink" : "text-ink/85")}>{node.title}</div>
+                <div className={cn("truncate text-[13px]", selected ? "font-semibold text-ink" : "text-ink/85")}>{node.title}</div>
                 <div className="mt-0.5 font-mono text-[10px] tracking-wide" style={{ color: meta.hex }}>
                   {node.estimatedMinutes}m · {meta.label}
                 </div>

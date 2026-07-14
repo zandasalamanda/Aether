@@ -93,7 +93,7 @@ function StepRow({ node, sub }: { node: SharedNode; sub?: boolean }) {
         <span className={`grid h-4 w-4 shrink-0 place-items-center rounded-full ${done ? "bg-sage" : "border border-line"}`}>
           {done && <Check size={11} className="text-canvas" />}
         </span>
-        <span className={`${sub ? "text-[13.5px]" : "text-[15px] font-medium"} leading-snug ${done ? "text-faint line-through" : "text-ink"}`}>{node.title}</span>
+        <span className={`${sub ? "text-[14px]" : "text-[15px] font-medium"} leading-snug ${done ? "text-faint line-through" : "text-ink"}`}>{node.title}</span>
       </div>
       {res && node.resourceLabel && (
         <a href={searchUrl(node.resourceKind!, node.resourceLabel)} target="_blank" rel="noopener noreferrer" className="mt-1.5 ml-6 inline-flex items-center gap-1.5 text-[12px] text-muted transition-colors hover:text-ink">

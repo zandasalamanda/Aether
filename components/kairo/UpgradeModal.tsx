@@ -51,10 +51,10 @@ export function UpgradeModal({ reason, onClose }: { reason: string | null; onClo
           <span className="grid h-8 w-8 place-items-center rounded-xl border border-accent/20 bg-accent/5 text-accent"><Zap size={16} /></span>
           <span className="font-display text-lg font-semibold text-ink">Go Pro</span>
         </div>
-        <p className="mt-2 text-[13.5px] leading-relaxed text-muted">{reason}</p>
+        <p className="mt-2 text-[14px] leading-relaxed text-muted">{reason}</p>
         <ul className="mt-4 space-y-2">
           {PRO_LINES.map((l) => (
-            <li key={l} className="flex items-center gap-2 text-[13.5px] text-ink/90"><Check size={14} className="shrink-0 text-accent" />{l}</li>
+            <li key={l} className="flex items-center gap-2 text-[14px] text-ink/90"><Check size={14} className="shrink-0 text-accent" />{l}</li>
           ))}
         </ul>
         <button onClick={() => void upgrade()} disabled={loading} className="raised-gold mt-5 inline-flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 text-[14px] font-medium disabled:opacity-50">

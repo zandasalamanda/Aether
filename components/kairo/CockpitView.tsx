@@ -102,7 +102,7 @@ export function CockpitView({ goals: initial, remote }: { goals: GoalWithNodes[]
           <span className="shrink-0 font-mono text-[11px] text-faint">{formatDuration(primary.node.estimatedMinutes)}</span>
         </div>
         <h2 className="relative mt-2 font-display text-2xl font-semibold leading-snug text-ink">{primary.node.title}</h2>
-        {primary.node.description && <p className="relative mt-1.5 line-clamp-3 text-[13.5px] leading-relaxed text-muted">{primary.node.description}</p>}
+        {primary.node.description && <p className="relative mt-1.5 line-clamp-3 text-[14px] leading-relaxed text-muted">{primary.node.description}</p>}
         <div className="relative mt-5 flex items-center gap-2">
           <button onClick={() => startFocus(primary.g.id, primary.node)} className="raised-gold inline-flex items-center gap-1.5 rounded-xl px-5 py-2.5 text-[14px] font-medium">
             <Timer size={16} /> Focus
@@ -130,7 +130,7 @@ export function CockpitView({ goals: initial, remote }: { goals: GoalWithNodes[]
                     <div className="truncate text-[14px] font-medium text-ink">{node.title}</div>
                     <div className="truncate font-mono text-[10px] uppercase tracking-[0.14em] text-faint">{g.title} · {formatDuration(node.estimatedMinutes)}</div>
                   </div>
-                  <button onClick={() => startFocus(g.id, node)} className="raised-btn inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12.5px] text-accent" aria-label={`Focus on ${node.title}`}>
+                  <button onClick={() => startFocus(g.id, node)} className="raised-btn inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] text-accent" aria-label={`Focus on ${node.title}`}>
                     <Timer size={14} /> Focus
                   </button>
                   <button onClick={() => markDone(g.id, node.id)} className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-faint transition-colors hover:text-sage" aria-label={`Mark ${node.title} done`} title="Done">

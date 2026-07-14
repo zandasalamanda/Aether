@@ -128,7 +128,7 @@ export function AskSola({ goals, remote, onClose }: { goals: GoalWithNodes[]; re
                   {m.applied ? (
                     <p className="pt-1 text-[12px] text-sage">✓ Applied. Your plan’s updated.</p>
                   ) : (
-                    <button onClick={() => apply(m.id, m.changes!)} disabled={!m.changes.some((c) => c.on)} className="raised-gold mt-1 inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[12.5px] font-medium disabled:opacity-40">
+                    <button onClick={() => apply(m.id, m.changes!)} disabled={!m.changes.some((c) => c.on)} className="raised-gold mt-1 inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[13px] font-medium disabled:opacity-40">
                       Apply {m.changes.filter((c) => c.on).length} change{m.changes.filter((c) => c.on).length === 1 ? "" : "s"}
                     </button>
                   )}

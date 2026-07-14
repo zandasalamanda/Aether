@@ -272,7 +272,7 @@ export function FocusOverlay({
                             <li key={i}>
                               <button onClick={() => toggle(i)} className="flex w-full items-center gap-2.5 text-left">
                                 <span
-                                  className={cn("grid h-5 w-5 shrink-0 place-items-center rounded-md border transition-colors", on ? "border-transparent" : "border-line")}
+                                  className={cn("grid h-5 w-5 shrink-0 place-items-center rounded-lg border transition-colors", on ? "border-transparent" : "border-line")}
                                   style={on ? { background: hex } : undefined}
                                 >
                                   {on && <Check size={13} className="text-white" />}
@@ -286,11 +286,11 @@ export function FocusOverlay({
                     )}
 
                     <div className="mt-3.5 flex flex-wrap items-center gap-2 border-t border-line pt-3">
-                      <button onClick={() => void runStuck()} className="raised-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12.5px] text-muted transition-colors hover:text-ink">
+                      <button onClick={() => void runStuck()} className="raised-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] text-muted transition-colors hover:text-ink">
                         {stuckLoading ? <Loader2 size={13} className="animate-spin" /> : <HelpCircle size={13} />} Stuck?
                       </button>
                       {plan.kind === "desk" && (
-                        <button onClick={openDraft} className="raised-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12.5px] text-accent transition-colors hover:text-ink">
+                        <button onClick={openDraft} className="raised-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] text-accent transition-colors hover:text-ink">
                           <PenLine size={13} /> Draft with Solaspace
                         </button>
                       )}

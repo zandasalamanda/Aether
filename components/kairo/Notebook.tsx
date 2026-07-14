@@ -153,7 +153,7 @@ export function Notebook({ goals, remote, initialGoalId }: { goals: GoalWithNode
         <div className="panel animate-sheet-up rounded-2xl p-3">
           <div className="mb-2 flex items-center gap-2 px-0.5">
             <Sparkles size={13} className="text-accent" />
-            <span className="flex-1 text-[12.5px] text-muted">Add these to <span className="text-ink">{selected.title}</span>?</span>
+            <span className="flex-1 text-[13px] text-muted">Add these to <span className="text-ink">{selected.title}</span>?</span>
             <button onClick={() => setPicks(null)} className="grid h-6 w-6 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Cancel"><X size={13} /></button>
           </div>
           {picks.length === 0 ? (
@@ -167,7 +167,7 @@ export function Notebook({ goals, remote, initialGoalId }: { goals: GoalWithNode
                       onClick={() => setPicks((cur) => (cur ? cur.map((x, j) => (j === i ? { ...x, on: !x.on } : x)) : cur))}
                       className="flex w-full items-center gap-2.5 text-left"
                     >
-                      <span className={cn("grid h-5 w-5 shrink-0 place-items-center rounded-md border transition-colors", p.on ? "border-transparent bg-accent" : "border-line")}>
+                      <span className={cn("grid h-5 w-5 shrink-0 place-items-center rounded-lg border transition-colors", p.on ? "border-transparent bg-accent" : "border-line")}>
                         {p.on && <Check size={13} className="text-canvas" />}
                       </span>
                       <span className={cn("text-[14px] leading-snug", p.on ? "text-ink" : "text-faint line-through")}>{p.step}</span>
@@ -189,7 +189,7 @@ export function Notebook({ goals, remote, initialGoalId }: { goals: GoalWithNode
           <button
             onClick={runExtract}
             disabled={!notes.trim() || extracting}
-            className="raised-btn inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12.5px] text-accent transition-colors hover:text-ink disabled:opacity-40"
+            className="raised-btn inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] text-accent transition-colors hover:text-ink disabled:opacity-40"
           >
             {extracting ? <Loader2 size={13} className="animate-spin" /> : <Sparkles size={13} />} Turn notes into steps
           </button>

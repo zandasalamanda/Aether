@@ -1238,7 +1238,7 @@ function TemplateGallery({ onPick, onClose }: { onPick: (t: GoalTemplate) => voi
                   </div>
                 </div>
                 <p className="mt-2.5 text-[13px] leading-relaxed text-muted">{t.blurb}</p>
-                <span className="mt-3 inline-flex items-center gap-1.5 text-[12.5px] font-medium text-accent">
+                <span className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-accent">
                   <Plus size={13} /> Add to my map
                 </span>
               </button>
@@ -1292,7 +1292,7 @@ function NewGoalBar({
         </button>
       </form>
       <div className="mt-2.5 text-center">
-        <button onClick={onBrowse} className="inline-flex items-center gap-1.5 text-[12.5px] text-faint transition-colors hover:text-ink">
+        <button onClick={onBrowse} className="inline-flex items-center gap-1.5 text-[13px] text-faint transition-colors hover:text-ink">
           <LayoutGrid size={13} /> or start from a template
         </button>
       </div>
@@ -1400,8 +1400,8 @@ function ReplanSheet({ hex, loading, proposals, onAccept, onDismiss, onClose }: 
               <p className="mt-1.5 text-[14px] font-medium leading-snug text-ink">{p.title}</p>
               {p.reason && <p className="mt-0.5 text-[12px] text-muted">{p.reason}</p>}
               <div className="mt-2.5 flex items-center gap-2">
-                <button onClick={() => onAccept(p)} className="raised-gold inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12.5px] font-medium"><ArrowDownToLine size={13} /> Add to map</button>
-                <button onClick={() => onDismiss(p.pid)} className="raised-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[12.5px] text-muted hover:text-ink">Dismiss</button>
+                <button onClick={() => onAccept(p)} className="raised-gold inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-medium"><ArrowDownToLine size={13} /> Add to map</button>
+                <button onClick={() => onDismiss(p.pid)} className="raised-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] text-muted hover:text-ink">Dismiss</button>
               </div>
             </div>
           ))}
@@ -1770,11 +1770,11 @@ function NodeSheet({
           <div className="font-mono text-[10px] uppercase tracking-[0.14em] text-accent">Proof</div>
           {node.evidence.map((ev) =>
             ev.kind === "link" ? (
-              <a key={ev.id} href={ev.value.startsWith("http") ? ev.value : `https://${ev.value}`} target="_blank" rel="noopener noreferrer" className="truncate rounded-lg bg-white/[0.03] px-3 py-1.5 text-[12.5px] text-accent underline decoration-accent/30 underline-offset-2 hover:decoration-accent">
+              <a key={ev.id} href={ev.value.startsWith("http") ? ev.value : `https://${ev.value}`} target="_blank" rel="noopener noreferrer" className="truncate rounded-lg bg-white/[0.03] px-3 py-1.5 text-[13px] text-accent underline decoration-accent/30 underline-offset-2 hover:decoration-accent">
                 {ev.value}
               </a>
             ) : (
-              <div key={ev.id} className="rounded-lg bg-white/[0.03] px-3 py-1.5 text-[12.5px] text-ink/90">
+              <div key={ev.id} className="rounded-lg bg-white/[0.03] px-3 py-1.5 text-[13px] text-ink/90">
                 <span className="mr-1.5 font-mono text-[10px] uppercase text-faint">{ev.kind === "metric" ? "metric" : "note"}</span>{ev.value}
               </div>
             )
@@ -1902,7 +1902,7 @@ function NodeSheet({
                   <Markdown>{draftBody}</Markdown>
                 </div>
               )}
-              <button onClick={() => { if (draft) { onSaveArtifact(draft.title, draftBody); setSaved(true); } }} disabled={saved || !draftBody.trim()} className="raised-gold mt-2 inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[12.5px] font-medium disabled:opacity-40">
+              <button onClick={() => { if (draft) { onSaveArtifact(draft.title, draftBody); setSaved(true); } }} disabled={saved || !draftBody.trim()} className="raised-gold mt-2 inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[13px] font-medium disabled:opacity-40">
                 {saved ? <><Check size={14} /> Saved to notebook</> : <><Save size={14} /> Save to notebook</>}
               </button>
             </>
@@ -1935,7 +1935,7 @@ function NodeSheet({
               {loading ? <Loader2 size={15} className="animate-spin" /> : <ArrowUp size={16} />}
             </button>
           </form>
-          <button onClick={() => void runStuck()} disabled={loading} className="mt-2 inline-flex items-center gap-1.5 text-[12.5px] text-muted transition-colors hover:text-ink disabled:opacity-40">
+          <button onClick={() => void runStuck()} disabled={loading} className="mt-2 inline-flex items-center gap-1.5 text-[13px] text-muted transition-colors hover:text-ink disabled:opacity-40">
             <HelpCircle size={13} /> I&apos;m stuck — just tell me how to start
           </button>
           {answer && <div className="mt-2.5 text-[13px] leading-relaxed text-muted"><Markdown>{answer}</Markdown></div>}

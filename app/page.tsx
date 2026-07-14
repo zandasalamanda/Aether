@@ -108,7 +108,7 @@ export default function LandingPage() {
             <p className="mt-2 text-sm text-muted">Everything you need to map a goal and start moving.</p>
             <ul className="mt-6 space-y-2.5">
               {FREE.map((f) => (
-                <li key={f} className="flex items-start gap-2.5 text-[13.5px] text-ink/90"><Check size={15} className="mt-0.5 shrink-0 text-sage" />{f}</li>
+                <li key={f} className="flex items-start gap-2.5 text-[14px] text-ink/90"><Check size={15} className="mt-0.5 shrink-0 text-sage" />{f}</li>
               ))}
             </ul>
             <Link href="/onboarding" className="mt-7 inline-flex items-center gap-2 text-sm font-medium text-accent hover:underline">Get started <ArrowRight size={15} /></Link>
@@ -120,11 +120,11 @@ export default function LandingPage() {
               <span className="font-display text-4xl font-semibold text-ink">$12</span>
               <span className="mb-1.5 text-sm text-muted">/mo</span>
             </div>
-            <p className="mt-1 text-[12.5px] text-faint">or $96/yr, save 33%. Cents a day for a daily execution engine.</p>
+            <p className="mt-1 text-[13px] text-faint">or $96/yr, save 33%. Cents a day for a daily execution engine.</p>
             <p className="mt-2 text-sm text-muted">Everything in Free, plus the AI that does the work with you.</p>
             <ul className="mt-6 space-y-2.5">
               {PRO.map((f) => (
-                <li key={f} className="flex items-start gap-2.5 text-[13.5px] text-ink"><Check size={15} className="mt-0.5 shrink-0 text-accent" />{f}</li>
+                <li key={f} className="flex items-start gap-2.5 text-[14px] text-ink"><Check size={15} className="mt-0.5 shrink-0 text-accent" />{f}</li>
               ))}
             </ul>
             <Link href="/onboarding" className="mt-7 inline-flex items-center gap-2 text-sm font-medium text-ink hover:underline">Start free, upgrade in-app <ArrowRight size={15} /></Link>
