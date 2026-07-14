@@ -176,9 +176,10 @@ export function HeroCluster() {
         </div>
       </div>
 
-      {/* opened showcase map — a clean, legible preview of the plan */}
+      {/* opened showcase map — a clean, legible preview of the plan. Above the
+          hero catchphrase (z-120) so the big title never overlaps it. */}
       {openMap && (
-        <div className="fixed inset-0 z-[110] grid place-items-center bg-canvas/95 p-5 backdrop-blur-md" onClick={() => setOpenId(null)}>
+        <div className="fixed inset-0 z-[130] grid place-items-center bg-canvas/95 p-5 backdrop-blur-md" onClick={() => setOpenId(null)}>
           <div className="animate-sheet-up relative flex max-h-[86vh] w-full max-w-lg flex-col overflow-hidden rounded-3xl border border-line-strong shadow-2xl" style={{ background: "#0f1116" }} onClick={(e) => e.stopPropagation()}>
             <button onClick={() => setOpenId(null)} className="absolute right-4 top-4 z-10 grid h-8 w-8 place-items-center rounded-lg text-faint transition-colors hover:text-ink" aria-label="Close">
               <X size={17} />
