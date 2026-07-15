@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowUp, Check, Timer, X, ChevronDown, Locate, GitBranch, Plus, Minus, Crosshair, Palette, Trash2, Sparkles, MessageCircle, Loader2, PlayCircle, Dumbbell, BookOpen, ExternalLink, NotebookPen, Wand2, ArrowDownToLine, HelpCircle, LayoutGrid, Share2, Save, Search, Scissors } from "lucide-react";
+import { ArrowUp, Check, Timer, X, ChevronDown, Locate, GitBranch, Plus, Minus, Crosshair, Palette, Trash2, Sparkles, MessageCircle, Loader2, PlayCircle, Dumbbell, BookOpen, ExternalLink, NotebookPen, Wand2, ArrowDownToLine, HelpCircle, LayoutGrid, LayoutTemplate, Focus, Share2, Save, Search, Scissors } from "lucide-react";
 import type { GoalWithNodes, GoalNode, NodeStatus, NodeResource, ResourceKind, ResolvedResource } from "@/types";
 import { parseDeadline } from "@/lib/kairo/deadline";
 import { generateGoalMap } from "@/lib/ai/generate-goal-map";
@@ -272,6 +272,14 @@ export function GalaxyMap({
   const [groups, setGroups] = usePersistentState<Constellation[]>("kairo.groups.v1", []);
   const [groupPickerFor, setGroupPickerFor] = React.useState<string | null>(null); // goalId being filed
   const [newGroupName, setNewGroupName] = React.useState("");
+  // Tools toolbar: drag "New goal" onto the canvas to place it; search + focus lens.
+  const [toolDrag, setToolDrag] = React.useState<{ ox: number; oy: number; sx: number; sy: number } | null>(null);
+  const pendingPos = React.useRef<{ x: number; y: number } | null>(null);
+  const [dragOverGroup, setDragOverGroup] = React.useState<string | null>(null); // constellation a dragged planet is over
+  const [searchOpen, setSearchOpen] = React.useState(false);
+  const [query, setQuery] = React.useState("");
+  const [focusLens, setFocusLens] = React.useState(false);
+  const viewportRef = React.useRef<HTMLDivElement>(null);
   const router = useRouter();
   // The moment-of-intent upgrade prompt (goal cap etc.) — string = reason & open flag.
   const [upgradeReason, setUpgradeReason] = React.useState<string | null>(null);
@@ -466,6 +474,60 @@ export function GalaxyMap({
     showToast("Tidied the galaxy");
   };
 
+  // Screen point → map coordinates (invert the centered translate + scale transform).
+  const screenToMap = (sx: number, sy: number) => {
+    const r = viewportRef.current?.getBoundingClientRect();
+    const cx = r ? r.left + r.width / 2 : window.innerWidth / 2;
+    const cy = r ? r.top + r.height / 2 : window.innerHeight / 2;
+    return { x: (sx - cx - view.tx) / view.scale, y: (sy - cy - view.ty) / view.scale };
+  };
+
+  // Which constellation zone a point falls in — optionally excluding one goal so a
+  // dragged member tests against its group's OTHER members.
+  const groupAtPoint = (x: number, y: number, excludeGoalId?: string) => {
+    for (const gr of groups) {
+      const pts = gr.goalIds
+        .filter((gid) => gid !== excludeGoalId)
+        .map((gid) => { const i = goals.findIndex((g) => g.id === gid); return i >= 0 ? posOf(gid, i) : null; })
+        .filter((p): p is { x: number; y: number } => p !== null);
+      if (pts.length === 0) continue;
+      const cx = pts.reduce((s, p) => s + p.x, 0) / pts.length;
+      const cy = pts.reduce((s, p) => s + p.y, 0) / pts.length;
+      const radius = Math.max(150, ...pts.map((p) => Math.hypot(p.x - cx, p.y - cy))) + 120;
+      if (Math.hypot(x - cx, y - cy) <= radius) return gr;
+    }
+    return null;
+  };
+
+  // ---- toolbar: drag "New goal" from the rail onto the canvas to place it there ----
+  // Listeners are attached synchronously on pointerdown (not via an effect), so even
+  // an instant tap catches its pointerup. A tap opens the composer; a real drag onto
+  // the canvas also stashes the drop point so the new goal lands right there.
+  const startGoalDrag = (e: React.PointerEvent) => {
+    const ox = e.clientX, oy = e.clientY;
+    setToolDrag({ ox, oy, sx: ox, sy: oy });
+    const onMove = (ev: PointerEvent) => setToolDrag((t) => (t ? { ...t, sx: ev.clientX, sy: ev.clientY } : t));
+    const onUp = (ev: PointerEvent) => {
+      window.removeEventListener("pointermove", onMove);
+      setToolDrag(null);
+      // A tap (no real movement) is handled by the button's onClick; here we only
+      // handle an actual drag that lands on the canvas — drop the goal right there.
+      if (Math.hypot(ev.clientX - ox, ev.clientY - oy) <= 6) return;
+      const r = viewportRef.current?.getBoundingClientRect();
+      const inside = r && ev.clientX >= r.left && ev.clientX <= r.right && ev.clientY >= r.top && ev.clientY <= r.bottom;
+      if (!inside) return;
+      pendingPos.current = screenToMap(ev.clientX, ev.clientY);
+      setExpandedId(null);
+      setComposing(true);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp, { once: true });
+  };
+
+  // Search: a goal matches when its title or any of its steps match the query.
+  const q = query.trim().toLowerCase();
+  const goalMatches = (g: GoalWithNodes) => !q || g.title.toLowerCase().includes(q) || g.nodes.some((n) => n.title.toLowerCase().includes(q));
+
   // ---- canvas gestures (pan/zoom) ----
   const onDown = (e: React.PointerEvent) => {
     pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY });
@@ -520,20 +582,30 @@ export function GalaxyMap({
     const d = goalDrag.current;
     if (!d) return;
     e.stopPropagation();
-    const dx = (e.clientX - d.sx) / view.scale;
-    const dy = (e.clientY - d.sy) / view.scale;
+    const nx = d.ox + (e.clientX - d.sx) / view.scale;
+    const ny = d.oy + (e.clientY - d.sy) / view.scale;
     if (Math.hypot(e.clientX - d.sx, e.clientY - d.sy) > 4) d.moved = true;
     setAnimating(false);
-    setPositions((p) => ({ ...p, [d.id]: { x: d.ox + dx, y: d.oy + dy } }));
+    setPositions((p) => ({ ...p, [d.id]: { x: nx, y: ny } }));
+    if (d.moved) { const gr = groupAtPoint(nx, ny, d.id); setDragOverGroup((prev) => (prev === (gr?.id ?? null) ? prev : gr?.id ?? null)); }
   };
   const onPlanetUp = (e: React.PointerEvent, id: string) => {
     const d = goalDrag.current;
     goalDrag.current = null;
-    if (d && !d.moved) {
+    setDragOverGroup(null);
+    if (!d) return;
+    if (!d.moved) {
       e.stopPropagation();
       if (expandedId === id) { setExpandedId(null); overview(); }
       else { setExpandedId(id); setSelectedNodeId(null); flyTo(id); }
+      return;
     }
+    // Dropped inside a constellation it isn't part of? File it there (drag-to-group).
+    const fx = d.ox + (e.clientX - d.sx) / view.scale;
+    const fy = d.oy + (e.clientY - d.sy) / view.scale;
+    const over = groupAtPoint(fx, fy, id);
+    const cur = groupOf(id);
+    if (over && over.id !== cur?.id) { fileGoal(over.id, id); showToast(`Added to ${over.label}`); }
   };
 
   // ---- mutations ----
@@ -666,9 +738,11 @@ export function GalaxyMap({
     void createGoal(parts.length ? `${pend.prompt} — ${parts.join("; ")}` : pend.prompt);
   };
 
-  // Fly to the spot the new planet will occupy and coalesce it there.
+  // Fly to the spot the new planet will occupy and coalesce it there. If the goal
+  // was dropped onto the canvas from the toolbar, use that spot instead of a slot.
   const beginForming = () => {
-    const pos = defaultPos(goals.length);
+    const pos = pendingPos.current ?? defaultPos(goals.length);
+    pendingPos.current = null;
     const scale = 0.82;
     setFormingPos(pos);
     setMapping(true);
@@ -860,7 +934,7 @@ export function GalaxyMap({
   const empty = goals.length === 0;
 
   return (
-    <div className="absolute inset-0 overflow-hidden">
+    <div ref={viewportRef} className="absolute inset-0 overflow-hidden">
       {/* viewport */}
       <div
         className="absolute inset-0 cursor-grab touch-none active:cursor-grabbing"
@@ -879,13 +953,17 @@ export function GalaxyMap({
           className="absolute left-1/2 top-1/2"
           style={{ transform, transformOrigin: "center", transition: animating ? "transform 0.6s cubic-bezier(0.22,1,0.36,1)" : "none", willChange: "transform" }}
         >
-          {/* constellation halos — soft tinted nebulae behind grouped planets */}
-          {groupOpacity > 0 && constellations.map((c) => (
-            <div key={c.id} className="pointer-events-none absolute" style={{ left: c.cx, top: c.cy, opacity: groupOpacity, transition: "opacity 0.4s ease" }}>
-              <div className="rounded-full" style={{ position: "absolute", left: -c.radius, top: -c.radius, width: c.radius * 2, height: c.radius * 2, background: `radial-gradient(circle, ${c.hex}1f, ${c.hex}0d 46%, transparent 70%)` }} />
-              <span className="absolute left-0 -translate-x-1/2 whitespace-nowrap font-mono text-[11px] font-medium uppercase tracking-[0.24em]" style={{ top: -c.radius - 6, color: c.hex, opacity: 0.85, textShadow: "0 1px 12px rgba(8,9,11,0.95)" }}>{c.label}</span>
-            </div>
-          ))}
+          {/* constellation halos — soft tinted nebulae behind grouped planets. The
+              one a dragged planet hovers over brightens to signal it'll be filed there. */}
+          {(groupOpacity > 0 || dragOverGroup) && constellations.map((c) => {
+            const active = dragOverGroup === c.id;
+            return (
+              <div key={c.id} className="pointer-events-none absolute" style={{ left: c.cx, top: c.cy, opacity: active ? 1 : groupOpacity, transition: "opacity 0.3s ease" }}>
+                <div className="rounded-full" style={{ position: "absolute", left: -c.radius, top: -c.radius, width: c.radius * 2, height: c.radius * 2, background: `radial-gradient(circle, ${c.hex}${active ? "3a" : "1f"}, ${c.hex}${active ? "16" : "0d"} 46%, transparent 70%)` }} />
+                <span className="absolute left-0 -translate-x-1/2 whitespace-nowrap font-mono text-[11px] font-medium uppercase tracking-[0.24em]" style={{ top: -c.radius - 6, color: c.hex, opacity: active ? 1 : 0.85, textShadow: "0 1px 12px rgba(8,9,11,0.95)" }}>{c.label}</span>
+              </div>
+            );
+          })}
 
           {goals.map((g, i) => (
             <GoalCluster
@@ -894,7 +972,8 @@ export function GalaxyMap({
               pos={posOf(g.id, i)}
               hex={hexOf(g.id)}
               expanded={expandedId === g.id}
-              dimmed={expandedId != null && expandedId !== g.id}
+              dimmed={(expandedId != null && expandedId !== g.id) || (searchOpen && q.length > 0 && !goalMatches(g))}
+              focusLens={focusLens}
               hovered={hoverId === g.id}
               selectedNodeId={selectedNodeId}
               poppedId={poppedId}
@@ -966,8 +1045,48 @@ export function GalaxyMap({
 
       </div>
 
-      {/* map navigation — discoverable controls so mouse users don't have to
-          drag-and-scroll their way around. */}
+      {/* left tools rail — create, browse, find, focus, tidy. Drag "New goal" onto
+          the canvas to drop a goal exactly where you let go. */}
+      {!empty && (
+        <div className="pointer-events-none absolute left-4 top-[calc(env(safe-area-inset-top)+56px)] z-30 flex flex-col items-center gap-1.5 md:top-20">
+          <button
+            onPointerDown={startGoalDrag}
+            onClick={() => setComposing(true)}
+            className="raised-gold pointer-events-auto grid h-10 w-10 cursor-grab touch-none select-none place-items-center rounded-full active:cursor-grabbing"
+            aria-label="New goal — click, or drag onto the map to place it"
+            title="New goal — drag onto the map to place it"
+          >
+            <Plus size={18} />
+          </button>
+          <div className="chrome pointer-events-auto flex flex-col items-center gap-0.5 rounded-full p-1">
+            <button onClick={() => setBrowsingTemplates(true)} className="grid h-9 w-9 place-items-center rounded-full text-muted transition-colors hover:text-ink" aria-label="Starter templates" title="Starter templates"><LayoutTemplate size={16} /></button>
+            <button onClick={() => { setSearchOpen((s) => !s); setQuery(""); }} aria-pressed={searchOpen} className={cn("grid h-9 w-9 place-items-center rounded-full transition-colors", searchOpen ? "text-accent" : "text-muted hover:text-ink")} aria-label="Find on the map" title="Find on the map"><Search size={16} /></button>
+            <button onClick={() => setFocusLens((f) => !f)} aria-pressed={focusLens} className={cn("grid h-9 w-9 place-items-center rounded-full transition-colors", focusLens ? "text-accent" : "text-muted hover:text-ink")} aria-label="Focus lens — dim to your live path" title="Focus lens — dim to your live path"><Focus size={16} /></button>
+            {(groups.length > 0 || Object.keys(positions).length > 0) && (
+              <button onClick={tidy} className="grid h-9 w-9 place-items-center rounded-full text-muted transition-colors hover:text-ink" aria-label="Tidy the galaxy" title="Tidy the galaxy"><LayoutGrid size={15} /></button>
+            )}
+          </div>
+          {searchOpen && (
+            <div className="chrome animate-fade-in pointer-events-auto flex items-center gap-1.5 rounded-full px-2.5 py-1">
+              <Search size={13} className="shrink-0 text-faint" />
+              <input
+                autoFocus
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") { const m = goals.find(goalMatches); if (m) { setExpandedId(m.id); setSelectedNodeId(null); flyTo(m.id); setSearchOpen(false); } }
+                  else if (e.key === "Escape") { setSearchOpen(false); setQuery(""); }
+                }}
+                placeholder="Find a goal or step…"
+                className="h-7 w-40 bg-transparent text-[13px] text-ink placeholder:text-faint focus:outline-none"
+              />
+              {query && <button onClick={() => setQuery("")} className="shrink-0 text-faint transition-colors hover:text-ink" aria-label="Clear"><X size={13} /></button>}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* right rail — view controls: zoom, jump-to-next, recenter. */}
       {!empty && (
         <div className="pointer-events-none absolute right-4 top-[calc(env(safe-area-inset-top)+56px)] z-10 flex flex-col items-center gap-1.5 md:top-20">
           <div className="chrome pointer-events-auto flex flex-col overflow-hidden rounded-full">
@@ -979,11 +1098,6 @@ export function GalaxyMap({
               <Minus size={16} />
             </button>
           </div>
-          {(groups.length > 0 || Object.keys(positions).length > 0) && (
-            <button onClick={tidy} className="chrome pointer-events-auto grid h-9 w-9 place-items-center rounded-full text-muted transition-colors hover:text-ink" aria-label="Tidy the galaxy" title="Tidy the galaxy">
-              <LayoutGrid size={15} />
-            </button>
-          )}
           {expanded && (
             <button onClick={focusCurrent} className="chrome pointer-events-auto grid h-9 w-9 place-items-center rounded-full text-muted transition-colors hover:text-ink" aria-label="Jump to your next step" title="Jump to your next step">
               <Crosshair size={15} />
@@ -1225,6 +1339,15 @@ export function GalaxyMap({
         );
       })()}
 
+      {/* ghost goal-orb that follows the cursor while dragging "New goal" out */}
+      {toolDrag && Math.hypot(toolDrag.sx - toolDrag.ox, toolDrag.sy - toolDrag.oy) > 6 && (
+        <div className="pointer-events-none fixed z-[200] -translate-x-1/2 -translate-y-1/2" style={{ left: toolDrag.sx, top: toolDrag.sy }}>
+          <span className="grid h-12 w-12 place-items-center rounded-full" style={{ background: "radial-gradient(circle at 34% 26%, #fdf3e0 0%, #e6b877 46%, #1a130a 100%)", boxShadow: "0 0 30px rgba(230,184,119,0.5)" }}>
+            <Plus size={18} className="text-[#241809]" />
+          </span>
+        </div>
+      )}
+
       <UpgradeModal reason={upgradeReason} onClose={() => setUpgradeReason(null)} />
     </div>
   );
@@ -1257,7 +1380,7 @@ function PlanetSurface({ hex, seed }: { hex: string; seed: string }) {
 }
 
 function GoalCluster({
-  goal, pos, hex, expanded, dimmed, hovered, selectedNodeId, poppedId,
+  goal, pos, hex, expanded, dimmed, focusLens, hovered, selectedNodeId, poppedId,
   onPlanetDown, onPlanetUp, onEnter, onLeave, onSelectNode, onNodeContext, onCoreContext,
 }: {
   goal: GoalWithNodes;
@@ -1265,6 +1388,7 @@ function GoalCluster({
   hex: string;
   expanded: boolean;
   dimmed: boolean;
+  focusLens: boolean;
   hovered: boolean;
   selectedNodeId: string | null;
   poppedId: string | null;
@@ -1355,6 +1479,7 @@ function GoalCluster({
             selected={p.node.id === selectedNodeId}
             popping={p.node.id === poppedId}
             spine={p.spine}
+            faded={focusLens && p.node.id !== nId && p.node.status !== "in_motion" && p.node.status !== "at_risk"}
             delay={(Math.hypot(p.x, p.y) / maxDist) * 0.5 + 0.14}
             onSelect={() => onSelectNode(p.node.id)}
             onContext={(e) => onNodeContext(p.node, e)}
@@ -1423,7 +1548,7 @@ function GoalCluster({
 }
 
 function NodeOrb({
-  node, x, y, hex, isNext, selected, popping, spine, delay, onSelect, onContext,
+  node, x, y, hex, isNext, selected, popping, spine, faded, delay, onSelect, onContext,
 }: {
   node: GoalNode;
   x: number;
@@ -1433,6 +1558,7 @@ function NodeOrb({
   selected: boolean;
   popping: boolean;
   spine: boolean;
+  faded: boolean;
   delay: number;
   onSelect: () => void;
   onContext: (e: React.MouseEvent) => void;
@@ -1457,7 +1583,7 @@ function NodeOrb({
     ? `radial-gradient(circle at 38% 30%, #f6faf5 0%, ${hex} 55%, #14231a 100%)`
     : `radial-gradient(circle at 40% 34%, ${hex}33, rgba(12,14,18,0.94) 72%)`;
   return (
-    <div className="absolute -translate-x-1/2 -translate-y-1/2 animate-grow-in" style={{ left: x, top: y, animationDelay: `${delay.toFixed(2)}s` }}>
+    <div className="absolute -translate-x-1/2 -translate-y-1/2 animate-grow-in" style={{ left: x, top: y, animationDelay: `${delay.toFixed(2)}s`, opacity: faded ? 0.22 : 1, transition: "opacity 0.35s ease" }}>
       <button
         onClick={(e) => { e.stopPropagation(); onSelect(); }}
         onPointerDown={(e) => e.stopPropagation()}
