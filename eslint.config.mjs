@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Unrelated nested app (separate project) — not part of Solaspace.
+    "everdeck/**",
   ]),
 ]);
 
