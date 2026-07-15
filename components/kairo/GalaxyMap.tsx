@@ -37,6 +37,7 @@ import {
   setNodeResolvedResource,
   shareGoal,
   deleteGoal,
+  deleteNode,
 } from "@/lib/data/actions";
 import { MicButton } from "@/components/ui/MicButton";
 import { Chip } from "@/components/ui/Chip";
@@ -497,6 +498,40 @@ export function GalaxyMap({
     showToast("Goal removed");
   };
 
+  // Remove a step and everything hanging off it, then recompute progress.
+  const removeNode = (goalId: string, nodeId: string) => {
+    setGoals((prev) =>
+      prev.map((g) => {
+        if (g.id !== goalId) return g;
+        const remove = new Set([nodeId]);
+        let changed = true;
+        while (changed) {
+          changed = false;
+          for (const n of g.nodes) if (n.parentId && remove.has(n.parentId) && !remove.has(n.id)) { remove.add(n.id); changed = true; }
+        }
+        const nodes = g.nodes.filter((n) => !remove.has(n.id));
+        const done = nodes.filter((n) => n.status === "done").length;
+        const progress = nodes.length ? Math.round((done / nodes.length) * 100) : 0;
+        return { ...g, nodes, progress };
+      })
+    );
+    if (selectedNodeId === nodeId) setSelectedNodeId(null);
+    if (remote) void deleteNode({ goalId, nodeId });
+    showToast("Step removed");
+  };
+
+  // Right-click context menu on a node or a goal core (node = null → the goal core).
+  const [ctx, setCtx] = React.useState<{ x: number; y: number; goalId: string; node: GoalNode | null } | null>(null);
+  React.useEffect(() => {
+    if (!ctx) return;
+    const close = () => setCtx(null);
+    const onKey = (e: KeyboardEvent) => { if (e.key === "Escape") setCtx(null); };
+    window.addEventListener("click", close);
+    window.addEventListener("scroll", close, true);
+    window.addEventListener("keydown", onKey);
+    return () => { window.removeEventListener("click", close); window.removeEventListener("scroll", close, true); window.removeEventListener("keydown", onKey); };
+  }, [ctx]);
+
   // Free plan is capped at 2 active goals; Pro is unlimited.
   const atGoalCap = () => {
     if (isPro) return false;
@@ -758,6 +793,8 @@ export function GalaxyMap({
               onEnter={() => setHoverId(g.id)}
               onLeave={() => setHoverId((h) => (h === g.id ? null : h))}
               onSelectNode={(nid) => setSelectedNodeId(nid)}
+              onNodeContext={(node, e) => { e.preventDefault(); setCtx({ x: e.clientX, y: e.clientY, goalId: g.id, node }); }}
+              onCoreContext={(e) => { e.preventDefault(); setExpandedId(g.id); setCtx({ x: e.clientX, y: e.clientY, goalId: g.id, node: null }); }}
             />
           ))}
 
@@ -981,6 +1018,43 @@ export function GalaxyMap({
         </div>
       )}
 
+      {ctx && (
+        <div
+          role="menu"
+          className="chrome animate-fade-in fixed z-[150] w-52 overflow-hidden rounded-xl p-1.5"
+          style={{ left: Math.min(ctx.x, window.innerWidth - 220), top: Math.min(ctx.y, window.innerHeight - 220) }}
+        >
+          <div className="truncate px-3 pb-1 pt-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-faint">
+            {ctx.node ? truncate(ctx.node.title, 22) : "Goal"}
+          </div>
+          {(ctx.node
+            ? [
+                { label: "Focus", onClick: () => openFocus(ctx.node!) },
+                { label: ctx.node.status === "done" ? "Mark not done" : "Mark done", onClick: () => setStatus(ctx.goalId, ctx.node!.id, ctx.node!.status === "done" ? "not_started" : "done") },
+                { label: "Add a branch here", onClick: () => setBranchFor(ctx.node!.id) },
+                { label: "Delete step", danger: true, onClick: () => removeNode(ctx.goalId, ctx.node!.id) },
+              ]
+            : [
+                { label: "Change colour", onClick: () => cycleColor(ctx.goalId) },
+                { label: "Adapt with Sola", onClick: () => void runReplan(ctx.goalId) },
+                { label: "Share", onClick: () => void shareGoalLink(ctx.goalId) },
+                { label: "Delete goal", danger: true, onClick: () => removeGoal(ctx.goalId) },
+              ]
+          ).map((it) => (
+            <button
+              key={it.label}
+              onClick={() => { it.onClick(); setCtx(null); }}
+              className={cn(
+                "flex w-full items-center rounded-lg px-3 py-2 text-left text-[13px] transition-colors",
+                it.danger ? "text-warn hover:bg-warn/10" : "text-muted hover:bg-white/5 hover:text-ink"
+              )}
+            >
+              {it.label}
+            </button>
+          ))}
+        </div>
+      )}
+
       <UpgradeModal reason={upgradeReason} onClose={() => setUpgradeReason(null)} />
     </div>
   );
@@ -1014,7 +1088,7 @@ function PlanetSurface({ hex, seed }: { hex: string; seed: string }) {
 
 function GoalCluster({
   goal, pos, hex, expanded, dimmed, hovered, selectedNodeId, poppedId,
-  onPlanetDown, onPlanetUp, onEnter, onLeave, onSelectNode,
+  onPlanetDown, onPlanetUp, onEnter, onLeave, onSelectNode, onNodeContext, onCoreContext,
 }: {
   goal: GoalWithNodes;
   pos: { x: number; y: number };
@@ -1029,6 +1103,8 @@ function GoalCluster({
   onEnter: () => void;
   onLeave: () => void;
   onSelectNode: (id: string) => void;
+  onNodeContext: (node: GoalNode, e: React.MouseEvent) => void;
+  onCoreContext: (e: React.MouseEvent) => void;
 }) {
   // Trees open outward, away from the crowded galaxy centre (goals near the
   // centre keep opening upward). Snap toward the nearest of 8 directions so the
@@ -1099,6 +1175,7 @@ function GoalCluster({
             spine={p.spine}
             delay={(Math.hypot(p.x, p.y) / maxDist) * 0.5 + 0.14}
             onSelect={() => onSelectNode(p.node.id)}
+            onContext={(e) => onNodeContext(p.node, e)}
           />
         ))}
 
@@ -1109,6 +1186,7 @@ function GoalCluster({
         onMouseEnter={onEnter}
         onMouseLeave={onLeave}
         onClick={(e) => e.stopPropagation()}
+        onContextMenu={onCoreContext}
         className="absolute -translate-x-1/2 -translate-y-1/2 cursor-pointer touch-none"
         style={{ left: 0, top: 0 }}
         aria-label={goal.title}
@@ -1158,7 +1236,7 @@ function GoalCluster({
 }
 
 function NodeOrb({
-  node, x, y, hex, isNext, selected, popping, spine, delay, onSelect,
+  node, x, y, hex, isNext, selected, popping, spine, delay, onSelect, onContext,
 }: {
   node: GoalNode;
   x: number;
@@ -1170,6 +1248,7 @@ function NodeOrb({
   spine: boolean;
   delay: number;
   onSelect: () => void;
+  onContext: (e: React.MouseEvent) => void;
 }) {
   const done = node.status === "done";
   const dim = node.status === "not_started";
@@ -1189,6 +1268,7 @@ function NodeOrb({
       <button
         onClick={(e) => { e.stopPropagation(); onSelect(); }}
         onPointerDown={(e) => e.stopPropagation()}
+        onContextMenu={onContext}
         className="relative grid place-items-center"
         style={{ width: size, height: size, animation: "breathe 6s ease-in-out infinite" }}
       >
@@ -1629,11 +1709,8 @@ function NodeSheet({
   };
 
   const runResearch = async () => {
-    if (!isPro) {
-      onToast("Research is a Pro feature. Upgrade for live, cited answers.");
-      router.push("/app/billing");
-      return;
-    }
+    // Free users get a daily taste (metered server-side); when it's used up the
+    // server returns an upgrade prompt, surfaced by handleAiError below.
     setResearching(true); setAsking(false); setBreakOpen(false); setDrafting(false);
     if (researchResult || researchLoading) return;
     setResearchLoading(true);
@@ -1750,7 +1827,7 @@ function NodeSheet({
           </Chip>
           <Chip tone="accent" icon={<Scissors size={14} />} onClick={breaking ? undefined : onMakeSmaller}>Make it smaller</Chip>
           <Chip tone="accent" icon={<Wand2 size={14} />} onClick={() => void runDraft()}>Do it for me</Chip>
-          <Chip tone="accent" pro icon={<Search size={14} />} onClick={() => void runResearch()}>Research</Chip>
+          <Chip tone="accent" pro={!isPro} icon={<Search size={14} />} onClick={() => void runResearch()}>Research</Chip>
         </div>
       )}
 

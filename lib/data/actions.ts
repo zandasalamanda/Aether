@@ -216,6 +216,35 @@ export async function deleteAccount(): Promise<Result> {
   return { ok: true };
 }
 
+/** Delete a single node and its descendants, then recompute goal progress. */
+export async function deleteNode(input: { goalId: string; nodeId: string }): Promise<Result> {
+  if (!isRemote) return NO_OP;
+  const scoped = await getScopedClient();
+  if (!scoped) return NO_OP;
+  const { supabase } = scoped;
+
+  const res = await supabase.from("goal_nodes").select("id,parent_id,status").eq("goal_id", input.goalId);
+  const rows = (res.data ?? []) as { id: string; parent_id: string | null; status: NodeStatus }[];
+  const remove = new Set<string>([input.nodeId]);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const r of rows) {
+      if (r.parent_id && remove.has(r.parent_id) && !remove.has(r.id)) { remove.add(r.id); changed = true; }
+    }
+  }
+  const del = await supabase.from("goal_nodes").delete().in("id", [...remove]);
+  if (del.error) return NO_OP;
+
+  const left = rows.filter((r) => !remove.has(r.id));
+  const done = left.filter((r) => r.status === "done").length;
+  const progress = left.length ? Math.round((done / left.length) * 100) : 0;
+  await supabase.from("goals").update({ progress }).eq("id", input.goalId);
+
+  revalidatePath("/app", "layout");
+  return { ok: true, id: input.nodeId };
+}
+
 /** Delete a goal and everything under it (nodes cascade via FK). */
 export async function deleteGoal(input: { goalId: string }): Promise<Result> {
   if (!isRemote) return NO_OP;
