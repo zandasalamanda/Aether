@@ -40,16 +40,40 @@ describe("mockGoalMap", () => {
 describe("mockDailyPlan", () => {
   const goals = buildSeed().goals;
 
-  it("never exceeds the available budget", () => {
+  it("never exceeds the available budget, breaks included", () => {
     const r = mockDailyPlan({ availableMinutes: 90, energy: "normal", context: "", goals });
     const total = r.blocks.reduce((s, b) => s + b.durationMinutes, 0);
     expect(total).toBeLessThanOrEqual(90);
-    expect(r.blocks.every((b) => b.nodeId)).toBe(true);
+    // every focus block points at a real node; breaks carry no node
+    expect(r.blocks.filter((b) => b.kind === "focus").every((b) => b.nodeId)).toBe(true);
+    expect(r.blocks.filter((b) => b.kind === "break").every((b) => b.nodeId === null)).toBe(true);
   });
 
-  it("keeps blocks short on low energy", () => {
+  it("keeps focus blocks short on low energy", () => {
     const r = mockDailyPlan({ availableMinutes: 120, energy: "low", context: "", goals });
-    expect(r.blocks.every((b) => b.durationMinutes <= 30)).toBe(true);
+    expect(r.blocks.filter((b) => b.kind === "focus").every((b) => b.durationMinutes <= 25)).toBe(true);
+  });
+
+  it("splits a full day into several focus blocks with breaks", () => {
+    const r = mockDailyPlan({ availableMinutes: 360, energy: "normal", context: "", goals });
+    const focus = r.blocks.filter((b) => b.kind === "focus");
+    const breaks = r.blocks.filter((b) => b.kind === "break");
+    expect(focus.length).toBeGreaterThanOrEqual(3);
+    expect(breaks.length).toBeGreaterThanOrEqual(1);
+    const total = r.blocks.reduce((s, b) => s + b.durationMinutes, 0);
+    expect(total).toBeLessThanOrEqual(360);
+    // no back-to-back breaks, and the day never ends on a break
+    r.blocks.forEach((b, i) => { if (b.kind === "break") expect(r.blocks[i + 1]?.kind).not.toBe("break"); });
+    expect(r.blocks[r.blocks.length - 1].kind).toBe("focus");
+  });
+
+  it("lets a large step span more than one session when work is scarce", () => {
+    // one big node + a long budget → it should recur across sessions, not truncate
+    const g = buildSeed().goals[0];
+    const single = [{ ...g, nodes: [{ ...g.nodes[1], estimatedMinutes: 200, status: "in_motion" as const }] }];
+    const r = mockDailyPlan({ availableMinutes: 360, energy: "high", context: "", goals: single });
+    const sessions = r.blocks.filter((b) => b.kind === "focus" && b.nodeId === g.nodes[1].id).length;
+    expect(sessions).toBeGreaterThan(1);
   });
 
   it("surfaces a recovery note when a node is at risk", () => {

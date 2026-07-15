@@ -9,7 +9,7 @@ import { Markdown } from "./Markdown";
 import { fireHaptic } from "@/lib/kairo/celebrate";
 import { cn } from "@/lib/utils";
 
-const OPTIONS = [15, 25, 50];
+const clampMinutes = (n: number) => Math.max(5, Math.round(n / 5) * 5);
 
 /**
  * A focus session on a single step — a calm timer that Solaspace sits down with you
@@ -23,6 +23,7 @@ export function FocusOverlay({
   nodeDescription,
   context,
   hex,
+  initialMinutes,
   onComplete,
   onClose,
   onSaveArtifact,
@@ -32,13 +33,19 @@ export function FocusOverlay({
   nodeDescription: string;
   context?: string;
   hex: string;
+  /** seed the timer from a planned block's length (falls back to 25) */
+  initialMinutes?: number;
   /** called with the minutes actually spent in focus */
   onComplete: (minutes: number) => void;
   onClose: () => void;
   onSaveArtifact: (title: string, content: string) => void;
 }) {
-  const [minutes, setMinutes] = React.useState(25);
-  const [left, setLeft] = React.useState(25 * 60);
+  const start = initialMinutes ? clampMinutes(initialMinutes) : 25;
+  // Session lengths: the usual 15/25/50, plus the planned block length so the timer
+  // matches what today's plan asked for.
+  const options = React.useMemo(() => Array.from(new Set([15, 25, 50, start])).sort((a, b) => a - b), [start]);
+  const [minutes, setMinutes] = React.useState(start);
+  const [left, setLeft] = React.useState(start * 60);
   const [running, setRunning] = React.useState(false);
   const [done, setDone] = React.useState(false);
 
@@ -83,7 +90,7 @@ export function FocusOverlay({
   React.useEffect(() => {
     // planLoading starts true; this runs once (overlay is keyed by node id upstream).
     let alive = true;
-    planSession({ goalTitle, nodeTitle: title, nodeDescription, minutes: 25, context })
+    planSession({ goalTitle, nodeTitle: title, nodeDescription, minutes: start, context })
       .then((p) => { if (alive) { setPlan(p); setPlanLoading(false); } })
       .catch(() => { if (alive) setPlanLoading(false); });
     return () => { alive = false; };
@@ -178,7 +185,7 @@ export function FocusOverlay({
 
           {!running && !done && (
             <div className="inset-well mb-6 flex gap-1 rounded-xl p-1">
-              {OPTIONS.map((m) => (
+              {options.map((m) => (
                 <button
                   key={m}
                   onClick={() => setDur(m)}

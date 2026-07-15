@@ -70,6 +70,8 @@ export interface DailyPlanInput {
 }
 
 export interface PlannedBlock {
+  /** "focus" = real work on a node; "break" = a rest block (no goal/node). */
+  kind: "focus" | "break";
   title: string;
   description: string;
   goalId: string | null;

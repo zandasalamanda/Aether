@@ -13,10 +13,7 @@ import { Logo } from "./Logo";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
 import { MicButton } from "@/components/ui/MicButton";
-import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { useSpeechInput } from "@/lib/hooks/use-speech-input";
-import { usePersistentState } from "@/lib/store/persist";
-import type { EnergyLevel } from "@/types";
 import { nodeStatusMeta } from "@/lib/kairo/status";
 import { track } from "@/lib/analytics";
 import { cn, formatDuration, relativeDays } from "@/lib/utils";
@@ -35,12 +32,6 @@ const STEP_PROGRESS: Record<Step, number> = { input: 18, questions: 45, mapping:
 
 export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: boolean; signedIn?: boolean }) {
   const [step, setStep] = React.useState<Step>("input");
-  // Smart defaults: a recommended time + energy budget, pre-selected so the task is
-  // "scan & verify," not "fill in from scratch." Persisted for the daily planner.
-  const [budget, setBudget] = usePersistentState<{ minutes: number; energy: EnergyLevel }>(
-    "kairo.budget.v1",
-    { minutes: 25, energy: "normal" }
-  );
   const [prompt, setPrompt] = React.useState("");
   const [result, setResult] = React.useState<GoalMapResult | null>(null);
   const [goalId, setGoalId] = React.useState<string | null>(null);
@@ -213,25 +204,6 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
                 {c}
               </button>
             ))}
-          </div>
-
-          {/* Smart defaults: recommended time + energy, pre-selected — scan & verify. */}
-          <div className="mx-auto mt-8 max-w-md">
-            <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-faint">The time &amp; energy you have today</div>
-            <div className="grid grid-cols-2 gap-3">
-              <SegmentedControl
-                ariaLabel="Time you have today"
-                options={[{ value: "15", label: "15m" }, { value: "25", label: "25m" }, { value: "50", label: "50m" }]}
-                value={String(budget.minutes)}
-                onChange={(v) => setBudget((b) => ({ ...b, minutes: Number(v) }))}
-              />
-              <SegmentedControl
-                ariaLabel="Energy level today"
-                options={[{ value: "low", label: "Low" }, { value: "normal", label: "Normal" }, { value: "high", label: "High" }]}
-                value={budget.energy}
-                onChange={(v) => setBudget((b) => ({ ...b, energy: v as EnergyLevel }))}
-              />
-            </div>
           </div>
         </div>
       )}

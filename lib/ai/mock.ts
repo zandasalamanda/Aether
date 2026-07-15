@@ -216,11 +216,31 @@ export function mockGoalMap(input: GoalMapInput): GoalMapResult {
 
 // ---------- daily plan ----------
 
-function difficultyFor(minutes: number, energy: DailyPlanInput["energy"]): Difficulty {
-  if (energy === "low") return "light";
-  if (minutes >= 75) return energy === "high" ? "deep" : "moderate";
-  if (minutes >= 45) return "moderate";
-  return "light";
+function difficultyFor(minutes: number, energy: DailyPlanInput["energy"], focusSoFar: number): Difficulty {
+  // Deep into a long day, everything lightens — you don't ask someone to go deep
+  // in hour five. Fatigue caps the ceiling regardless of the block's length.
+  if (energy === "low" || focusSoFar >= 300) return "light";
+  let base: Difficulty;
+  if (minutes >= 50 && energy === "high") base = "deep";
+  else if (minutes >= 40) base = "moderate";
+  else if (minutes >= 25) base = "moderate";
+  else base = "light";
+  if (focusSoFar >= 180 && base === "deep") return "moderate";
+  return base;
+}
+
+function breakBlock(minutes: number, long: boolean): PlannedBlock {
+  return {
+    kind: "break",
+    title: long ? "Long break" : "Break",
+    description: long ? "Step away — walk, eat, reset before the next stretch." : "Stretch, breathe, look away from the screen.",
+    goalId: null,
+    nodeId: null,
+    durationMinutes: minutes,
+    startTime: null,
+    difficulty: "light",
+    reason: "Protects your focus for the block after it",
+  };
 }
 
 /** Workable nodes, best-first: in_motion, then at_risk, then not_started. */
@@ -240,54 +260,107 @@ function candidateNodes(input: DailyPlanInput): { node: GoalNode; goalId: string
   });
 }
 
+// Break blocks count against the window, so the plan fits the real time you have —
+// e.g. a 4h budget becomes ~3h of focus with rests woven through, not 4h straight.
+const MIN_FOCUS = 15;
+const round5 = (n: number) => Math.round(n / 5) * 5;
+// Blocks shrink as the day accumulates — hour one is not hour five.
+const taper = (focusSoFar: number) => Math.max(0.65, 1 - focusSoFar / 600);
+
 export function mockDailyPlan(input: DailyPlanInput): DailyPlanResult {
+  const energy = input.energy;
+  const budget = Math.max(0, Math.round(input.availableMinutes || 0));
   const candidates = candidateNodes(input);
-  const budget = input.availableMinutes;
-  const cap = input.energy === "low" ? 30 : input.energy === "high" ? 120 : 60;
 
-  // No clock times — the plan is an ordered list for today (order = array index).
+  // Each node can span multiple sessions across the day — a 120-min step becomes
+  // a few focus blocks with breaks between, not one impossible sitting.
+  const queue = candidates.map((c) => ({ ...c, remaining: Math.max(MIN_FOCUS, c.node.estimatedMinutes || 30), sessions: 0 }));
+
+  const baseChunk = energy === "low" ? 25 : energy === "high" ? 55 : 45;
+  const shortBreak = energy === "high" ? 5 : 10;
+  const longBreakEvery = energy === "low" ? 60 : energy === "high" ? 110 : 90; // focus min between long breaks
+  const longBreakLen = energy === "low" ? 20 : 15;
+
   const blocks: PlannedBlock[] = [];
-  let used = 0;
+  let used = 0;        // window consumed (focus + breaks)
+  let totalFocus = 0;  // focus minutes so far (drives taper + difficulty)
+  let sinceLong = 0;   // focus minutes since the last long break
+  let ptr = 0;
+  let focusCount = 0;
+  const hasWork = () => queue.some((q) => q.remaining >= 10);
 
-  for (const c of candidates) {
-    if (used >= budget) break;
-    const remaining = budget - used;
-    let minutes = Math.min(c.node.estimatedMinutes, cap, remaining);
-    if (minutes < 15) continue;
-    minutes = Math.round(minutes / 5) * 5;
+  let guard = 0;
+  while (used < budget && hasWork() && guard++ < 80) {
+    if (budget - used < MIN_FOCUS) break;
+    // rotate to the next candidate that still has work (round-robin keeps a long
+    // day varied instead of grinding one node to zero before touching the rest)
+    let tries = 0;
+    while (queue[ptr % queue.length].remaining < 10 && tries++ < queue.length) ptr++;
+    const c = queue[ptr % queue.length];
+    if (c.remaining < 10) break;
 
+    const room = budget - used;
+    let chunk = Math.min(round5(baseChunk * taper(totalFocus)), c.remaining, room);
+    if (chunk < MIN_FOCUS) {
+      // a node's small leftover can still be a short closing block; otherwise retire it
+      if (c.remaining <= MIN_FOCUS && room >= 10) chunk = Math.min(Math.max(10, round5(c.remaining)), room);
+      else { c.remaining = 0; continue; }
+    }
+    if (chunk < 10) { c.remaining = 0; continue; }
+
+    c.sessions += 1;
+    const continued = c.sessions > 1;
+    const partialStart = energy === "low" && !continued && c.remaining > chunk;
     blocks.push({
-      title:
-        input.energy === "low" && c.node.estimatedMinutes > minutes
-          ? `Make a start: ${c.node.title.toLowerCase()}`
-          : c.node.title,
+      kind: "focus",
+      title: partialStart ? `Make a start: ${c.node.title.toLowerCase()}` : c.node.title,
       description: c.node.description || c.node.aiReason || "",
       goalId: c.goalId,
       nodeId: c.node.id,
-      durationMinutes: minutes,
+      durationMinutes: chunk,
       startTime: null,
-      difficulty: difficultyFor(minutes, input.energy),
-      reason: `${c.goalTitle} · ${c.node.aiReason ?? "keeps the goal moving"}`,
+      difficulty: difficultyFor(chunk, energy, totalFocus),
+      reason: continued ? `${c.goalTitle} · continued` : `${c.goalTitle} · ${c.node.aiReason ?? "keeps the goal moving"}`,
     });
-    used += minutes;
+    used += chunk; totalFocus += chunk; sinceLong += chunk; c.remaining -= chunk; focusCount++; ptr++;
+
+    if (used >= budget || !hasWork()) break;
+    // a break only earns its place if a real block follows it
+    if (sinceLong >= longBreakEvery && budget - used >= longBreakLen + MIN_FOCUS) {
+      blocks.push(breakBlock(longBreakLen, true)); used += longBreakLen; sinceLong = 0;
+    } else if (budget - used >= shortBreak + MIN_FOCUS) {
+      blocks.push(breakBlock(shortBreak, false)); used += shortBreak;
+    }
   }
 
-  const hours = Math.round((used / 60) * 10) / 10;
+  // A day should never end on a break — trim any that the loop left dangling.
+  while (blocks.length && blocks[blocks.length - 1].kind === "break") {
+    used -= blocks[blocks.length - 1].durationMinutes;
+    blocks.pop();
+  }
+
+  const focusHours = Math.round((totalFocus / 60) * 10) / 10;
+  const breakCount = blocks.filter((b) => b.kind === "break").length;
   const atRisk = candidates.find((c) => c.node.status === "at_risk");
+  const spare = budget - used;
 
   const summary =
-    blocks.length === 0
-      ? "No blocks fit today — add time or unblock a node to build a plan."
-      : `${blocks.length} focus block${blocks.length > 1 ? "s" : ""} · ~${hours}h planned · ${input.energy} energy`;
+    focusCount === 0
+      ? "No blocks fit today — add time, or make a step smaller to build a plan."
+      : `${focusCount} focus block${focusCount > 1 ? "s" : ""} · ~${focusHours}h of focus${breakCount ? ` · ${breakCount} break${breakCount > 1 ? "s" : ""}` : ""} · ${energy} energy`;
 
-  const explanation =
-    blocks.length === 0
-      ? "Every workable node needs more room than today's budget. Try a longer window, or make a task smaller."
-      : input.energy === "low"
-        ? "Energy is low, so Solaspace kept blocks short and light — momentum matters more than volume today."
-        : input.energy === "high"
-          ? "Energy is high, so Solaspace front-loaded the deepest work while you can carry it."
-          : "Solaspace balanced the day around what actually moves your goals, ordered by momentum.";
+  const base =
+    focusCount === 0
+      ? "Every workable step needs more room than today's budget. Try a longer window, or make a step smaller."
+      : energy === "low"
+        ? "Energy is low, so Sola kept the blocks short and gentle — momentum matters more than volume today."
+        : energy === "high"
+          ? "Energy is high, so Sola front-loaded the deepest work while you can carry it, then eased off."
+          : "Sola balanced the day around what actually moves your goals, with breaks so the focus holds.";
+  // Only flag leftover time when real work ran out (not when we simply filled the day).
+  const explanation = focusCount > 0 && !hasWork() && spare >= 20
+    ? `${base} You've got about ${Math.round(spare / 5) * 5} min to spare — rest it, or pull a step forward.`
+    : base;
 
   const recoveryNote = atRisk
     ? `"${atRisk.node.title}" is at risk. One of today's blocks targets it to pull the timeline back.`
