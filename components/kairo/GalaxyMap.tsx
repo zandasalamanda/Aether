@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowUp, Check, Timer, X, ChevronDown, Locate, GitBranch, Plus, Minus, Crosshair, Palette, Trash2, Sparkles, MessageCircle, Loader2, PlayCircle, Dumbbell, BookOpen, ExternalLink, NotebookPen, Wand2, ArrowDownToLine, HelpCircle, LayoutGrid, LayoutTemplate, Focus, Share2, Save, Search, Scissors } from "lucide-react";
+import { ArrowUp, Check, Timer, X, ChevronDown, Locate, GitBranch, Plus, Minus, Crosshair, Palette, Trash2, Sparkles, MessageCircle, Loader2, PlayCircle, Dumbbell, BookOpen, ExternalLink, NotebookPen, Wand2, ArrowDownToLine, HelpCircle, LayoutGrid, LayoutTemplate, Focus, Boxes, Share2, Save, Search, Scissors } from "lucide-react";
 import type { GoalWithNodes, GoalNode, NodeStatus, NodeResource, ResourceKind, ResolvedResource } from "@/types";
 import { parseDeadline } from "@/lib/kairo/deadline";
 import { generateGoalMap } from "@/lib/ai/generate-goal-map";
@@ -63,6 +63,20 @@ function resourceUrl(r: NodeResource): string {
     ? `https://www.google.com/search?q=${q}`
     : `https://www.youtube.com/results?search_query=${q}`;
 }
+
+// "Organise" buckets a goal by the kind of icon it carries — a light-touch
+// auto-sort into life areas. Icons not listed fall into "Other".
+const CATEGORY_OF: Record<string, string> = {
+  fitness: "Health", health: "Health", habit: "Health",
+  career: "Work", rocket: "Work", growth: "Work",
+  money: "Money",
+  study: "Learning", school: "Learning", language: "Learning",
+  code: "Digital", design: "Digital", photo: "Digital",
+  music: "Creative", writing: "Creative", speaking: "Creative", trophy: "Creative",
+  travel: "Travel",
+  home: "Home", cooking: "Home", community: "Home",
+};
+const categoryOf = (icon: string | null | undefined): string => CATEGORY_OF[icon ?? ""] ?? "Other";
 
 /** Deterministic galaxy slot for a goal by its index (used until dragged). */
 function defaultPos(i: number): { x: number; y: number } {
@@ -450,28 +464,68 @@ export function GalaxyMap({
     setNewGroupName("");
   };
 
-  // "Tidy": snap planets to a clean arrangement — each constellation's members
-  // cluster tightly around a spiral slot; loose goals fill the rest of the spiral.
+  // "Tidy": snap every planet onto a clean, evenly-spaced grid centred on the
+  // origin. Constellation members are ordered contiguously so a group stays a tight
+  // block rather than getting scattered across the grid.
   const tidy = () => {
+    const seen = new Set<string>();
+    const order: string[] = [];
+    for (const gr of groups) for (const id of gr.goalIds) if (!seen.has(id) && goals.some((g) => g.id === id)) { seen.add(id); order.push(id); }
+    for (const g of goals) if (!seen.has(g.id)) order.push(g.id);
+    const n = order.length;
+    const cols = Math.max(1, Math.round(Math.sqrt(n * 1.6))); // a touch wider than tall
+    const rows = Math.ceil(n / cols);
+    const CX = 330, CY = 300;
     const next: Record<string, { x: number; y: number }> = {};
-    const live = groups
-      .map((gr) => ({ ...gr, goalIds: gr.goalIds.filter((id) => goals.some((g) => g.id === id)) }))
-      .filter((gr) => gr.goalIds.length > 0);
-    let slot = 0;
-    for (const gr of live) {
-      const base = defaultPos(slot++);
-      gr.goalIds.forEach((id, k) => {
-        const a = k * GOLDEN;
-        const r = k === 0 ? 0 : 78 + 14 * k;
-        next[id] = { x: base.x + Math.cos(a) * r, y: base.y + Math.sin(a) * r };
-      });
-    }
-    const grouped = new Set(live.flatMap((gr) => gr.goalIds));
-    for (const g of goals) if (!grouped.has(g.id)) next[g.id] = defaultPos(slot++);
+    order.forEach((id, i) => {
+      const col = i % cols, row = Math.floor(i / cols);
+      // the last row is short — centre it under the rest
+      const inRow = row === rows - 1 ? n - row * cols : cols;
+      next[id] = { x: (col - (inRow - 1) / 2) * CX, y: (row - (rows - 1) / 2) * CY };
+    });
     setAnimating(true);
+    setView({ tx: 0, ty: 0, scale: 0.72 }); // frame the whole grid
     setPositions(next);
     setSelectedNodeId(null);
     showToast("Tidied the galaxy");
+  };
+
+  // "Organise": auto-sort goals into life-area constellations by their icon
+  // (Health, Work, Travel, Digital, …) and lay each group out as its own cluster.
+  const organize = () => {
+    if (goals.length === 0) return;
+    const buckets = new Map<string, string[]>();
+    for (const g of goals) {
+      const cat = categoryOf(g.icon);
+      (buckets.get(cat) ?? buckets.set(cat, []).get(cat)!).push(g.id);
+    }
+    const cats = [...buckets.entries()];
+    // A halo is only worth drawing for a real cluster — label groups of 2+.
+    const newGroups: Constellation[] = cats
+      .filter(([, ids]) => ids.length >= 2)
+      .map(([label, goalIds], i) => ({ id: newId(), label, colorIdx: i % GOAL_PALETTE.length, goalIds }));
+    const cols = Math.max(1, Math.ceil(Math.sqrt(cats.length)));
+    const rows = Math.ceil(cats.length / cols);
+    const CX = 560, CY = 500;
+    const next: Record<string, { x: number; y: number }> = {};
+    cats.forEach(([, goalIds], ci) => {
+      const col = ci % cols, row = Math.floor(ci / cols);
+      const cx = (col - (cols - 1) / 2) * CX;
+      const cy = (row - (rows - 1) / 2) * CY;
+      goalIds.forEach((id, k) => {
+        if (goalIds.length === 1) { next[id] = { x: cx, y: cy }; return; }
+        const a = k * GOLDEN;
+        const r = 96 + 20 * Math.sqrt(k);
+        next[id] = { x: cx + Math.cos(a) * r, y: cy + Math.sin(a) * r };
+      });
+    });
+    setGroups(newGroups);
+    setAnimating(true);
+    setView({ tx: 0, ty: 60, scale: 0.66 }); // frame the clusters, nudged down so top labels clear the chrome
+    setPositions(next);
+    setSelectedNodeId(null);
+    setExpandedId(null);
+    showToast(`Organised into ${cats.length} area${cats.length === 1 ? "" : "s"}`);
   };
 
   // Screen point → map coordinates (invert the centered translate + scale transform).
@@ -1062,8 +1116,11 @@ export function GalaxyMap({
             <button onClick={() => setBrowsingTemplates(true)} className="grid h-9 w-9 place-items-center rounded-full text-muted transition-colors hover:text-ink" aria-label="Starter templates" title="Starter templates"><LayoutTemplate size={16} /></button>
             <button onClick={() => { setSearchOpen((s) => !s); setQuery(""); }} aria-pressed={searchOpen} className={cn("grid h-9 w-9 place-items-center rounded-full transition-colors", searchOpen ? "text-accent" : "text-muted hover:text-ink")} aria-label="Find on the map" title="Find on the map"><Search size={16} /></button>
             <button onClick={() => setFocusLens((f) => !f)} aria-pressed={focusLens} className={cn("grid h-9 w-9 place-items-center rounded-full transition-colors", focusLens ? "text-accent" : "text-muted hover:text-ink")} aria-label="Focus lens — dim to your live path" title="Focus lens — dim to your live path"><Focus size={16} /></button>
-            {(groups.length > 0 || Object.keys(positions).length > 0) && (
-              <button onClick={tidy} className="grid h-9 w-9 place-items-center rounded-full text-muted transition-colors hover:text-ink" aria-label="Tidy the galaxy" title="Tidy the galaxy"><LayoutGrid size={15} /></button>
+            {goals.length > 1 && (
+              <button onClick={organize} className="grid h-9 w-9 place-items-center rounded-full text-muted transition-colors hover:text-ink" aria-label="Organise into life areas" title="Organise into life areas (Health, Work, Travel…)"><Boxes size={16} /></button>
+            )}
+            {goals.length > 1 && (
+              <button onClick={tidy} className="grid h-9 w-9 place-items-center rounded-full text-muted transition-colors hover:text-ink" aria-label="Tidy the galaxy" title="Tidy into a clean grid"><LayoutGrid size={15} /></button>
             )}
           </div>
           {searchOpen && (

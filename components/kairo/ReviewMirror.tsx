@@ -46,7 +46,7 @@ export function ReviewMirror({ insights, goals }: { insights: ReviewInsights; go
                     <span className={cn("shrink-0 text-[12px] font-medium", STATE_TONE[p.state])}>{p.verdict}</span>
                   </div>
                   {/* progress fill (where you are) vs a marker for time elapsed (where you should be) */}
-                  <div className="relative mt-2.5 h-2 overflow-hidden rounded-full" style={{ background: "rgba(255,255,255,0.06)" }}>
+                  <div className="inset-well relative mt-2.5 h-2 overflow-hidden rounded-full">
                     <div className="h-full rounded-full" style={{ width: `${Math.max(2, Math.round(p.progress))}%`, background: hex }} />
                     {p.state !== "done" && (
                       <span
