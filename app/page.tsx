@@ -1,7 +1,7 @@
 import Link from "next/link";
-import Image from "next/image";
 import { ArrowRight, ChevronDown, Waypoints, Sunrise, CircleCheck, Search, Bell, ShieldCheck, Activity, Check } from "lucide-react";
 import { Logo } from "@/components/kairo/Logo";
+import { AppShots } from "@/components/kairo/AppShots";
 import { HeroCluster } from "@/components/kairo/HeroCluster";
 import { LiveMapDemo } from "@/components/kairo/LiveMapDemo";
 import { SectionLabel } from "@/components/kairo/PageHeader";
@@ -142,28 +142,7 @@ export default function LandingPage() {
           <p className="mx-auto mt-3 max-w-xl text-[15px] leading-relaxed text-muted">Every screen here is the real product — the living map, the research on each step, and the honest weekly review a paying member actually uses.</p>
         </div>
 
-        <figure className="panel-2 overflow-hidden rounded-3xl p-2 md:p-3">
-          <Image src="/shots/map.png" width={1700} height={941} alt="The living goal map with a research panel open on a step" className="w-full rounded-2xl" />
-          <figcaption className="px-3 py-3 text-center text-[13px] text-muted">Your living goal map — every step placed in order, each with a hand-picked video or cited guide attached.</figcaption>
-        </figure>
-
-        <div className="mt-5 grid gap-4 sm:grid-cols-3">
-          {[
-            { src: "/shots/review.png", w: 731, h: 900, alt: "Weekly review showing pace to each deadline", cap: "An honest weekly review — your true pace to every deadline." },
-            { src: "/shots/focus.png", w: 751, h: 900, alt: "A focus session with a timer and a first-move checklist", cap: "Focus sessions with a first move and checklist, so you just start." },
-            { src: "/shots/list.png", w: 668, h: 900, alt: "List view of goals with steps checked off", cap: "Every goal and step, checked off as you go." },
-          ].map((s) => (
-            <figure key={s.src} className="panel overflow-hidden rounded-2xl p-1.5">
-              <Image src={s.src} width={s.w} height={s.h} alt={s.alt} className="w-full rounded-xl" />
-              <figcaption className="px-2 py-2.5 text-center text-[12px] leading-relaxed text-muted">{s.cap}</figcaption>
-            </figure>
-          ))}
-        </div>
-
-        <figure className="panel-2 mt-5 overflow-hidden rounded-3xl p-2 md:p-3">
-          <Image src="/shots/sola.png" width={1700} height={909} alt="The Ask Sola panel proposing plan changes to accept or dismiss" className="w-full rounded-2xl" />
-          <figcaption className="px-3 py-3 text-center text-[13px] text-muted">Ask Sola to reshape your whole plan — it proposes changes, you accept or dismiss.</figcaption>
-        </figure>
+        <AppShots />
       </section>
 
       {/* Pricing */}
@@ -224,17 +203,14 @@ export default function LandingPage() {
       </section>
 
       {/* Final CTA */}
-      <section className="mx-auto max-w-6xl px-5 py-20">
-        <div className="panel-2 relative overflow-hidden rounded-[32px] px-8 py-16 text-center">
-          <div className="pointer-events-none absolute inset-0 -z-10">
-            <div className="absolute left-1/2 top-0 h-64 w-64 -translate-x-1/2 rounded-full bg-accent/20 blur-[90px]" />
-          </div>
-          <h2 className="mx-auto max-w-2xl font-display text-4xl font-semibold tracking-tight text-ink md:text-5xl">Pick a goal. Watch the path appear.</h2>
-          <p className="mx-auto mt-4 max-w-md text-[15px] text-muted">Chart it. Focus. Arrive. The first map takes about a minute. Free, no card.</p>
-          <Link href="/build" className="mt-8 inline-block">
-            <Button variant="primary" size="lg">Start your map <ArrowRight size={18} /></Button>
-          </Link>
+      <section className="relative mx-auto max-w-6xl overflow-hidden px-5 py-24 text-center">
+        <div className="pointer-events-none absolute inset-0 -z-10">
+          <div className="absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full bg-accent/15 blur-[90px]" />
         </div>
+        <h2 className="mx-auto max-w-2xl font-display text-4xl font-semibold tracking-tight text-ink md:text-5xl">Pick a goal. Watch the path appear.</h2>
+        <Link href="/build" className="mt-8 inline-block">
+          <Button variant="primary" size="lg">Start your map <ArrowRight size={18} /></Button>
+        </Link>
       </section>
 
       {/* Footer */}
