@@ -13,14 +13,17 @@ export function SegmentedControl<T extends string>({
   value,
   onChange,
   className,
+  ariaLabel,
 }: {
   options: Segment<T>[];
   value: T;
   onChange: (value: T) => void;
   className?: string;
+  /** Names the whole control for screen readers (e.g. "Time you have"). */
+  ariaLabel?: string;
 }) {
   return (
-    <div className={cn("inset-well flex gap-1 rounded-xl p-1", className)}>
+    <div role="group" aria-label={ariaLabel} className={cn("inset-well flex gap-1 rounded-xl p-1", className)}>
       {options.map((opt) => {
         const active = opt.value === value;
         return (

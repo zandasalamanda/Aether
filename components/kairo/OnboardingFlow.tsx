@@ -254,11 +254,13 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
             <div className="mb-2 font-mono text-[10px] uppercase tracking-[0.16em] text-faint">The time &amp; energy you have today</div>
             <div className="grid grid-cols-2 gap-3">
               <SegmentedControl
+                ariaLabel="Time you have today"
                 options={[{ value: "15", label: "15m" }, { value: "25", label: "25m" }, { value: "50", label: "50m" }]}
                 value={String(budget.minutes)}
                 onChange={(v) => setBudget((b) => ({ ...b, minutes: Number(v) }))}
               />
               <SegmentedControl
+                ariaLabel="Energy level today"
                 options={[{ value: "low", label: "Low" }, { value: "normal", label: "Normal" }, { value: "high", label: "High" }]}
                 value={budget.energy}
                 onChange={(v) => setBudget((b) => ({ ...b, energy: v as EnergyLevel }))}

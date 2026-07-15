@@ -3,7 +3,7 @@ import { LegalPage, LegalSection } from "@/components/kairo/LegalPage";
 
 export const metadata: Metadata = { title: "Privacy · Solaspace" };
 
-const CONTACT = "zander.leon@gmail.com";
+const CONTACT = "support@solaspace.app";
 
 export default function PrivacyPage() {
   return (

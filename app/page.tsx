@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, ChevronDown, Waypoints, Sunrise, CircleCheck, Search, Bell, ShieldCheck, Activity, Check } from "lucide-react";
 import { Logo } from "@/components/kairo/Logo";
 import { HeroCluster } from "@/components/kairo/HeroCluster";
@@ -22,9 +23,44 @@ const PILLARS = [
   { icon: Activity, title: "Progress you can see", desc: "A weekly report of what you produced and your true pace to every deadline. A clear picture, every week." },
 ];
 
+// Honest answers to the questions a first-time visitor actually asks.
+const FAQS = [
+  { q: "Do I need to be an expert to use it?", a: "No. Tell Solaspace your goal in plain words — it handles the mapping, the order, and the research for each step, so you just follow the next move." },
+  { q: "What powers the AI?", a: "Solaspace uses leading large language models to map your goals, break steps down, and draft alongside you. If AI is ever unavailable, it falls back to solid built-in plans so the app always works." },
+  { q: "What happens to my data?", a: "Your goals and progress are yours. They're stored securely, never sold, and you can delete your account and all of your data anytime from Settings." },
+  { q: "Is payment secure, and can I cancel?", a: "Payments run through Stripe — we never see your card. Cancel in one click from Settings anytime; you keep Pro through the end of the period you paid for." },
+  { q: "What if I fall behind?", a: "That's exactly what it's built for. Solaspace shows your true pace, reschedules what slipped, and rebuilds today around the time and energy you actually have." },
+  { q: "Can I use it for free?", a: "Yes — the free plan maps up to two goals with daily planning, research picks, and a weekly review. Upgrade to Pro only when you want unlimited goals and the full AI." },
+];
+
 export default function LandingPage() {
   return (
     <div className="relative overflow-hidden">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@graph": [
+              {
+                "@type": "SoftwareApplication",
+                name: "Solaspace",
+                applicationCategory: "ProductivityApplication",
+                operatingSystem: "Web",
+                description: "An AI goal-execution app that turns your goals into a living map and builds the best plan for the time you actually have today.",
+                offers: [
+                  { "@type": "Offer", price: "0", priceCurrency: "USD", name: "Free" },
+                  { "@type": "Offer", price: "10", priceCurrency: "USD", name: "Pro" },
+                ],
+              },
+              {
+                "@type": "FAQPage",
+                mainEntity: FAQS.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
+              },
+            ],
+          }),
+        }}
+      />
       {/* Header */}
       <header className="fixed inset-x-0 top-0 z-40 border-b border-line/50 bg-canvas/50 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3.5">
@@ -98,6 +134,38 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* The real app — actual screenshots, not a mockup */}
+      <section id="app" className="mx-auto max-w-6xl px-5 py-20">
+        <div className="mb-10 text-center">
+          <SectionLabel className="mb-3 flex justify-center">The real thing</SectionLabel>
+          <h2 className="font-display text-3xl font-semibold tracking-tight text-ink md:text-4xl">Not a mockup. The actual app.</h2>
+          <p className="mx-auto mt-3 max-w-xl text-[15px] leading-relaxed text-muted">Every screen here is the real product — the living map, the research on each step, and the honest weekly review a paying member actually uses.</p>
+        </div>
+
+        <figure className="panel-2 overflow-hidden rounded-3xl p-2 md:p-3">
+          <Image src="/shots/map.png" width={1700} height={941} alt="The living goal map with a research panel open on a step" className="w-full rounded-2xl" />
+          <figcaption className="px-3 py-3 text-center text-[13px] text-muted">Your living goal map — every step placed in order, each with a hand-picked video or cited guide attached.</figcaption>
+        </figure>
+
+        <div className="mt-5 grid gap-4 sm:grid-cols-3">
+          {[
+            { src: "/shots/review.png", w: 731, h: 900, alt: "Weekly review showing pace to each deadline", cap: "An honest weekly review — your true pace to every deadline." },
+            { src: "/shots/focus.png", w: 751, h: 900, alt: "A focus session with a timer and a first-move checklist", cap: "Focus sessions with a first move and checklist, so you just start." },
+            { src: "/shots/list.png", w: 668, h: 900, alt: "List view of goals with steps checked off", cap: "Every goal and step, checked off as you go." },
+          ].map((s) => (
+            <figure key={s.src} className="panel overflow-hidden rounded-2xl p-1.5">
+              <Image src={s.src} width={s.w} height={s.h} alt={s.alt} className="w-full rounded-xl" />
+              <figcaption className="px-2 py-2.5 text-center text-[12px] leading-relaxed text-muted">{s.cap}</figcaption>
+            </figure>
+          ))}
+        </div>
+
+        <figure className="panel-2 mt-5 overflow-hidden rounded-3xl p-2 md:p-3">
+          <Image src="/shots/sola.png" width={1700} height={909} alt="The Ask Sola panel proposing plan changes to accept or dismiss" className="w-full rounded-2xl" />
+          <figcaption className="px-3 py-3 text-center text-[13px] text-muted">Ask Sola to reshape your whole plan — it proposes changes, you accept or dismiss.</figcaption>
+        </figure>
+      </section>
+
       {/* Pricing */}
       <section id="pricing" className="mx-auto max-w-6xl px-5 py-20">
         <div className="mb-10 text-center">
@@ -136,6 +204,25 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* FAQ */}
+      <section id="faq" className="mx-auto max-w-3xl px-5 py-20">
+        <div className="mb-8 text-center">
+          <SectionLabel className="mb-3 flex justify-center">Questions</SectionLabel>
+          <h2 className="font-display text-3xl font-semibold tracking-tight text-ink md:text-4xl">Good questions, honest answers.</h2>
+        </div>
+        <div className="space-y-2.5">
+          {FAQS.map((f) => (
+            <details key={f.q} className="panel group rounded-2xl px-5 py-4">
+              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[15px] font-medium text-ink [&::-webkit-details-marker]:hidden">
+                {f.q}
+                <ChevronDown size={18} className="shrink-0 text-faint transition-transform group-open:rotate-180" />
+              </summary>
+              <p className="mt-3 text-[14px] leading-relaxed text-muted">{f.a}</p>
+            </details>
+          ))}
+        </div>
+      </section>
+
       {/* Final CTA */}
       <section className="mx-auto max-w-6xl px-5 py-20">
         <div className="panel-2 relative overflow-hidden rounded-[32px] px-8 py-16 text-center">
@@ -158,6 +245,7 @@ export default function LandingPage() {
             <Link href="/sign-in" className="inline-block py-1.5 hover:text-ink">Sign in</Link>
             <a href="#features" className="inline-block py-1.5 hover:text-ink">Features</a>
             <a href="#pricing" className="inline-block py-1.5 hover:text-ink">Pricing</a>
+            <a href="#faq" className="inline-block py-1.5 hover:text-ink">FAQ</a>
             <Link href="/privacy" className="inline-block py-1.5 hover:text-ink">Privacy</Link>
             <Link href="/terms" className="inline-block py-1.5 hover:text-ink">Terms</Link>
           </div>
