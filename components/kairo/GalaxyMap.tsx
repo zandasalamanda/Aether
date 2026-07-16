@@ -1059,10 +1059,11 @@ export function GalaxyMap({
         )}
 
         {empty && !mapping && (
-          <div className="pointer-events-none absolute inset-0 grid place-items-center pb-40">
-            <div className="grid place-items-center text-center">
+          <div className="pointer-events-none absolute inset-0 grid place-items-center pb-44">
+            <div className="grid max-w-xs place-items-center px-6 text-center">
               <span className="rounded-full" style={{ width: 96, height: 96, background: "radial-gradient(circle at 36% 28%, #fdf3e0 0%, #e6b877 46%, #1a130a 100%)", boxShadow: "0 0 60px rgba(230,184,119,0.28)", animation: "breathe 6s ease-in-out infinite" }} />
-              <p className="mt-6 font-mono text-[11px] uppercase tracking-[0.22em] text-faint">Your map is empty</p>
+              <p className="mt-7 font-display text-xl font-semibold text-ink">What do you want to do?</p>
+              <p className="mt-2 text-[15px] leading-relaxed text-muted">Type a goal below and Solaspace maps every step for you.</p>
             </div>
           </div>
         )}
@@ -1242,6 +1243,7 @@ export function GalaxyMap({
               onClose={() => setSelectedNodeId(null)}
               onDone={() => { setStatus(expanded.id, selectedNode.id, "done"); track("step_completed", { goalId: expanded.id, surface: "map" }); }}
               onFocus={() => openFocus(selectedNode)}
+              onDelete={() => { removeNode(expanded.id, selectedNode.id); setSelectedNodeId(null); }}
               onBranch={() => setBranchFor(selectedNode.id)}
               onBreakDown={() => setBreakdownFor(selectedNode)}
               onMakeSmaller={() => void runMakeSmaller(selectedNode)}
@@ -1266,6 +1268,7 @@ export function GalaxyMap({
               onDelete={() => removeGoal(expanded.id)}
               onAdapt={() => void runReplan(expanded.id)}
               onShare={() => void shareGoalLink(expanded.id)}
+              onGroup={() => { setGroupPickerFor(expanded.id); setNewGroupName(""); }}
               onClose={() => { setExpandedId(null); overview(); }}
             />
           ) : (
@@ -1788,7 +1791,7 @@ function NewGoalBar({
 }
 
 function GoalBar({
-  goal, hex, value, onChange, onAddStep, onColor, onDelete, onAdapt, onShare, onClose,
+  goal, hex, value, onChange, onAddStep, onColor, onDelete, onAdapt, onShare, onGroup, onClose,
 }: {
   goal: GoalWithNodes;
   hex: string;
@@ -1799,6 +1802,7 @@ function GoalBar({
   onDelete: () => void;
   onAdapt: () => void;
   onShare: () => void;
+  onGroup: () => void;
   onClose: () => void;
 }) {
   const [armed, setArmed] = React.useState(false);
@@ -1822,13 +1826,14 @@ function GoalBar({
             <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: hex, boxShadow: `0 0 8px ${hex}` }} />
             <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-ink">{goal.title}</span>
             {goal.nodes.length > 0 && (
-              <button onClick={onAdapt} className="grid h-7 w-7 place-items-center rounded-lg text-faint hover:text-accent" aria-label="Adapt the plan" title="Adapt the plan to your progress"><Wand2 size={15} /></button>
+              <button onClick={onAdapt} className="grid h-9 w-9 place-items-center rounded-lg text-faint hover:text-accent" aria-label="Adapt the plan" title="Adapt the plan to your progress"><Wand2 size={16} /></button>
             )}
-            <button onClick={onShare} className="grid h-7 w-7 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Share this map" title="Copy a public link"><Share2 size={15} /></button>
-            <Link href={`/app/notebook?goal=${goal.id}`} className="grid h-7 w-7 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Notebook" title="Notebook"><NotebookPen size={15} /></Link>
-            <button onClick={onColor} className="grid h-7 w-7 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Change color" title="Change color"><Palette size={15} /></button>
-            <button onClick={() => setArmed(true)} className="grid h-7 w-7 place-items-center rounded-lg text-faint hover:text-warn" aria-label="Delete goal" title="Delete goal"><Trash2 size={15} /></button>
-            <button onClick={onClose} className="grid h-7 w-7 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Close" title="Close"><X size={15} /></button>
+            <button onClick={onGroup} className="grid h-9 w-9 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Add to a group" title="Add to a group (Health, Work…)"><Boxes size={16} /></button>
+            <button onClick={onShare} className="grid h-9 w-9 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Share this map" title="Copy a public link"><Share2 size={16} /></button>
+            <Link href={`/app/notebook?goal=${goal.id}`} className="grid h-9 w-9 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Notebook" title="Notebook"><NotebookPen size={16} /></Link>
+            <button onClick={onColor} className="grid h-9 w-9 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Change color" title="Change color"><Palette size={16} /></button>
+            <button onClick={() => setArmed(true)} className="grid h-9 w-9 place-items-center rounded-lg text-faint hover:text-warn" aria-label="Delete goal" title="Delete goal"><Trash2 size={16} /></button>
+            <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Close" title="Close"><X size={16} /></button>
           </div>
           <form onSubmit={(e) => { e.preventDefault(); onAddStep(); }} className="inset-well flex items-center gap-2 rounded-xl p-1 pl-3.5">
             <input
@@ -2042,7 +2047,7 @@ export function NodeResourceBlock({ node, onResolve }: { node: GoalNode; onResol
 }
 
 function NodeSheet({
-  node, hex, goalTitle, goalNotes, breaking, isPro, onToast, onClose, onDone, onFocus, onBranch, onBreakDown, onMakeSmaller, onResolveResource, onSaveArtifact,
+  node, hex, goalTitle, goalNotes, breaking, isPro, onToast, onClose, onDone, onFocus, onDelete, onBranch, onBreakDown, onMakeSmaller, onResolveResource, onSaveArtifact,
 }: {
   node: GoalNode;
   hex: string;
@@ -2054,6 +2059,7 @@ function NodeSheet({
   onClose: () => void;
   onDone: () => void;
   onFocus: () => void;
+  onDelete: () => void;
   onBranch: () => void;
   onBreakDown: () => void;
   onMakeSmaller: () => void;
@@ -2061,6 +2067,7 @@ function NodeSheet({
   onSaveArtifact: (label: string, body: string) => void;
 }) {
   const [asking, setAsking] = React.useState(false);
+  const [armedDel, setArmedDel] = React.useState(false);
   const [breakOpen, setBreakOpen] = React.useState(false);
   const [question, setQuestion] = React.useState("");
   const [answer, setAnswer] = React.useState<string | null>(null);
@@ -2190,8 +2197,18 @@ function NodeSheet({
           </div>
           <h2 className="mt-1 font-display text-lg font-semibold leading-snug text-ink">{node.title}</h2>
         </div>
-        <button onClick={onClose} className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Close"><X size={16} /></button>
+        <div className="flex shrink-0 items-center gap-1">
+          <button onClick={() => setArmedDel(true)} className="grid h-9 w-9 place-items-center rounded-lg text-faint transition-colors hover:text-warn" aria-label="Delete this step" title="Delete this step"><Trash2 size={16} /></button>
+          <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Close"><X size={17} /></button>
+        </div>
       </div>
+      {armedDel && (
+        <div className="mt-2 flex items-center gap-2 rounded-xl border border-warn/25 bg-warn/[0.06] px-3 py-2">
+          <span className="min-w-0 flex-1 text-[13px] text-warn">Delete this step?</span>
+          <Chip onClick={() => setArmedDel(false)}>Cancel</Chip>
+          <Chip tone="warn" icon={<Trash2 size={13} />} onClick={onDelete}>Delete</Chip>
+        </div>
+      )}
       {node.description && <div className="mt-1.5 text-[13px] leading-relaxed text-muted"><Markdown>{node.description}</Markdown></div>}
 
       {node.resource && (

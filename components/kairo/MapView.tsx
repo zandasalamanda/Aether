@@ -6,6 +6,7 @@ import type { GoalWithNodes } from "@/types";
 import { GalaxyMap } from "./GalaxyMap";
 import { GoalList } from "./GoalList";
 import { AskSola } from "./AskSola";
+import { FirstRunTour } from "./FirstRunTour";
 import { usePersistentState } from "@/lib/store/persist";
 import { cn } from "@/lib/utils";
 
@@ -22,6 +23,7 @@ export function MapView({ goals, initialGoalId, remote, isPro }: { goals: GoalWi
 
   return (
     <div className="absolute inset-0">
+      <FirstRunTour />
       {view === "galaxy" ? (
         <GalaxyMap key={openId ?? "root"} goals={goals} initialGoalId={openId} remote={remote} isPro={isPro} onSheetChange={setSheetOpen} />
       ) : (
