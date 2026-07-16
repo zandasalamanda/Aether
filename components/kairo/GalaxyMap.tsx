@@ -1993,11 +1993,11 @@ export function NodeResourceBlock({ node, onResolve }: { node: GoalNode; onResol
   const resource = node.resource!;
   const resMeta = RESOURCE_META[resource.kind];
   const [resolved, setResolved] = React.useState<ResolvedResource | null>(resource.resolved ?? null);
-  // Starts true when we'll resolve on open (video step, not yet resolved).
-  const [resolving, setResolving] = React.useState(() => resource.kind !== "read" && !resource.resolved);
+  // Starts true when we'll resolve on open (any kind not yet resolved to a real URL).
+  const [resolving, setResolving] = React.useState(() => !resource.resolved);
 
   React.useEffect(() => {
-    if (resolved || resource.kind === "read") return;
+    if (resolved) return;
     let alive = true;
     viaRoute<{ resolved: ResolvedResource | null }>("/api/resource/resolve", { kind: resource.kind, query: resource.query })
       .then((j) => {
@@ -2034,7 +2034,7 @@ export function NodeResourceBlock({ node, onResolve }: { node: GoalNode; onResol
       {resolving ? <Loader2 size={18} className="shrink-0 animate-spin text-accent" /> : <resMeta.Icon size={18} className="shrink-0 text-accent" />}
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[13px] font-medium text-ink">{resMeta.verb}: {resource.label}</span>
-        <span className="block text-[11px] text-faint">{resolving ? "Finding the best video…" : "Opens a search. Pick the best result."}</span>
+        <span className="block text-[11px] text-faint">{resolving ? "Finding the best link…" : "Opens a search."}</span>
       </span>
       <ExternalLink size={14} className="shrink-0 text-faint" />
     </a>

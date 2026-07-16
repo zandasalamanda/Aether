@@ -1,21 +1,21 @@
 import "server-only";
 import type { ResolvedResource, ResourceKind } from "@/types";
 import { searchYouTube } from "./youtube";
+import { resolveArticle } from "./web";
 
-// Turn a step's search intent into a real, live link. Video-kind steps go to the
-// YouTube Data API; "read" stays a search intent for now (returns null → caller
-// keeps today's search link). A small in-memory cache keeps identical queries
-// from re-spending quota within a warm server instance; the node-level cache in
-// the DB makes it durable across instances.
+// Turn a step's search intent into a real, live link: video-kind steps go to the
+// YouTube Data API, "read" steps to Gemini's Google Search grounding. Both return
+// a real URL or null (caller then keeps today's search link — never a dead link).
+// A small in-memory cache keeps identical queries from re-spending quota within a
+// warm server instance; the node-level DB cache makes it durable across instances.
 
 const cache = new Map<string, ResolvedResource | null>();
 const norm = (kind: ResourceKind, q: string) => `${kind}:${q.trim().toLowerCase()}`;
 
 export async function resolveResource(kind: ResourceKind, query: string): Promise<ResolvedResource | null> {
-  if (kind === "read") return null; // web-search grounding is a later pass
   const k = norm(kind, query);
   if (cache.has(k)) return cache.get(k) ?? null;
-  const r = await searchYouTube(query);
+  const r = kind === "read" ? await resolveArticle(query) : await searchYouTube(query);
   cache.set(k, r);
   return r;
 }
