@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Image, { type StaticImageData } from "next/image";
-import { X, Maximize2 } from "lucide-react";
+import { X, Maximize2, MousePointer2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Imported, not referenced by path. Next then derives each image's real size and
@@ -23,15 +23,15 @@ interface Shot {
 interface Beat {
   x: number;
   y: number;
-  label: string;
+  label: React.ReactNode;
 }
 
 const MAP: Shot = { img: mapPng, alt: "The living goal map with a step open, showing the video picked for it" };
 const MAP_BEATS: Beat[] = [
-  { x: 47, y: 41, label: "Every goal becomes a map, with real progress on its face." },
-  { x: 61, y: 46, label: "Each step in order. The ones you finished light the trail." },
-  { x: 94, y: 84, label: "One clear next move, always marked." },
-  { x: 50, y: 90, label: "The exact video you need, already found and attached." },
+  { x: 47, y: 41, label: <>Every goal becomes a <b>living map</b>, with real progress on its face.</> },
+  { x: 61, y: 46, label: <>Each step <b>in order</b>. The ones you finished <b>light the trail</b>.</> },
+  { x: 94, y: 84, label: <>One clear <b>next move</b>, always marked.</> },
+  { x: 50, y: 90, label: <>The <b>exact video you need</b>, already found and attached.</> },
 ];
 
 const SIDE: (Shot & { beats: Beat[] })[] = [
@@ -39,40 +39,43 @@ const SIDE: (Shot & { beats: Beat[] })[] = [
     img: solaPng,
     alt: "The Ask Sola panel proposing plan changes to accept or dismiss",
     beats: [
-      // Sit beside the text, not on top of it — the pin points, it shouldn't cover.
-      { x: 20, y: 17, label: "Ask for what you want, in plain words." },
-      { x: 13, y: 49, label: "Sola proposes the exact changes it would make." },
-      { x: 24, y: 91, label: "Nothing moves until you say so." },
+      // Sit beside the text, not on top of it — the cursor points, it shouldn't cover.
+      { x: 20, y: 17, label: <><b>Ask in plain words</b> for what you want.</> },
+      { x: 13, y: 49, label: <>Sola proposes the <b>exact changes</b> it would make.</> },
+      { x: 24, y: 91, label: <><b>Nothing moves</b> until you say so.</> },
     ],
   },
   {
     img: listPng,
     alt: "List view of goals with steps checked off and research attached",
     beats: [
-      { x: 85, y: 8, label: "Every goal and step, plainly listed." },
-      { x: 78, y: 38, label: "Your next step, marked for you." },
-      { x: 50, y: 61, label: "The research sits right on the step." },
+      { x: 85, y: 8, label: <><b>Every goal and step</b>, plainly listed.</> },
+      { x: 78, y: 38, label: <>Your <b>next step</b>, marked for you.</> },
+      { x: 50, y: 61, label: <>The <b>research sits right on the step</b>.</> },
     ],
   },
   {
     img: reviewPng,
     alt: "Weekly review showing true pace to each deadline",
     beats: [
-      { x: 74, y: 23, label: "Ahead or behind, told to you straight." },
-      { x: 50, y: 57, label: "How much is done against how much time is gone." },
-      { x: 18, y: 83, label: "Proof you actually showed up." },
+      { x: 74, y: 23, label: <><b>Ahead or behind</b>, told to you straight.</> },
+      { x: 50, y: 57, label: <>How much is <b>done</b> against how much <b>time is gone</b>.</> },
+      { x: 18, y: 83, label: <><b>Proof you showed up</b>.</> },
     ],
   },
   {
     img: focusPng,
     alt: "A focus session with a timer and a first-move checklist",
     beats: [
-      { x: 67, y: 27, label: "One step, one timer, nothing else." },
-      { x: 52, y: 68, label: "It hands you the first move." },
-      { x: 45, y: 81, label: "Tick them off and just start." },
+      { x: 67, y: 27, label: <><b>One step, one timer</b>, nothing else.</> },
+      { x: 52, y: 68, label: <>It hands you <b>the first move</b>.</> },
+      { x: 45, y: 81, label: <>Tick them off and <b>just start</b>.</> },
     ],
   },
 ];
+
+// Gold, faintly glowing key words — the same treatment the old captions used.
+const MARK = "[&_b]:font-semibold [&_b]:text-accent [&_b]:[text-shadow:0_0_14px_rgba(230,184,119,0.55)]";
 
 function useReducedMotion() {
   const [reduced, setReduced] = React.useState(false);
@@ -86,10 +89,13 @@ function useReducedMotion() {
   return reduced;
 }
 
+const GLIDE = "left .9s cubic-bezier(0.22,1,0.36,1), top .9s cubic-bezier(0.22,1,0.36,1)";
+
 /**
- * A screenshot that explains itself: a hotspot walks the image, pausing on each
- * region while the line underneath says what it is. Only runs while on screen.
- * Under reduced motion it stops cycling and lists every note at once instead.
+ * A screenshot that explains itself: a cursor glides around the image carrying a
+ * glow, resting on one region at a time while the line underneath says what it
+ * is. Only runs while on screen. Under reduced motion the cursor is hidden and
+ * every note is listed at once instead.
  */
 function ShotTour({ shot, beats, rounded, onZoom }: { shot: Shot; beats: Beat[]; rounded: string; onZoom: (s: Shot) => void }) {
   const ref = React.useRef<HTMLDivElement>(null);
@@ -111,35 +117,39 @@ function ShotTour({ shot, beats, rounded, onZoom }: { shot: Shot; beats: Beat[];
     return () => window.clearInterval(id);
   }, [live, reduced, beats.length]);
 
+  const at = beats[i];
+
   return (
     <figure ref={ref} className="panel-2 rounded-3xl p-2 md:p-3">
       <div className="group relative overflow-hidden rounded-2xl">
         <Image src={shot.img} alt={shot.alt} className={cn("w-full", rounded)} />
 
-        {/* the walking hotspot */}
-        {beats.map((b, k) => {
-          const on = reduced || k === i;
-          return (
-            <button
-              key={k}
-              onClick={() => setI(k)}
-              aria-label={b.label}
-              className="absolute grid h-7 w-7 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full"
-              style={{ left: `${b.x}%`, top: `${b.y}%` }}
-            >
-              {on && !reduced && (
-                <span className="absolute inset-0 animate-ping rounded-full" style={{ background: "rgba(230,184,119,0.35)" }} />
-              )}
-              <span
-                className={cn("relative block rounded-full transition-all duration-300", on ? "h-3 w-3" : "h-1.5 w-1.5")}
-                style={{
-                  background: on ? "#e6b877" : "rgba(230,184,119,0.4)",
-                  boxShadow: on ? "0 0 0 3px rgba(230,184,119,0.25), 0 1px 6px rgba(0,0,0,0.6)" : "none",
-                }}
-              />
-            </button>
-          );
-        })}
+        {!reduced && (
+          <>
+            {/* the glow the cursor carries, resting on whatever it's pointing at */}
+            <span
+              className="pointer-events-none absolute h-24 w-24 -translate-x-1/2 -translate-y-1/2 animate-pulse-soft rounded-full"
+              style={{
+                left: `${at.x}%`,
+                top: `${at.y}%`,
+                transition: GLIDE,
+                background: "radial-gradient(circle, rgba(230,184,119,0.42), rgba(230,184,119,0.13) 45%, transparent 70%)",
+              }}
+            />
+            {/* the cursor itself — its tip lands on the point */}
+            <MousePointer2
+              size={18}
+              className="pointer-events-none absolute text-white"
+              style={{
+                left: `${at.x}%`,
+                top: `${at.y}%`,
+                transition: GLIDE,
+                fill: "rgba(255,255,255,0.9)",
+                filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.7))",
+              }}
+            />
+          </>
+        )}
 
         <button
           onClick={() => onZoom(shot)}
@@ -150,13 +160,17 @@ function ShotTour({ shot, beats, rounded, onZoom }: { shot: Shot; beats: Beat[];
         </button>
       </div>
 
-      {/* the line that explains whatever the hotspot is sitting on */}
-      <figcaption className="px-2 pb-1 pt-4 text-center">
+      {/* the line that explains whatever the cursor is resting on */}
+      <figcaption className={cn("px-2 pb-1 pt-4 text-center", MARK)}>
         {reduced ? (
-          <span className="text-[14px] leading-relaxed text-muted">{beats.map((b) => b.label).join(" ")}</span>
+          <span className="text-[14px] leading-relaxed text-muted">
+            {beats.map((b, k) => (
+              <React.Fragment key={k}>{b.label} </React.Fragment>
+            ))}
+          </span>
         ) : (
           <span key={i} className="animate-fade-in block text-[14.5px] leading-relaxed text-muted">
-            {beats[i].label}
+            {at.label}
           </span>
         )}
       </figcaption>
