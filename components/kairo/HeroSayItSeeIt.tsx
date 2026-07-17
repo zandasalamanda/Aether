@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ArrowRight, ChevronDown } from "lucide-react";
 import { SHOWCASE_MAPS } from "@/lib/kairo/showcase-maps";
 import { PENDING_KEY } from "./OnboardingFlow";
+import { GoalOrb } from "./GoalOrb";
 
 // The landing hero. Type a goal right here and it hands off the SAME way the
 // onboarding screen does: stash the goal, send you to sign up, and Sola maps it
@@ -35,18 +36,9 @@ export function HeroSayItSeeIt() {
 
   return (
     <div className="relative flex min-h-[86svh] flex-col items-center justify-center px-5 pb-10 pt-24 text-center">
-      {/* A goal orb rising behind the words: a slow-breathing gold core with one
-          node orbiting it, and a soft glow (gradient, not a blur filter). Faint
-          on purpose so the headline stays crisp on top. */}
-      <div aria-hidden className="pointer-events-none absolute left-1/2 top-[15%] -z-10 -translate-x-1/2 -translate-y-1/2">
-        <div className="relative grid h-[190px] w-[190px] place-items-center sm:h-[210px] sm:w-[210px]">
-          <div className="absolute inset-[-45%] rounded-full" style={{ background: "radial-gradient(circle, rgba(230,184,119,0.24), rgba(230,184,119,0.07) 44%, transparent 70%)" }} />
-          <div className="animate-orbit-slow absolute inset-[20%] rounded-full border border-accent/20">
-            <span className="absolute left-1/2 top-0 h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full" style={{ background: "radial-gradient(circle at 35% 30%, #fdf3e0, #e6b877 60%, #a9803f)", boxShadow: "0 0 12px rgba(230,184,119,0.6)" }} />
-          </div>
-          <div className="h-[96px] w-[96px] rounded-full sm:h-[108px] sm:w-[108px]" style={{ background: "radial-gradient(circle at 36% 30%, #fdf3e0 0%, #e6b877 46%, #7c5c30 100%)", boxShadow: "inset 0 2px 8px rgba(255,255,255,0.5), 0 0 50px rgba(230,184,119,0.34)", animation: "breathe 7s ease-in-out infinite" }} />
-        </div>
-      </div>
+      {/* A goal orb above the title, sized close to it. In-flow (not behind the
+          text) so the top bar never clips it and it never overlaps the words. */}
+      <GoalOrb className="animate-fade-up mb-3" />
 
       <h1 className="animate-fade-up font-display text-[2.5rem] font-semibold leading-[1.06] tracking-tight text-ink sm:text-6xl md:text-[4.1rem]">
         Are you ready to{" "}
