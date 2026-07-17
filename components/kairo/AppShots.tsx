@@ -59,7 +59,7 @@ const SIDE: Shot[] = [
     beats: [
       { x: 85, y: 8, label: <><b>All your goals</b>, in a simple list.</> },
       { x: 78, y: 38, label: <><b>Start here.</b></> },
-      { x: 50, y: 61, label: <>The <b>video</b> sits right on the step.</> },
+      { x: 50, y: 61, label: <>The <b>resources</b> sit right on the step.</> },
     ],
   },
   {
@@ -69,7 +69,7 @@ const SIDE: Shot[] = [
     beats: [
       { x: 74, y: 23, label: <>It tells you if you are <b>ahead or behind</b>.</> },
       { x: 50, y: 57, label: <><b>How much is done</b>, next to <b>how much time has passed</b>.</> },
-      { x: 18, y: 83, label: <><b>How many days</b> you have kept going.</> },
+      { x: 18, y: 83, label: <><b>Proof you showed up</b>.</> },
     ],
   },
   {
@@ -90,10 +90,10 @@ const ORDER = [MAP.id, ...SIDE.map((s) => s.id)];
 // Gold, faintly glowing key words — the same treatment the old captions used.
 const MARK = "[&_b]:font-semibold [&_b]:text-accent [&_b]:[text-shadow:0_0_14px_rgba(230,184,119,0.55)]";
 
-// Slow on purpose: the cursor takes its time getting there, and each note sits
-// long enough to be read twice without hurrying.
-const GLIDE_MS = 1400;
-const HOLD_MS = 5600;
+// Unhurried, but not sleepy: the cursor takes its time getting there, and each
+// note sits long enough to read comfortably.
+const GLIDE_MS = 1150;
+const HOLD_MS = 4600;
 const GLIDE = `left ${GLIDE_MS}ms cubic-bezier(0.22,1,0.36,1), top ${GLIDE_MS}ms cubic-bezier(0.22,1,0.36,1)`;
 
 function useReducedMotion() {
@@ -174,6 +174,9 @@ function ShotTour({
   const toLeft = at.x > 55;
   const above = at.y > 78;
   const show = active && !reduced;
+  const n = shot.beats.length;
+  const idx = active ? i : 0; // an idle shot rests on its first note
+  const counter = (unit: string) => <span className={cn("mr-1.5 font-mono font-semibold text-accent/80", unit)}>{idx + 1}/{n}</span>;
 
   return (
     <figure ref={ref} className="panel-2 rounded-3xl p-2 md:p-3">
@@ -206,10 +209,12 @@ function ShotTour({
               }}
             />
             {/* the chip. Keyed on the beat and delayed by the glide, so it is hidden
-                while the cursor travels and fades in where it lands. */}
+                while the cursor travels and fades in where it lands. Desktop only —
+                on a narrow phone it would run off the image, so mobile reads the
+                note as a line under the shot instead (below). */}
             <span
               key={i}
-              className={cn("chrome pointer-events-none absolute z-10 rounded-xl px-3 py-2 text-left leading-snug text-ink", compact ? "text-[12px]" : "text-[13px]", MARK)}
+              className={cn("chrome pointer-events-none absolute z-10 hidden rounded-xl px-3 py-2 text-left leading-snug text-ink sm:block", compact ? "text-[12px]" : "text-[13px]", MARK)}
               style={{
                 left: `${at.x}%`,
                 top: `${at.y}%`,
@@ -219,7 +224,7 @@ function ShotTour({
                 animation: `fade-in 0.45s ease ${GLIDE_MS}ms both`,
               }}
             >
-              {at.label}
+              {counter("text-[10px]")}{at.label}
             </span>
           </>
         )}
@@ -233,13 +238,27 @@ function ShotTour({
         </button>
       </div>
 
-      {/* Reduced motion gets the notes as plain text; everyone else gets them from
-          the chip, and screen readers read them here. */}
-      <figcaption className={cn(reduced ? "px-2 pb-1 pt-4 text-center text-[14px] leading-relaxed text-muted" : "sr-only", MARK)}>
+      {/* Screen readers always get the whole list, at any size. */}
+      <figcaption className="sr-only">
         {shot.beats.map((b, k) => (
           <React.Fragment key={k}>{b.label} </React.Fragment>
         ))}
       </figcaption>
+
+      {reduced ? (
+        // No motion: print every note, for everyone.
+        <p className={cn("px-2 pb-1 pt-4 text-center text-[14px] leading-relaxed text-muted", MARK)}>
+          {shot.beats.map((b, k) => (
+            <React.Fragment key={k}>{b.label} </React.Fragment>
+          ))}
+        </p>
+      ) : (
+        // Mobile reads the current note here, under the image, where nothing clips.
+        <p aria-hidden className={cn("px-2 pb-1 pt-3 text-center text-[13.5px] leading-relaxed text-muted sm:hidden", MARK)}>
+          {counter("text-[11px]")}
+          <span key={idx} className="animate-fade-in">{shot.beats[idx].label}</span>
+        </p>
+      )}
     </figure>
   );
 }

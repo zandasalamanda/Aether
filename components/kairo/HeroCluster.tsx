@@ -110,7 +110,13 @@ export function HeroCluster() {
       // otherwise the pointer capture below swallows the click.
       if ((e.target as HTMLElement | null)?.closest("a, button")) return;
       dragging = true; movedRef.current = false; lastX = e.clientX; downX = e.clientX; downY = e.clientY;
-      try { wrap.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+      // On touch, DON'T capture — touch-action: pan-y lets the browser scroll the
+      // page on a vertical swipe (it sends pointercancel and we bail). Capturing
+      // would swallow that gesture and trap the visitor on the hero. Horizontal
+      // drags still spin the cluster since the pointer stays over this element.
+      if (e.pointerType !== "touch") {
+        try { wrap.setPointerCapture(e.pointerId); } catch { /* ignore */ }
+      }
     };
     const onMove = (e: PointerEvent) => {
       // Track pointer for parallax whenever we're not dragging or showing a map.
@@ -155,7 +161,7 @@ export function HeroCluster() {
   const openMap = openId ? SHOWCASE_MAPS.find((m) => m.id === openId) ?? null : null;
 
   return (
-    <div ref={wrapRef} className="absolute inset-0 touch-none select-none">
+    <div ref={wrapRef} className="absolute inset-0 touch-pan-y select-none">
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" aria-hidden="true" />
 
       {/* real glossy planets — positioned each frame by the rAF loop */}
