@@ -138,9 +138,9 @@ export default function LandingPage() {
       {/* The real app — actual screenshots, not a mockup */}
       <section id="app" className="mx-auto max-w-6xl px-5 py-20">
         <Reveal className="mb-10 text-center">
-          <SectionLabel className="mb-3 flex justify-center">The real thing</SectionLabel>
-          <h2 className="font-display text-3xl font-semibold tracking-tight text-ink md:text-4xl">Not a mockup. The actual app.</h2>
-          <p className="mx-auto mt-3 max-w-xl text-[15px] leading-relaxed text-muted">Every screen here is the real product: the living map, the research on each step, and the honest weekly review a paying member actually uses.</p>
+          <SectionLabel className="mb-3 flex justify-center">A look inside</SectionLabel>
+          <h2 className="font-display text-3xl font-semibold tracking-tight text-ink md:text-4xl">See exactly what you get.</h2>
+          <p className="mx-auto mt-3 max-w-xl text-[15px] leading-relaxed text-muted">Every screen below explains itself. Follow the cursor.</p>
         </Reveal>
 
         <Reveal><AppShots /></Reveal>
