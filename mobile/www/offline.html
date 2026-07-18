@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Solaspace</title>
+<!--
+  The offline / error screen for the native shell.
+
+  This is the only file bundled inside the binary. Everything else is fetched
+  from solaspace.app, so when the network is gone this is all the app has.
+  It must therefore be completely self contained: inline CSS, inline SVG, no
+  fonts, no scripts from anywhere else.
+
+  It deliberately does NOT use the Capacitor Network plugin. On Android the
+  error page is loaded without bridge access, so a plugin call would throw and
+  leave the user on a dead screen. Polling /api/health with fetch works on both
+  platforms and also tells us the server is actually up, not merely that the
+  device has a radio signal.
+-->
+<style>
+  :root { color-scheme: dark; }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; height: 100%;
+    background: #0a0b0d; color: #f2f3f5;
+    overscroll-behavior: none;
+    -webkit-user-select: none; user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+  }
+  body {
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    text-align: center;
+    padding: calc(24px + env(safe-area-inset-top)) 28px calc(24px + env(safe-area-inset-bottom));
+  }
+  .mark { width: 64px; height: 64px; margin-bottom: 28px; opacity: 0; animation: rise .5s cubic-bezier(.22,1,.36,1) .05s forwards; }
+  h1 { margin: 0 0 12px; font-size: 24px; line-height: 1.2; font-weight: 600; letter-spacing: -.01em;
+       opacity: 0; animation: rise .5s cubic-bezier(.22,1,.36,1) .12s forwards; }
+  p  { margin: 0 0 32px; font-size: 17px; line-height: 1.55; color: #aeb3bd; max-width: 30ch;
+       opacity: 0; animation: rise .5s cubic-bezier(.22,1,.36,1) .18s forwards; }
+  button {
+    font: inherit; font-size: 17px; font-weight: 600; color: #241809;
+    min-height: 52px; padding: 0 32px; border: 0; border-radius: 14px;
+    background: linear-gradient(160deg, #f0cf9a 0%, #e6b877 46%, #cfa063 100%);
+    opacity: 0; animation: rise .5s cubic-bezier(.22,1,.36,1) .24s forwards;
+  }
+  button:active { transform: scale(.98); }
+  button[disabled] { opacity: .55; }
+  .status { margin-top: 18px; font-size: 15px; color: #8d93a0; min-height: 1.4em; }
+  @keyframes rise { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+  @media (prefers-reduced-motion: reduce) {
+    .mark, h1, p, button { animation: none; opacity: 1; }
+  }
+</style>
+</head>
+<body>
+  <!-- The Solaspace mark, inlined. Each gradient id is unique to this file. -->
+  <svg class="mark" viewBox="0 0 32 32" fill="none" aria-hidden="true">
+    <defs>
+      <radialGradient id="offline-core" cx="50%" cy="38%" r="65%">
+        <stop offset="0%" stop-color="#fdf3e0" />
+        <stop offset="46%" stop-color="#e6b877" />
+        <stop offset="100%" stop-color="#7c5c30" />
+      </radialGradient>
+    </defs>
+    <path d="M16 3.5a12.5 12.5 0 1 1 -9.4 20.7" stroke="rgba(255,255,255,.28)" stroke-width="1.5" stroke-linecap="round" fill="none" />
+    <circle cx="6.6" cy="24.2" r="2" fill="#e6b877" />
+    <circle cx="16" cy="15" r="6.2" fill="url(#offline-core)" />
+    <ellipse cx="13.8" cy="12.6" rx="1.8" ry="1.2" fill="#fff" opacity=".5" />
+  </svg>
+
+  <h1>You are offline</h1>
+  <p>Solaspace needs a connection to load your map. Your plan is safe and will be here when you are back.</p>
+  <button id="retry" type="button">Try again</button>
+  <div class="status" id="status" role="status" aria-live="polite"></div>
+
+<script>
+(function () {
+  var btn = document.getElementById("retry");
+  var status = document.getElementById("status");
+  // Where to return to. Kept in sync with server.url in capacitor.config.ts.
+  var HOME = "https://solaspace.app/app/today";
+  var HEALTH = "https://solaspace.app/api/health";
+  var checking = false;
+
+  function reachable() {
+    // HEAD keeps it cheap. cache:no-store stops a stale 200 from a previous
+    // session making us think we are online when we are not.
+    return fetch(HEALTH, { method: "HEAD", cache: "no-store" })
+      .then(function (r) { return r.ok; })
+      .catch(function () { return false; });
+  }
+
+  function attempt(manual) {
+    if (checking) return;
+    checking = true;
+    if (manual) { btn.disabled = true; status.textContent = "Checking..."; }
+    reachable().then(function (ok) {
+      checking = false;
+      btn.disabled = false;
+      if (ok) { status.textContent = "Back online."; location.replace(HOME); return; }
+      if (manual) status.textContent = "Still no connection.";
+    });
+  }
+
+  btn.addEventListener("click", function () { attempt(true); });
+
+  // Quietly retry in the background so the app returns on its own the moment
+  // the connection comes back, without the user having to tap anything.
+  setInterval(function () { attempt(false); }, 5000);
+  window.addEventListener("online", function () { attempt(false); });
+})();
+</script>
+</body>
+</html>

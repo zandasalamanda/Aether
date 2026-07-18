@@ -6,3 +6,8 @@ node_modules
 everdeck
 .claude
 app/devpreview
+
+# Native shell. Built locally with Xcode, never needed by the web deploy.
+ios
+android
+mobile
