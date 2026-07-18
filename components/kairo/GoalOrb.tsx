@@ -2,20 +2,15 @@
 
 import * as React from "react";
 import { goalIcon } from "@/lib/kairo/goal-icon";
+import { CometCanvas } from "./CometCanvas";
 
-// A goal orb with a small planet flying around it on a tilted 3D orbit. The
-// planet and its trail are BILLBOARDS — they only move, never rotate — so each
-// stays a round sphere facing you, while the elliptical path + real z-depth make
-// the orbit read as 3D (it passes behind the core up top, and swings in front and
-// larger down low). It trails a smooth gold comet tail of tightly-spaced,
-// tapering dots. The core is a glossy sphere whose centre cross-fades through
-// goal-type icons, in white like the rest of the app.
+// A glossy goal orb that wobbles gently in place like a planet, with a small
+// planet flying a smooth orbit behind it, trailing a gold comet tail. The core's
+// centre cross-fades through goal-type icons, in white like the rest of the app.
 
 const ICON_KEYS = ["target", "fitness", "money", "language", "travel", "rocket", "writing", "music"];
 const SIZE = 208;
 const CORE = 92;
-const PERIOD = 9; // seconds per orbit
-const TRAIL = 13; // head + tail
 
 function usePrefersReducedMotion() {
   const [reduced, setReduced] = React.useState(false);
@@ -41,39 +36,20 @@ export function GoalOrb({ className }: { className?: string }) {
 
   const cell: React.CSSProperties = { gridArea: "1 / 1" };
 
-  // The comet: a bright head, then a taper of ever-smaller, fainter dots each
-  // lagging a hair behind, so they blend into one clean streak.
-  const dots = Array.from({ length: TRAIL }, (_, i) => {
-    const f = i / (TRAIL - 1);
-    return { size: 16 - i * 0.95, opacity: i === 0 ? 1 : 0.85 * (1 - f * 0.92), delay: i * 0.07, glow: i === 0 };
-  });
-
   return (
-    <div aria-hidden className={className} style={{ perspective: "440px" }}>
-      <div style={{ display: "grid", placeItems: "center", width: SIZE, height: SIZE, transformStyle: "preserve-3d" }}>
+    <div aria-hidden className={className}>
+      <div style={{ display: "grid", placeItems: "center", width: SIZE, height: SIZE }}>
         {/* soft glow */}
-        <div style={{ ...cell, width: SIZE * 0.78, height: SIZE * 0.78, borderRadius: "50%", transform: "translateZ(-10px)", background: "radial-gradient(circle, rgba(230,184,119,0.2), transparent 68%)" }} />
+        <div style={{ ...cell, width: SIZE * 0.78, height: SIZE * 0.78, borderRadius: "50%", background: "radial-gradient(circle, rgba(230,184,119,0.18), transparent 68%)" }} />
 
-        {/* the comet — billboard dots riding the tilted 3D path */}
-        {!reduce &&
-          dots.map((d, i) => (
-            <span
-              key={i}
-              style={{
-                ...cell,
-                width: d.size, height: d.size, placeSelf: "center", borderRadius: "50%",
-                background: "radial-gradient(circle at 38% 32%, #fff6e6, #e6b877 58%, #a9803f)",
-                boxShadow: d.glow ? "0 0 12px rgba(230,184,119,0.7)" : undefined,
-                opacity: d.opacity,
-                // delay - PERIOD keeps each dot a hair BEHIND the head (trailing),
-                // with no first-play gap.
-                animation: `comet-path ${PERIOD}s linear ${d.delay - PERIOD}s infinite`,
-              }}
-            />
-          ))}
+        {/* the orbiting planet + its smooth comet trail, behind the core */}
+        <div style={cell}>
+          <CometCanvas size={SIZE} />
+        </div>
 
-        {/* the central goal orb — a real sphere at z 0, so it hides the comet on the back pass */}
-        <div style={{ ...cell, transformStyle: "preserve-3d" }}>
+        {/* the central goal orb — a real sphere, wobbling gently in place. Opaque, so
+            it hides the comet on the back pass. */}
+        <div style={cell} className={reduce ? undefined : "animate-bobble"}>
           <div
             className="relative grid place-items-center rounded-full"
             style={{
@@ -81,7 +57,6 @@ export function GoalOrb({ className }: { className?: string }) {
               background: "radial-gradient(circle at 33% 27%, #fff7e8 0%, #f2d79f 20%, #e6b877 50%, #bb8949 76%, #6d4e27 100%)",
               boxShadow:
                 "inset -9px -11px 22px rgba(74,50,18,0.6), inset 6px 7px 15px rgba(255,255,255,0.55), 0 8px 24px -5px rgba(70,46,16,0.5), 0 0 40px rgba(230,184,119,0.26)",
-              animation: reduce ? undefined : "breathe 7s ease-in-out infinite",
             }}
           >
             <span

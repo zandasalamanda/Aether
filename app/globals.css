@@ -272,25 +272,20 @@ body::before {
 .animate-orbit-slow { animation: orbit 34s linear infinite; }
 @media (prefers-reduced-motion: reduce) { .animate-orbit-slow { animation: none; } }
 
-/* The hero comet's path: a tilted 3D ellipse (foreshortened y, real z for depth)
-   traced by billboard dots that always face the viewer, so each stays a round
-   sphere while the whole orbit reads as 3D — behind the core up top, in front and
-   larger down low. */
-@keyframes comet-path {
-  0%      { transform: translate3d(66px, 0, 0); }
-  8.333%  { transform: translate3d(57px, 15px, 29px); }
-  16.667% { transform: translate3d(33px, 26px, 51px); }
-  25%     { transform: translate3d(0px, 30px, 59px); }
-  33.333% { transform: translate3d(-33px, 26px, 51px); }
-  41.667% { transform: translate3d(-57px, 15px, 29px); }
-  50%     { transform: translate3d(-66px, 0, 0); }
-  58.333% { transform: translate3d(-57px, -15px, -29px); }
-  66.667% { transform: translate3d(-33px, -26px, -51px); }
-  75%     { transform: translate3d(0px, -30px, -59px); }
-  83.333% { transform: translate3d(33px, -26px, -51px); }
-  91.667% { transform: translate3d(57px, -15px, -29px); }
-  100%    { transform: translate3d(66px, 0, 0); }
+/* The hero goal orb's idle wobble — small, irregular drift and tilt, like a
+   planet turning in place. Returns home, so it never wanders off centre. */
+@keyframes bobble {
+  0%   { transform: translate(0px, 0px) rotate(0deg); }
+  14%  { transform: translate(2px, -1.3px) rotate(0.8deg); }
+  29%  { transform: translate(-1.5px, -1.9px) rotate(-0.6deg); }
+  43%  { transform: translate(-2.2px, 1px) rotate(0.5deg); }
+  58%  { transform: translate(1.3px, 2px) rotate(-0.9deg); }
+  72%  { transform: translate(2px, -0.6px) rotate(0.5deg); }
+  86%  { transform: translate(-0.9px, 1.5px) rotate(-0.4deg); }
+  100% { transform: translate(0px, 0px) rotate(0deg); }
 }
+.animate-bobble { animation: bobble 13s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .animate-bobble { animation: none; } }
 
 /* A gentle down-nudge so the scroll arrow reads as "scroll down". */
 @keyframes scroll-cue { 0%, 100% { transform: translateY(0); opacity: 0.55; } 50% { transform: translateY(6px); opacity: 1; } }
