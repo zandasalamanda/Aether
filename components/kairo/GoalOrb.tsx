@@ -3,12 +3,26 @@
 import * as React from "react";
 import { goalIcon } from "@/lib/kairo/goal-icon";
 
-// A small breathing goal orb. A node orbits it on a TILTED plane in real CSS 3D
-// (preserve-3d), so it swings behind the orb on the far side and in front on the
-// near side, growing and shrinking with perspective — a little Saturn ring. The
-// centre cross-fades through goal-type icons.
+// A goal orb with a node that flies around it on a TILTED 3D orbit (real CSS 3D,
+// so it passes behind the orb on the far side and in front on the near side,
+// growing and shrinking with perspective), trailing a gold comet tail as it
+// goes. The core is a glossy goal orb whose centre cross-fades through goal-type
+// icons, in white like the rest of the app.
 
 const ICON_KEYS = ["target", "fitness", "money", "language", "travel", "rocket", "writing", "music"];
+const SIZE = 176;
+const R = 54; // orbit radius
+
+// The comet: a bright head plus a few fading, shrinking gold dots strung out
+// behind it along the orbit.
+const COMET = [
+  { deg: 0, s: 17, o: 1, glow: true },
+  { deg: -8, s: 14, o: 0.6, glow: false },
+  { deg: -17, s: 11, o: 0.38, glow: false },
+  { deg: -27, s: 9, o: 0.22, glow: false },
+  { deg: -38, s: 7, o: 0.12, glow: false },
+  { deg: -50, s: 5, o: 0.06, glow: false },
+];
 
 function usePrefersReducedMotion() {
   const [reduced, setReduced] = React.useState(false);
@@ -35,37 +49,48 @@ export function GoalOrb({ className }: { className?: string }) {
   const cell: React.CSSProperties = { gridArea: "1 / 1" };
 
   return (
-    <div aria-hidden className={className} style={{ perspective: "640px" }}>
-      <div style={{ display: "grid", placeItems: "center", width: 208, height: 128, transformStyle: "preserve-3d" }}>
-        {/* soft glow, held just behind everything */}
-        <div style={{ ...cell, width: 138, height: 138, borderRadius: "50%", transform: "translateZ(-6px)", background: "radial-gradient(circle, rgba(230,184,119,0.2), transparent 70%)" }} />
+    <div aria-hidden className={className} style={{ perspective: "600px" }}>
+      <div style={{ display: "grid", placeItems: "center", width: SIZE, height: SIZE, transformStyle: "preserve-3d" }}>
+        {/* soft glow */}
+        <div style={{ ...cell, width: SIZE * 0.82, height: SIZE * 0.82, borderRadius: "50%", transform: "translateZ(-8px)", background: "radial-gradient(circle, rgba(230,184,119,0.2), transparent 68%)" }} />
 
-        {/* the tilted orbit plane, spinning, carrying the node through real depth */}
-        <div style={{ ...cell, width: 120, height: 120, transformStyle: "preserve-3d", transform: "rotateX(64deg)" }}>
-          <div style={{ position: "absolute", inset: 0, transformStyle: "preserve-3d", animation: reduce ? undefined : "orbit 13s linear infinite" }}>
-            <span
-              style={{
-                position: "absolute", left: "50%", top: "50%", width: 12, height: 12, marginLeft: -6, marginTop: -6,
-                borderRadius: "50%", transform: "translateX(58px)",
-                background: "radial-gradient(circle at 35% 30%, #fdf3e0, #e6b877 60%, #a9803f)",
-                boxShadow: "0 0 9px rgba(230,184,119,0.55)",
-              }}
-            />
+        {/* tilted orbit plane, spinning, carrying the comet through real depth */}
+        <div style={{ ...cell, width: SIZE, height: SIZE, transformStyle: "preserve-3d", transform: "rotateX(66deg)" }}>
+          <div style={{ position: "absolute", inset: 0, transformStyle: "preserve-3d", animation: reduce ? undefined : "orbit 11s linear infinite" }}>
+            {COMET.map((c, k) => (
+              <div key={k} style={{ position: "absolute", left: "50%", top: "50%", transformStyle: "preserve-3d", transform: `rotateZ(${c.deg}deg)` }}>
+                <span
+                  style={{
+                    position: "absolute", left: 0, top: 0, width: c.s, height: c.s, marginLeft: -c.s / 2, marginTop: -c.s / 2,
+                    borderRadius: "50%", transform: `translateX(${R}px)`,
+                    background: "radial-gradient(circle at 38% 32%, #fff6e6, #e6b877 58%, #a9803f)",
+                    boxShadow: c.glow ? "0 0 12px rgba(230,184,119,0.7)" : undefined,
+                    opacity: c.o,
+                  }}
+                />
+              </div>
+            ))}
           </div>
         </div>
 
-        {/* the central goal orb — faces you at z 0, so it hides the node on the back pass */}
+        {/* the central goal orb — faces you at z 0, so it hides the comet on the back pass */}
         <div style={{ ...cell, transformStyle: "preserve-3d" }}>
           <div
             className="grid place-items-center rounded-full"
             style={{
-              width: 60, height: 60,
+              width: 68, height: 68,
               background: "radial-gradient(circle at 36% 30%, #fdf3e0 0%, #e6b877 46%, #7c5c30 100%)",
-              boxShadow: "inset 0 2px 6px rgba(255,255,255,0.5), 0 0 28px rgba(230,184,119,0.24)",
+              boxShadow: "inset 0 2px 8px rgba(255,255,255,0.5), 0 0 30px rgba(230,184,119,0.26)",
               animation: reduce ? undefined : "breathe 7s ease-in-out infinite",
             }}
           >
-            {React.createElement(goalIcon(ICON_KEYS[ic]), { key: ic, size: 24, strokeWidth: 1.7, className: "animate-fade-in", style: { color: "rgba(58,40,14,0.74)" } })}
+            {React.createElement(goalIcon(ICON_KEYS[ic]), {
+              key: ic,
+              size: 28,
+              strokeWidth: 1.7,
+              className: "animate-fade-in",
+              style: { color: "#ffffff", opacity: 0.85, filter: "drop-shadow(0 1px 2px rgba(50,34,8,0.5))" },
+            })}
           </div>
         </div>
       </div>

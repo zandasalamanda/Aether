@@ -52,9 +52,11 @@ export function HeroSayItSeeIt() {
         Type any goal in plain words. Sola maps every step and finds every resource, so you always know exactly what to do next.
       </p>
 
+      {/* Stacks on mobile so the example placeholder gets the full width and never
+          truncates; a single pill on sm and up. */}
       <form
         onSubmit={(e) => { e.preventDefault(); start(); }}
-        className="chrome animate-fade-up mt-10 flex w-full max-w-xl items-center gap-2 rounded-2xl py-2 pl-4 pr-2"
+        className="chrome animate-fade-up mt-10 flex w-full max-w-xl flex-col gap-2 rounded-2xl p-2 sm:flex-row sm:items-center sm:py-2 sm:pl-4 sm:pr-2"
         style={{ animationDelay: "0.2s" }}
       >
         <input
@@ -63,9 +65,9 @@ export function HeroSayItSeeIt() {
           placeholder={`e.g. ${SHOWCASE_MAPS[ph].prompt}`}
           aria-label="Your goal"
           enterKeyHint="go"
-          className="min-w-0 flex-1 bg-transparent text-[16px] text-ink placeholder:text-faint focus:outline-none sm:text-[17px]"
+          className="min-w-0 flex-1 truncate bg-transparent px-3 py-1.5 text-[16px] text-ink placeholder:text-faint focus:outline-none sm:px-0 sm:py-0 sm:text-[17px]"
         />
-        <button type="submit" className="raised-gold inline-flex shrink-0 items-center gap-1.5 rounded-xl px-4 py-2.5 text-[14px] font-semibold sm:px-5">
+        <button type="submit" className="raised-gold inline-flex w-full shrink-0 items-center justify-center gap-1.5 rounded-xl px-4 py-3 text-[14px] font-semibold sm:w-auto sm:px-5 sm:py-2.5">
           Get started <ArrowRight size={15} />
         </button>
       </form>
@@ -74,7 +76,7 @@ export function HeroSayItSeeIt() {
       </p>
 
       <a href="#how" className="mt-16 text-faint transition-colors hover:text-muted" aria-label="See how it works">
-        <ChevronDown size={22} className="animate-pulse-soft" />
+        <ChevronDown size={24} className="animate-scroll-cue" />
       </a>
     </div>
   );

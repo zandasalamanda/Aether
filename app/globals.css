@@ -272,6 +272,11 @@ body::before {
 .animate-orbit-slow { animation: orbit 34s linear infinite; }
 @media (prefers-reduced-motion: reduce) { .animate-orbit-slow { animation: none; } }
 
+/* A gentle down-nudge so the scroll arrow reads as "scroll down". */
+@keyframes scroll-cue { 0%, 100% { transform: translateY(0); opacity: 0.55; } 50% { transform: translateY(6px); opacity: 1; } }
+.animate-scroll-cue { animation: scroll-cue 1.5s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) { .animate-scroll-cue { animation: none; opacity: 0.7; } }
+
 /* The single "next move" node breathing on the landing living-map. */
 @keyframes lt-pulse { 0%, 100% { opacity: 0.5; transform: scale(1); } 55% { opacity: 0; transform: scale(1.55); } }
 .lt-pulse { animation: lt-pulse 2.8s ease-in-out infinite; }
