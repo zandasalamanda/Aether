@@ -2,23 +2,20 @@
 
 import * as React from "react";
 import { goalIcon } from "@/lib/kairo/goal-icon";
-import { OrbitComet, ELLIPSE_D } from "./OrbitComet";
 
 // A glossy goal orb that wobbles gently in place, with a planet flying a smooth
-// orbit around it. Method (per the usual comet/orbit techniques): both the planet
-// and its tail ride a CSS motion path (offset-path + offset-distance), which the
-// browser interpolates ALONG the real curve, so the motion is smooth with no
-// choppy corners. The tail is ONE tangent-aligned gradient streak (offset-rotate:
-// auto) that fades to transparent — a single trail, never a row of separate orbs.
-// A stepped z-index carries the planet in front of the core down low and behind it
-// up top. The core's centre cross-fades through goal-type icons, in white.
+// orbit around it. The planet rides a CSS motion path (offset-path +
+// offset-distance), which the browser interpolates ALONG the real curve, so the
+// motion is smooth with no choppy corners. A stepped z-index carries the planet
+// in front of the core down low and behind it up top. The core's centre
+// cross-fades through goal-type icons, in white.
+const ELLIPSE_D = "M 174 108 A 66 40 0 1 1 42 108 A 66 40 0 1 1 174 108 Z";
 
 const ICON_KEYS = ["target", "fitness", "money", "language", "travel", "rocket", "writing", "music"];
 const SIZE = 216;
 const CORE = 92;
 const PERIOD = 11; // seconds per orbit
-// The head rides the very same ellipse the tail is stroked on, so it sits at the
-// tail's leading edge. Starts at the right, sweeps clockwise: bottom (near) then top (far).
+// Starts at the right, sweeps clockwise: bottom (near) then top (far).
 const PATH = `path('${ELLIPSE_D}')`;
 
 function usePrefersReducedMotion() {
@@ -53,12 +50,9 @@ export function GoalOrb({ className }: { className?: string }) {
         {/* soft glow */}
         <div className="absolute rounded-full" style={{ width: SIZE * 0.76, height: SIZE * 0.76, background: "radial-gradient(circle, rgba(230,184,119,0.18), transparent 68%)", zIndex: 0 }} />
 
-        {/* the planet + its curve-following trail, stepping behind/in-front of the core */}
+        {/* the planet, stepping behind/in-front of the core as it goes round */}
         <div className="absolute inset-0" style={{ animation: reduce ? undefined : `comet-depth ${PERIOD}s linear infinite` }}>
-          {/* the tail — strokes ON the orbit path, so it follows the curve */}
-          <OrbitComet />
-          {/* the planet — a round billboard sphere (offset-rotate 0, so it never tilts),
-              riding the same ellipse so it sits at the tail's leading edge */}
+          {/* a round billboard sphere (offset-rotate 0, so it never tilts) */}
           <div
             style={{
               ...move,
