@@ -3,26 +3,22 @@
 import * as React from "react";
 import { goalIcon } from "@/lib/kairo/goal-icon";
 
-// A glossy goal orb that wobbles gently in place like a planet, with a smaller
-// planet flying a smooth, near-round 3D orbit around it — passing behind the core
-// up top and in front down low. The planet is a billboard (it only moves, never
-// rotates) so it stays a round sphere, and it drags a short, tapering gold trail
-// behind it (fading and shrinking, so it never reads as several separate orbs).
-// The core's centre cross-fades through goal-type icons, in white.
+// A glossy goal orb that wobbles gently in place, with a planet flying a smooth
+// orbit around it. Method (per the usual comet/orbit techniques): both the planet
+// and its tail ride a CSS motion path (offset-path + offset-distance), which the
+// browser interpolates ALONG the real curve, so the motion is smooth with no
+// choppy corners. The tail is ONE tangent-aligned gradient streak (offset-rotate:
+// auto) that fades to transparent — a single trail, never a row of separate orbs.
+// A stepped z-index carries the planet in front of the core down low and behind it
+// up top. The core's centre cross-fades through goal-type icons, in white.
 
 const ICON_KEYS = ["target", "fitness", "money", "language", "travel", "rocket", "writing", "music"];
 const SIZE = 216;
 const CORE = 92;
-const PERIOD = 10; // seconds per orbit
-
-// Head first, then a few quickly-fading, shrinking ghosts close behind it.
-const TAIL = [
-  { delay: 0, s: 24, o: 1, glow: true },
-  { delay: 0.16, s: 19, o: 0.45, glow: false },
-  { delay: 0.32, s: 15, o: 0.24, glow: false },
-  { delay: 0.5, s: 11, o: 0.12, glow: false },
-  { delay: 0.7, s: 8, o: 0.05, glow: false },
-];
+const PERIOD = 11; // seconds per orbit
+// A gently-tilted ellipse centred in the box (rx 66, ry 40). Starts at the right
+// side and sweeps clockwise: bottom first (near), then top (far).
+const PATH = "path('M 174 108 A 66 40 0 1 1 42 108 A 66 40 0 1 1 174 108')";
 
 function usePrefersReducedMotion() {
   const [reduced, setReduced] = React.useState(false);
@@ -46,34 +42,42 @@ export function GoalOrb({ className }: { className?: string }) {
     return () => window.clearInterval(id);
   }, [reduce]);
 
-  const cell: React.CSSProperties = { gridArea: "1 / 1" };
+  const move: React.CSSProperties = reduce
+    ? { offsetPath: PATH, offsetDistance: "8%" }
+    : { offsetPath: PATH, offsetDistance: "0%", animation: `orbit-move ${PERIOD}s linear infinite`, willChange: "offset-distance" };
 
   return (
-    <div aria-hidden className={className} style={{ perspective: "460px" }}>
-      <div style={{ display: "grid", placeItems: "center", width: SIZE, height: SIZE, transformStyle: "preserve-3d" }}>
+    <div aria-hidden className={className}>
+      <div className="relative grid place-items-center" style={{ width: SIZE, height: SIZE, isolation: "isolate" }}>
         {/* soft glow */}
-        <div style={{ ...cell, width: SIZE * 0.76, height: SIZE * 0.76, borderRadius: "50%", background: "radial-gradient(circle, rgba(230,184,119,0.18), transparent 68%)" }} />
+        <div className="absolute rounded-full" style={{ width: SIZE * 0.76, height: SIZE * 0.76, background: "radial-gradient(circle, rgba(230,184,119,0.18), transparent 68%)", zIndex: 0 }} />
 
-        {/* the orbiting planet + its short trail (billboards, so each stays round) */}
-        {!reduce &&
-          TAIL.map((p, i) => (
-            <span
-              key={i}
-              style={{
-                ...cell,
-                placeSelf: "center",
-                width: p.s, height: p.s, borderRadius: "50%",
-                background: "radial-gradient(circle at 36% 30%, #fff6e6 0%, #f0d49a 34%, #e6b877 62%, #a9803f 100%)",
-                boxShadow: p.glow ? "inset 1px 1px 2px rgba(255,255,255,0.6), 0 0 14px rgba(230,184,119,0.6)" : undefined,
-                opacity: p.o,
-                animation: `comet-path ${PERIOD}s linear ${p.delay - PERIOD}s infinite`,
-              }}
-            />
-          ))}
+        {/* the planet + its trail, stepping between behind/in-front of the core */}
+        <div className="absolute inset-0" style={{ animation: reduce ? undefined : `comet-depth ${PERIOD}s linear infinite` }}>
+          {/* the tail — one continuous streak, tangent to the path, fading out */}
+          <div
+            style={{
+              ...move,
+              offsetRotate: "auto",
+              offsetAnchor: "100% 50%",
+              position: "absolute", top: 0, left: 0, width: 74, height: 11, borderRadius: 999,
+              background: "linear-gradient(to left, rgba(255,246,230,0.95) 0%, rgba(230,184,119,0.6) 26%, rgba(230,184,119,0) 100%)",
+            }}
+          />
+          {/* the planet — a round billboard sphere (offset-rotate 0, so it never tilts) */}
+          <div
+            style={{
+              ...move,
+              offsetRotate: "0deg",
+              position: "absolute", top: 0, left: 0, width: 28, height: 28, borderRadius: "50%",
+              background: "radial-gradient(circle at 36% 30%, #fff6e6 0%, #f0d49a 34%, #e6b877 62%, #a9803f 100%)",
+              boxShadow: "inset 1px 1px 2px rgba(255,255,255,0.6), 0 0 14px rgba(230,184,119,0.6)",
+            }}
+          />
+        </div>
 
-        {/* the central goal orb — a real sphere, wobbling gently in place. Opaque, so
-            it hides the planet on the back pass. */}
-        <div style={cell} className={reduce ? undefined : "animate-bobble"}>
+        {/* the central goal orb — a real sphere, wobbling gently in place, at z-index 1 */}
+        <div className={reduce ? "relative" : "relative animate-bobble"} style={{ zIndex: 1 }}>
           <div
             className="relative grid place-items-center rounded-full"
             style={{
