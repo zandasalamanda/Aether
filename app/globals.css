@@ -272,6 +272,26 @@ body::before {
 .animate-orbit-slow { animation: orbit 34s linear infinite; }
 @media (prefers-reduced-motion: reduce) { .animate-orbit-slow { animation: none; } }
 
+/* The hero comet's path: a tilted 3D ellipse (foreshortened y, real z for depth)
+   traced by billboard dots that always face the viewer, so each stays a round
+   sphere while the whole orbit reads as 3D — behind the core up top, in front and
+   larger down low. */
+@keyframes comet-path {
+  0%      { transform: translate3d(66px, 0, 0); }
+  8.333%  { transform: translate3d(57px, 15px, 29px); }
+  16.667% { transform: translate3d(33px, 26px, 51px); }
+  25%     { transform: translate3d(0px, 30px, 59px); }
+  33.333% { transform: translate3d(-33px, 26px, 51px); }
+  41.667% { transform: translate3d(-57px, 15px, 29px); }
+  50%     { transform: translate3d(-66px, 0, 0); }
+  58.333% { transform: translate3d(-57px, -15px, -29px); }
+  66.667% { transform: translate3d(-33px, -26px, -51px); }
+  75%     { transform: translate3d(0px, -30px, -59px); }
+  83.333% { transform: translate3d(33px, -26px, -51px); }
+  91.667% { transform: translate3d(57px, -15px, -29px); }
+  100%    { transform: translate3d(66px, 0, 0); }
+}
+
 /* A gentle down-nudge so the scroll arrow reads as "scroll down". */
 @keyframes scroll-cue { 0%, 100% { transform: translateY(0); opacity: 0.55; } 50% { transform: translateY(6px); opacity: 1; } }
 .animate-scroll-cue { animation: scroll-cue 1.5s ease-in-out infinite; }
