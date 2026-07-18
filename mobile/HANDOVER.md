@@ -42,6 +42,7 @@ Either way you need a plan for telling a paying subscriber why the iPhone app sh
 | Lint | clean on every touched file |
 | Web appearance | **unchanged**, verified in-browser |
 | iOS project | scaffolded, 10 plugins registered, icons and splash generated |
+| iOS **compile** | **not verified**, see below |
 
 ### The native detection
 
@@ -141,12 +142,30 @@ you are on Java 8 and it needs 17+), and the App Store listing copy.
 
 ---
 
-## Running it
+## Running it: your first step
+
+**Open the project in Xcode once before anything else.**
 
 ```bash
-npx cap sync ios          # after any config or plugin change
-npx cap open ios          # opens Xcode
-CAP_LIVE_RELOAD=1 npx cap sync ios   # points the shell at localhost:3000 instead
+npx cap open ios
+```
+
+I could not verify that the iOS project compiles. `xcodebuild` hangs at
+`Resolve Package Graph` indefinitely, tried twice, with and without a sandbox, over ten
+minutes each, producing no further output and no error. Network is fine and the license is
+accepted, so the most likely cause is that Xcode 26.6 has not completed its interactive
+first-run setup on this machine, which a headless `xcodebuild` cannot do for itself.
+
+Opening the project in Xcode should let it finish first-run, resolve the Swift packages
+interactively, and build. **Until that happens, treat "the iOS app compiles" as unproven.**
+Everything upstream of it is verified: `npx cap sync ios` completes cleanly, all 10 plugins
+are registered, and the icons and splash screens are generated into the asset catalog.
+
+Afterwards:
+
+```bash
+npx cap sync ios                     # after any config or plugin change
+CAP_LIVE_RELOAD=1 npx cap sync ios   # point the shell at localhost:3000 instead
 ```
 
 Capacitor 8 uses **Swift Package Manager**, not CocoaPods, so no `pod install` and no
