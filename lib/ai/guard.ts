@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { features } from "@/lib/config";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
+import { isNativeRequest } from "@/lib/native";
 
 export type Plan = "free" | "pro";
 
@@ -91,10 +92,18 @@ export async function guardAi(opts: GuardOptions = {}): Promise<NextResponse | n
   }
 
   const weight = Math.max(1, Math.round(opts.weight ?? 1));
-  const plan = await planFor(userId, supabase);
+  // App Store Guideline 3.1.1: the native build may not consume an entitlement
+  // bought on the web, so it resolves to free regardless of the real plan, and
+  // its error bodies must name no paid tier and carry no `upgrade` flag (the
+  // client renders an "Upgrade to Pro" button off that flag). Web responses
+  // below are unchanged.
+  const native = await isNativeRequest();
+  const plan = native ? "free" : await planFor(userId, supabase);
 
   if (opts.pro && plan !== "pro") {
-    return NextResponse.json({ error: "That's a Pro feature.", upgrade: true }, { status: 402 });
+    return native
+      ? NextResponse.json({ error: "That feature isn't available on this plan." }, { status: 402 })
+      : NextResponse.json({ error: "That's a Pro feature.", upgrade: true }, { status: 402 });
   }
 
   const L = LIMITS[plan];
@@ -110,6 +119,9 @@ export async function guardAi(opts: GuardOptions = {}): Promise<NextResponse | n
   ]);
   if (!burst) return NextResponse.json({ error: "You're going a bit fast — give it a moment." }, { status: 429 });
   if (!day || !month) {
+    if (native) {
+      return NextResponse.json({ error: "You've reached today's AI limit. It resets tomorrow." }, { status: 429 });
+    }
     return NextResponse.json(
       {
         error: plan === "pro" ? "You've reached today's AI limit — it resets tomorrow." : "You've used today's free AI. Upgrade to Pro for much more.",
@@ -125,6 +137,12 @@ export async function guardAi(opts: GuardOptions = {}): Promise<NextResponse | n
   if (opts.feature && opts.featureFreeDaily && plan !== "pro") {
     const featOk = await rlHit(supabase, `ai:f:${opts.feature}:${userId}`, opts.featureFreeDaily, DAY, 1);
     if (!featOk) {
+      if (native) {
+        return NextResponse.json(
+          { error: `You've used today's ${opts.featureLabel ?? opts.feature} (${opts.featureFreeDaily}/day). It resets tomorrow.` },
+          { status: 429 }
+        );
+      }
       return NextResponse.json(
         { error: `You've used today's free ${opts.featureLabel ?? opts.feature} (${opts.featureFreeDaily}/day). Upgrade to Pro for unlimited.`, upgrade: true },
         { status: 429 }

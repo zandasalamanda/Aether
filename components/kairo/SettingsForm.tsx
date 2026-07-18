@@ -30,7 +30,9 @@ export function SettingsForm({ user }: { user: SessionUser }) {
     setError(null);
     const res = await deleteAccount();
     if (res.ok) {
-      window.location.href = "/";
+      // "/" natively redirects straight back into the app, which would loop a
+      // just-signed-out user. Send everyone to the sign-in screen instead.
+      window.location.href = "/sign-in";
       return;
     }
     setError(res.error ?? "We couldn't delete your account. Please try again.");
@@ -60,17 +62,20 @@ export function SettingsForm({ user }: { user: SessionUser }) {
       <div className="panel rounded-2xl p-6">
         <SectionLabel className="mb-4">Account</SectionLabel>
         <div className="flex flex-wrap gap-2.5">
-          <Link href="/app/billing" className="raised-btn inline-flex h-10 items-center gap-2 rounded-xl px-5 text-sm font-medium text-accent">
-            <Zap size={15} /> Manage plan
-          </Link>
+          {/* App Store Guideline 3.1.1: no route to an external purchase in the native build. */}
+          {!user.native && (
+            <Link href="/app/billing" className="raised-btn inline-flex h-10 items-center gap-2 rounded-xl px-5 text-sm font-medium text-accent">
+              <Zap size={15} /> Manage plan
+            </Link>
+          )}
           {clerkPublic ? (
-            <SignOutButton redirectUrl="/">
+            <SignOutButton redirectUrl="/sign-in">
               <button className="raised-btn inline-flex h-10 items-center gap-2 rounded-xl px-5 text-sm text-muted hover:text-ink">
                 <LogOut size={15} /> Sign out
               </button>
             </SignOutButton>
           ) : (
-            <Link href="/" className="raised-btn inline-flex h-10 items-center gap-2 rounded-xl px-5 text-sm text-muted hover:text-ink">
+            <Link href="/sign-in" className="raised-btn inline-flex h-10 items-center gap-2 rounded-xl px-5 text-sm text-muted hover:text-ink">
               <LogOut size={15} /> Sign out
             </Link>
           )}

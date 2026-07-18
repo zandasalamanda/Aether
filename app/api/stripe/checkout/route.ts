@@ -1,8 +1,14 @@
 import { NextResponse } from "next/server";
 import { features, pricing } from "@/lib/config";
 import { ensureProfile } from "@/lib/data/profile";
+import { isNativeRequest } from "@/lib/native";
 
 export async function POST(req: Request) {
+  // App Store Guideline 3.1.1: no purchase path from the native shell, even if
+  // a UI surface is ever missed. Checked first so nothing else can run.
+  if (await isNativeRequest()) {
+    return NextResponse.json({ error: "Not available in the app." }, { status: 403 });
+  }
   if (!features.stripe) {
     return NextResponse.json({ error: "Billing isn't configured yet. Add STRIPE_SECRET_KEY + price IDs to enable checkout." }, { status: 400 });
   }

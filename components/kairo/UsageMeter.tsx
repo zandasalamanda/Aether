@@ -12,9 +12,11 @@ interface Props {
   monthLimit: number;
   proDay: number;
   proMonth: number;
+  /** App Store Guideline 3.1.1: hides the paid-tier comparison and the billing link. */
+  native?: boolean;
 }
 
-export function UsageMeter({ plan, dayUsed, dayLimit, monthUsed, monthLimit, proDay, proMonth }: Props) {
+export function UsageMeter({ plan, dayUsed, dayLimit, monthUsed, monthLimit, proDay, proMonth, native = false }: Props) {
   const over = dayUsed >= dayLimit;
   const pct = Math.min(100, Math.round((dayUsed / Math.max(1, dayLimit)) * 100));
 
@@ -44,7 +46,7 @@ export function UsageMeter({ plan, dayUsed, dayLimit, monthUsed, monthLimit, pro
         />
       </div>
 
-      {plan === "free" && (
+      {plan === "free" && !native && (
         <div className="mt-2 flex flex-wrap items-center gap-2 text-[12px]">
           <span className="rounded-full bg-accent/15 px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-wide text-accent">With Pro</span>
           <span className="text-muted">

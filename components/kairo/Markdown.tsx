@@ -3,6 +3,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import { MermaidBlock } from "./MermaidBlock";
+import { ExternalLink } from "@/components/ui/ExternalLink";
 
 /**
  * A tiny, dependency-free Markdown renderer for AI-written prose (Ask Sola,
@@ -37,7 +38,7 @@ const INLINE: Pattern[] = [
     make: (m, key) => {
       const href = safeHref(m[2]);
       return href
-        ? <a key={key} href={href} target="_blank" rel="noopener noreferrer" className="text-accent underline decoration-accent/40 underline-offset-2 transition-colors hover:decoration-accent">{renderInline(m[1], key)}</a>
+        ? <ExternalLink key={key} href={href} className="text-accent underline decoration-accent/40 underline-offset-2 transition-colors hover:decoration-accent">{renderInline(m[1], key)}</ExternalLink>
         : <span key={key}>{renderInline(m[1], key)}</span>;
     },
   },

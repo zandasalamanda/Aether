@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { LegalPage, LegalSection } from "@/components/kairo/LegalPage";
+import { ExternalLink } from "@/components/ui/ExternalLink";
 
 export const metadata: Metadata = { title: "Privacy · Solaspace" };
 
@@ -51,7 +52,7 @@ export default function PrivacyPage() {
 
       <LegalSection heading="Contact">
         <p>
-          Questions about your privacy? Email <a href={`mailto:${CONTACT}`} className="text-accent underline underline-offset-2">{CONTACT}</a>.
+          Questions about your privacy? Email <ExternalLink href={`mailto:${CONTACT}`} className="text-accent underline underline-offset-2">{CONTACT}</ExternalLink>.
         </p>
       </LegalSection>
     </LegalPage>

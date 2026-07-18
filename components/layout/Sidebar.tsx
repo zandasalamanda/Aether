@@ -21,7 +21,9 @@ export function Sidebar({ user, nextMove, usage, className }: { user: SessionUse
   return (
     <aside
       className={cn(
-        "fixed inset-y-0 left-0 z-30 w-[248px] flex-col justify-between border-r border-line bg-canvas-2/70 px-4 py-6 backdrop-blur-xl",
+        "fixed inset-y-0 left-0 z-30 w-[248px] flex-col justify-between border-r border-line bg-canvas-2/70 backdrop-blur-xl",
+        // Insets resolve to 0 on the web, so max()/calc() collapse to the original px-4 py-6.
+        "pl-[max(1rem,env(safe-area-inset-left))] pr-4 pt-[calc(1.5rem+env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]",
         className
       )}
     >
@@ -77,10 +79,10 @@ export function Sidebar({ user, nextMove, usage, className }: { user: SessionUse
                 style={{ width: `${usePct}%`, background: useOver ? "linear-gradient(180deg,#f0a36a,#d9784a)" : "linear-gradient(180deg,#f3d6a0,#e6b877)" }}
               />
             </div>
-            {useOver && <p className="mt-1.5 text-[11px] leading-snug text-faint">You&apos;ve used today&apos;s free AI. Resets tomorrow, or go Pro.</p>}
+            {useOver && <p className="mt-1.5 text-[11px] leading-snug text-faint">{user.native ? "You’ve used today’s AI. Resets tomorrow." : "You’ve used today’s free AI. Resets tomorrow, or go Pro."}</p>}
           </div>
         )}
-        {user.plan === "free" && (
+        {user.plan === "free" && !user.native && (
           <Link
             href="/app/billing"
             className="group block rounded-xl border border-line bg-white/[0.02] p-4 transition-colors hover:border-line-strong"

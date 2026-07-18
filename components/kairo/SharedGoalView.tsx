@@ -4,6 +4,7 @@ import { Check, PlayCircle, Dumbbell, BookOpen, ExternalLink, ArrowRight } from 
 import type { SharedGoal, SharedNode } from "@/lib/data/shared";
 import { goalIcon } from "@/lib/kairo/goal-icon";
 import type { ResourceKind } from "@/types";
+import { ExternalLink as OutLink } from "@/components/ui/ExternalLink";
 
 const RES: Record<ResourceKind, { verb: string; Icon: typeof PlayCircle }> = {
   watch: { verb: "Watch", Icon: PlayCircle },
@@ -96,9 +97,9 @@ function StepRow({ node, sub }: { node: SharedNode; sub?: boolean }) {
         <span className={`${sub ? "text-[14px]" : "text-[15px] font-medium"} leading-snug ${done ? "text-faint line-through" : "text-ink"}`}>{node.title}</span>
       </div>
       {res && node.resourceLabel && (
-        <a href={searchUrl(node.resourceKind!, node.resourceLabel)} target="_blank" rel="noopener noreferrer" className="mt-1.5 ml-6 inline-flex items-center gap-1.5 text-[12px] text-muted transition-colors hover:text-ink">
+        <OutLink href={searchUrl(node.resourceKind!, node.resourceLabel)} className="mt-1.5 ml-6 inline-flex items-center gap-1.5 text-[12px] text-muted transition-colors hover:text-ink">
           <res.Icon size={13} className="text-accent" /> {res.verb}: {node.resourceLabel} <ExternalLink size={11} className="text-faint" />
-        </a>
+        </OutLink>
       )}
     </div>
   );

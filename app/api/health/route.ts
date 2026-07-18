@@ -6,6 +6,14 @@ import { getSupabaseServer } from "@/lib/supabase/server";
 // Returns 200 when the app + database are reachable, 503 when the DB is down.
 export const dynamic = "force-dynamic";
 
+// Readable cross-origin. The native shell's offline screen (mobile/www/offline.html)
+// is bundled in the app binary, so it runs from the capacitor:// origin and polls
+// this endpoint to decide when the connection is back. Without this header the
+// browser blocks it from reading the response and the offline screen can never
+// recover. The body is a status string and two booleans, so there is nothing here
+// worth protecting.
+const CORS = { "Access-Control-Allow-Origin": "*" } as const;
+
 export async function GET() {
   const checks: Record<string, string> = { app: "ok" };
   let healthy = true;
@@ -26,5 +34,8 @@ export async function GET() {
     }
   }
 
-  return NextResponse.json({ status: healthy ? "ok" : "degraded", checks }, { status: healthy ? 200 : 503 });
+  return NextResponse.json(
+    { status: healthy ? "ok" : "degraded", checks },
+    { status: healthy ? 200 : 503, headers: CORS }
+  );
 }

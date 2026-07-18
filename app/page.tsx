@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { ArrowRight, ChevronDown, Waypoints, Sunrise, CircleCheck, Search, Bell, ShieldCheck, Activity, Check } from "lucide-react";
 import { Logo } from "@/components/kairo/Logo";
 import { AppShots } from "@/components/kairo/AppShots";
@@ -9,6 +10,7 @@ import { Reveal } from "@/components/kairo/Reveal";
 import { SectionLabel } from "@/components/kairo/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { PLAN_FREE_FEATURES, PLAN_PRO_FEATURES, priceDisplay } from "@/lib/kairo/plans";
+import { isNativeRequest } from "@/lib/native";
 
 // The three beats of the real loop — this IS a sequence, so numbering earns its place.
 const BEATS = [
@@ -35,7 +37,11 @@ const FAQS = [
   { q: "Can I use it for free?", a: "Yes. The free plan maps up to two goals with daily planning, research picks, and a weekly review. Upgrade to Pro only when you want unlimited goals and the full AI." },
 ];
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  // App Store Guideline 3.1.1: this page is the app's only public price list.
+  // The native shell never sees it, which removes every pricing surface at once.
+  // Guarded before any render so nothing can paint first.
+  if (await isNativeRequest()) redirect("/app/today");
   return (
     <div data-theme="dark" className="cockpit relative isolate overflow-hidden">
       {/* isolate on the root = its own stacking context, so the -z-10 starfield and

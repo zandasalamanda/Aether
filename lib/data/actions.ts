@@ -5,6 +5,7 @@ import { getScopedClient } from "@/lib/supabase/scoped";
 import { getSupabaseAdmin } from "@/lib/supabase/server";
 import { features, planLimits } from "@/lib/config";
 import { isAdmin } from "@/lib/auth";
+import { isNativeRequest } from "@/lib/native";
 import { ensureProfile } from "./profile";
 import { isRemote } from "./index";
 import { newId } from "@/lib/utils";
@@ -40,6 +41,11 @@ export async function persistGoalFromMap(input: { result: GoalMapResult }): Prom
       .eq("status", "active")
       .is("archived_at", null);
     if ((count ?? 0) >= planLimits.free.activeGoals) {
+      // App Store Guideline 3.1.1: natively, state the limit without naming a
+      // paid tier and without the flag that renders an upgrade button.
+      if (await isNativeRequest()) {
+        return { ok: false, error: `You can keep ${planLimits.free.activeGoals} active goals at a time. Archive one to start another.`, upgrade: false };
+      }
       return { ok: false, error: `Free is capped at ${planLimits.free.activeGoals} active goals — upgrade to Pro for unlimited.`, upgrade: true };
     }
   }

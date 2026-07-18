@@ -4,15 +4,23 @@ import * as React from "react";
 import Link from "next/link";
 import { X, Zap, Check } from "lucide-react";
 import { PRO_UPGRADE_LINES, priceDisplay } from "@/lib/kairo/plans";
+import { isNativeUserAgent } from "@/lib/native-ua";
+import { planLimits } from "@/lib/config";
 
 /**
  * The moment-of-intent upgrade prompt — shown when a free user hits the goal cap
  * or empties their daily AI. One tap starts checkout (no dead-end toast).
  * `reason` doubles as the open flag: null = closed.
+ *
+ * App Store Guideline 3.1.1: this is the only in-app surface that prints the
+ * price, so the native shell gets a plain limit notice instead. A client-side
+ * UA read is safe because the modal only opens in response to a user action,
+ * never on first paint, so there is no priced frame to flash.
  */
 export function UpgradeModal({ reason, onClose }: { reason: string | null; onClose: () => void }) {
   const [loading, setLoading] = React.useState(false);
   const [err, setErr] = React.useState<string | null>(null);
+  const native = isNativeUserAgent(typeof navigator === "undefined" ? "" : navigator.userAgent);
 
   React.useEffect(() => {
     if (!reason) return;
@@ -41,6 +49,26 @@ export function UpgradeModal({ reason, onClose }: { reason: string | null; onClo
       setLoading(false);
     }
   };
+
+  if (native) {
+    return (
+      <div className="fixed inset-0 z-[130] grid place-items-center bg-black/60 p-5 backdrop-blur-sm" onClick={onClose} role="dialog" aria-modal="true" aria-label="Goal limit reached">
+        <div className="chrome animate-sheet-up relative w-full max-w-sm rounded-2xl p-6" onClick={(e) => e.stopPropagation()}>
+          <button onClick={onClose} className="absolute right-3 top-3 grid h-8 w-8 place-items-center rounded-lg text-faint transition-colors hover:text-ink" aria-label="Close"><X size={16} /></button>
+          <div className="flex items-center gap-2">
+            <span className="grid h-8 w-8 place-items-center rounded-xl border border-accent/20 bg-accent/5 text-accent"><Zap size={16} /></span>
+            <span className="font-display text-lg font-semibold text-ink">Goal limit reached</span>
+          </div>
+          <p className="mt-2 text-[14px] leading-relaxed text-muted">
+            You can keep {planLimits.free.activeGoals} goals in motion at a time. Finish or archive one to make room for the next.
+          </p>
+          <button onClick={onClose} className="raised-btn mt-5 inline-flex w-full items-center justify-center rounded-xl py-2.5 text-[14px] font-medium text-ink">
+            Got it
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="fixed inset-0 z-[130] grid place-items-center bg-black/60 p-5 backdrop-blur-sm" onClick={onClose} role="dialog" aria-modal="true" aria-label="Upgrade to Pro">

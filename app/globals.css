@@ -216,7 +216,17 @@
 }
 
 /* ---------- Base ---------- */
-html { color-scheme: dark; }
+/* The canvas colour lives on <html> as well as <body>. In a WKWebView the
+   over-scroll ("rubber band") region is painted by the scroll view behind the
+   document, which shows white unless the root element itself carries the
+   colour. overscroll-behavior: none stops the bounce entirely. Both are no-ops
+   on the web: the painted colour is the same token body already used, and the
+   fixed body::before wash still covers the viewport. */
+html {
+  color-scheme: dark;
+  background-color: var(--color-canvas);
+  overscroll-behavior: none;
+}
 
 body {
   background-color: var(--color-canvas);
@@ -225,6 +235,7 @@ body {
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
   overflow-x: hidden;
+  overscroll-behavior: none;
 }
 
 /* A single, barely-there depth wash — no color, no drama */
@@ -266,6 +277,36 @@ body::before {
 /* Kill the default grey tap-flash box on touch devices — it reads as a stray
    box on an otherwise premium surface. Interactive states are handled in-app. */
 * { -webkit-tap-highlight-color: transparent; }
+
+/* ============================================================
+   Native shell only. The .is-native class is set on <html> when the app is
+   running inside the iOS WKWebView shell, so none of this reaches the web.
+   Long-press callouts ("Copy / Look Up") and text-selection handles are the
+   clearest "this is a website" tells inside a native app.
+   ============================================================ */
+.is-native {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+/* MANDATORY counterpart to the rule above. Without it the selection lock
+   applies to fields too and typing a goal becomes impossible: no caret
+   placement, no selection, no cursor movement inside the field. */
+.is-native input,
+.is-native textarea,
+.is-native [contenteditable] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+/* iOS zooms the whole page when a focused field is under 16px and never zooms
+   back out. Enforcing 16px in the shell fixes every field at once, including
+   one-off inputs in feature screens, without touching web typography. */
+.is-native input,
+.is-native textarea,
+.is-native select {
+  font-size: 16px;
+}
 
 /* A node orbiting the hero's goal orb — slow, ambient. */
 @keyframes orbit { to { transform: rotate(360deg); } }

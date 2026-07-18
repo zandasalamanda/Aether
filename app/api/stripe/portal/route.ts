@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server";
 import { features } from "@/lib/config";
 import { ensureProfile } from "@/lib/data/profile";
+import { isNativeRequest } from "@/lib/native";
 
 // Stripe Billing Portal: lets a subscriber update their card, view invoices, or
 // cancel. Requires the customer portal to be enabled once in the Stripe
 // dashboard (Settings → Billing → Customer portal).
 export async function POST(req: Request) {
+  // App Store Guideline 3.1.1: no route to external billing management from the
+  // native shell. Checked first so nothing else can run.
+  if (await isNativeRequest()) {
+    return NextResponse.json({ error: "Not available in the app." }, { status: 403 });
+  }
   if (!features.stripe) {
     return NextResponse.json({ error: "Billing isn't configured yet." }, { status: 400 });
   }

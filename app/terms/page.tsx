@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { LegalPage, LegalSection } from "@/components/kairo/LegalPage";
+import { ExternalLink } from "@/components/ui/ExternalLink";
 
 export const metadata: Metadata = { title: "Terms · Solaspace" };
 
@@ -84,7 +85,7 @@ export default function TermsPage() {
       <LegalSection heading="Changes and contact">
         <p>
           We may update these terms; we&rsquo;ll revise the date above when we do. Questions? Email{" "}
-          <a href={`mailto:${CONTACT}`} className="text-accent underline underline-offset-2">{CONTACT}</a>.
+          <ExternalLink href={`mailto:${CONTACT}`} className="text-accent underline underline-offset-2">{CONTACT}</ExternalLink>.
         </p>
       </LegalSection>
     </LegalPage>

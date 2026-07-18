@@ -5,6 +5,7 @@ import { Play, BookOpen, X, ArrowUpRight } from "lucide-react";
 import type { ShowcaseMap, ShowcaseResource } from "@/lib/kairo/showcase-maps";
 import { PlanetOrb } from "./PlanetOrb";
 import { cn } from "@/lib/utils";
+import { ExternalLink } from "@/components/ui/ExternalLink";
 
 // A static rendering of the real in-app goal map, drawn EXACTLY as the live map draws
 // it: the same fishbone layout + collision relaxation, DOM node orbs and an SVG
@@ -306,7 +307,7 @@ export function ShowcaseTree({ map, interactive = false, onOpenChange, onInterac
               <>
                 <p className="mt-2.5 text-[13px] leading-relaxed text-muted">{selected.res.summary}</p>
                 {selected.res.kind === "watch" ? (
-                <a href={`https://www.youtube.com/watch?v=${selected.res.videoId}`} target="_blank" rel="noopener noreferrer" className="raised-btn mt-3 block overflow-hidden rounded-xl">
+                <ExternalLink href={`https://www.youtube.com/watch?v=${selected.res.videoId}`} className="raised-btn mt-3 block overflow-hidden rounded-xl">
                   <span className="relative block aspect-video w-full bg-cover bg-center" style={{ backgroundImage: `url(https://img.youtube.com/vi/${selected.res.videoId}/mqdefault.jpg)` }}>
                     <span className="absolute inset-0 grid place-items-center">
                       <span className="grid h-11 w-11 place-items-center rounded-full bg-black/55 text-white backdrop-blur-sm"><Play size={18} fill="currentColor" /></span>
@@ -320,16 +321,16 @@ export function ShowcaseTree({ map, interactive = false, onOpenChange, onInterac
                     </span>
                     <ArrowUpRight size={15} className="shrink-0 text-faint" />
                   </span>
-                </a>
+                </ExternalLink>
               ) : (
-                <a href={selected.res.url} target="_blank" rel="noopener noreferrer" className="raised-btn mt-3 flex items-center gap-3 rounded-xl px-3 py-3">
+                <ExternalLink href={selected.res.url} className="raised-btn mt-3 flex items-center gap-3 rounded-xl px-3 py-3">
                   <span className="grid h-9 w-9 shrink-0 place-items-center rounded-lg" style={{ background: `${hex}1f`, color: hex }}><BookOpen size={16} /></span>
                   <span className="min-w-0 flex-1">
                     <span className="block font-mono text-[10px] uppercase tracking-wide text-faint">Read · {selected.res.source}</span>
                     <span className="mt-0.5 block truncate text-[13px] font-medium text-ink">{selected.res.title}</span>
                   </span>
                   <ArrowUpRight size={15} className="shrink-0 text-faint" />
-                </a>
+                </ExternalLink>
                 )}
               </>
             ) : (

@@ -12,6 +12,8 @@ import { addNode, updateNode, setNodeStatus, setGoalDeadline } from "@/lib/data/
 import { parseDeadline } from "@/lib/kairo/deadline";
 import { Markdown } from "./Markdown";
 import { newId, cn } from "@/lib/utils";
+import { isNativeUserAgent } from "@/lib/native-ua";
+import { useToast } from "@/components/ui/Toast";
 
 type PendingChange = SolaChange & { on: boolean };
 interface Msg { id: string; role: "user" | "sola"; text: string; changes?: PendingChange[]; applied?: boolean; upgrade?: boolean }
@@ -25,7 +27,13 @@ const META: Record<SolaChangeKind, { label: string; Icon: typeof Plus; tone: str
 };
 
 export function AskSola({ goals, remote, isPro, onClose }: { goals: GoalWithNodes[]; remote: boolean; isPro: boolean; onClose: () => void }) {
+  // App Store Guideline 3.1.1: no upgrade nudge in the native shell. `guardAi`
+  // already strips `upgrade` from native responses, so this is belt-and-braces.
+  // A client-side UA read is safe here because the nudge only ever appears
+  // after an async call, never on first paint, so there is nothing to flash.
+  const isNativeShell = isNativeUserAgent(typeof navigator === "undefined" ? "" : navigator.userAgent);
   const router = useRouter();
+  const showToast = useToast();
   const [messages, setMessages] = React.useState<Msg[]>([]);
   const [input, setInput] = React.useState("");
   const [loading, setLoading] = React.useState(false);
@@ -75,7 +83,7 @@ export function AskSola({ goals, remote, isPro, onClose }: { goals: GoalWithNode
 
   const apply = (msgId: string, changes: PendingChange[]) => {
     const chosen = changes.filter((c) => c.on);
-    if (!chosen.length || !remote) { if (!remote) alert("Sign in to let Sola edit your plan."); return; }
+    if (!chosen.length || !remote) { if (!remote) showToast("Sign in to let Sola edit your plan."); return; }
     const order = new Map<string, number>();
     const nextOrder = (goalId: string) => {
       const cur = order.get(goalId) ?? (goals.find((g) => g.id === goalId)?.nodes.length ?? 0);
@@ -123,7 +131,7 @@ export function AskSola({ goals, remote, isPro, onClose }: { goals: GoalWithNode
           <div key={m.id} className={cn("flex", m.role === "user" ? "justify-end" : "justify-start")}>
             <div className={cn("max-w-[86%] rounded-2xl px-3.5 py-2.5 text-[14px] leading-relaxed", m.role === "user" ? "raised-btn text-ink" : "bg-white/[0.03] text-muted")}>
               {m.role === "sola" ? <Markdown>{m.text}</Markdown> : <p className="whitespace-pre-line">{m.text}</p>}
-              {m.upgrade && (
+              {m.upgrade && !isNativeShell && (
                 <button onClick={() => { onClose(); router.push("/app/billing"); }} className="raised-gold mt-2.5 inline-flex items-center gap-1.5 rounded-lg px-3.5 py-1.5 text-[13px] font-medium">
                   Upgrade to Pro
                 </button>

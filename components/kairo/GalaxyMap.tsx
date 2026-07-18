@@ -18,6 +18,8 @@ import { useRouter } from "next/navigation";
 import type { DraftResult, ResearchResult } from "@/lib/ai/types";
 import { replanGoal } from "@/lib/ai/replan";
 import { viaRoute } from "@/lib/ai/provider";
+import { ExternalLink as OutLink } from "@/components/ui/ExternalLink";
+import { SITE_URL } from "@/lib/site";
 import type { Clarifier, ReplanProposal, ReplanKind, GoalMapResult } from "@/lib/ai/types";
 import { TEMPLATES, templateToMap, type GoalTemplate } from "@/lib/kairo/templates";
 import { clarifyGoal } from "@/lib/ai/clarify";
@@ -1009,7 +1011,7 @@ export function GalaxyMap({
     if (!remote) { showToast("Sign in to share your map"); return; }
     const res = await shareGoal({ goalId });
     if (!res.ok || !res.token) { showToast("Couldn't create a link"); return; }
-    const url = `${window.location.origin}/s/${res.token}`;
+    const url = `${SITE_URL}/s/${res.token}`;
     try { await navigator.clipboard.writeText(url); showToast("Share link copied"); }
     catch { showToast(url); }
   };
@@ -2104,7 +2106,7 @@ export function NodeResourceBlock({ node, onResolve }: { node: GoalNode; onResol
 
   if (resolved) {
     return (
-      <a href={resolved.url} target="_blank" rel="noopener noreferrer" className="raised-btn mt-3 flex items-center gap-3 rounded-xl p-2 pr-3.5">
+      <OutLink href={resolved.url} className="raised-btn mt-3 flex items-center gap-3 rounded-xl p-2 pr-3.5">
         {resolved.thumbnail ? (
           // eslint-disable-next-line @next/next/no-img-element
           <img src={resolved.thumbnail} alt="" className="h-12 w-[84px] shrink-0 rounded-lg object-cover" />
@@ -2116,19 +2118,19 @@ export function NodeResourceBlock({ node, onResolve }: { node: GoalNode; onResol
           <span className="block truncate text-[11px] text-faint">{resMeta.verb} · {resolved.source}</span>
         </span>
         <ExternalLink size={14} className="shrink-0 text-faint" />
-      </a>
+      </OutLink>
     );
   }
 
   return (
-    <a href={resourceUrl(resource)} target="_blank" rel="noopener noreferrer" className="raised-btn mt-3 flex items-center gap-3 rounded-xl px-3.5 py-2.5">
+    <OutLink href={resourceUrl(resource)} className="raised-btn mt-3 flex items-center gap-3 rounded-xl px-3.5 py-2.5">
       {resolving ? <Loader2 size={18} className="shrink-0 animate-spin text-accent" /> : <resMeta.Icon size={18} className="shrink-0 text-accent" />}
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[13px] font-medium text-ink">{resMeta.verb}: {resource.label}</span>
         <span className="block text-[11px] text-faint">{resolving ? "Finding the best link…" : "Opens a search."}</span>
       </span>
       <ExternalLink size={14} className="shrink-0 text-faint" />
-    </a>
+    </OutLink>
   );
 }
 
@@ -2346,9 +2348,9 @@ function NodeSheet({
                   <div className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-faint">Sources</div>
                   <div className="flex max-h-[22vh] flex-col gap-1 overflow-y-auto overscroll-contain">
                     {researchResult.sources.map((s, i) => (
-                      <a key={i} href={s.url} target="_blank" rel="noopener noreferrer" className="truncate text-[12px] text-accent underline decoration-accent/30 underline-offset-2 transition-colors hover:decoration-accent">
+                      <OutLink key={i} href={s.url} className="truncate text-[12px] text-accent underline decoration-accent/30 underline-offset-2 transition-colors hover:decoration-accent">
                         {i + 1}. {s.title}
-                      </a>
+                      </OutLink>
                     ))}
                   </div>
                 </div>

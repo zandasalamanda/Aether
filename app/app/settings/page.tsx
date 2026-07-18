@@ -25,7 +25,7 @@ export default async function SettingsPage() {
       <div className="space-y-5">
         <SettingsForm user={user} />
         <ThemeToggle />
-        {usage && <UsageMeter {...usage} />}
+        {usage && <UsageMeter {...usage} native={user.native} />}
         {profile && (
           <NotificationSettings
             initial={{
