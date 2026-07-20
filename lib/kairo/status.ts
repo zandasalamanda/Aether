@@ -19,7 +19,7 @@ export interface StatusMeta {
   chip: string;
 }
 
-// Near-monochrome: only three hues carry meaning — accent (live/next),
+// Near-monochrome. Only three hues carry meaning: accent (live/next),
 // sage (done / on track), warn (at risk / blocked). Everything else is grey.
 const ACCENT = "#e6b877";
 const SAGE = "#8fae9f";

@@ -2,15 +2,15 @@ import { generateJson, isObj, isClient, viaRoute, viaRouteResult, raiseIfBlocked
 import type { WorkSessionInput, WorkSessionResult, UnblockInput, UnblockResult } from "./types";
 
 // The Working Session: Solaspace sits down with the user on ONE step and helps them
-// actually start it — a first move that kills hesitation, plus a short checklist
+// actually start it: a first move that kills hesitation, plus a short checklist
 // sized to the session. One call, made when the user opens a focus session.
 
 const PLAN_SYSTEM = `You are Sola, an execution coach sitting down with someone for ONE short work session on a single step of their goal.
 First decide the step's kind:
-- "desk" — thinking/creating/planning work at a screen or on paper (writing, outlining, researching, designing, budgeting, messaging).
-- "coach" — physical or in-the-world work you cannot do for them (training, practising an instrument, cooking, a workout, a hard conversation, an errand).
+- "desk": thinking/creating/planning work at a screen or on paper (writing, outlining, researching, designing, budgeting, messaging).
+- "coach": physical or in-the-world work you cannot do for them (training, practising an instrument, cooking, a workout, a hard conversation, an errand).
 Return JSON: {"kind":"desk"|"coach","firstMove":string,"steps":[string,...]}.
-"firstMove" is the single smallest physical action to begin RIGHT NOW — concrete enough to remove all hesitation (e.g. "Open a blank doc, title it 'Ch.1'", "Set 4 cones 5 yards apart"). Max 12 words.
+"firstMove" is the single smallest physical action to begin RIGHT NOW, concrete enough to remove all hesitation (e.g. "Open a blank doc, title it 'Ch.1'", "Set 4 cones 5 yards apart"). Max 12 words.
 "steps" is an ORDERED checklist of 2-4 micro-actions that fit inside the session length. Each max 10 words, imperative, specific to THIS step. No filler, no warm-ups unless the step is physical.`;
 
 function validPlan(r: unknown): r is WorkSessionResult {
@@ -35,7 +35,7 @@ function fallbackPlan(input: WorkSessionInput): WorkSessionResult {
     firstMove: "Clear your space and start the timer.",
     steps: [
       `Turn "${t}" into one physical first action`,
-      "Do that action — ignore everything else",
+      "Do that action, ignore everything else",
       "Note where you stopped for next time",
     ],
   };
@@ -54,12 +54,12 @@ export async function planSession(input: WorkSessionInput): Promise<WorkSessionR
   return validPlan(r) && r.steps.length > 0 ? cleanPlan(r) : fallbackPlan(input);
 }
 
-// "Stuck?" — the coach when you freeze. One call: shrink the step, name the
+// "Stuck?" is the coach when you freeze. One call: shrink the step, name the
 // blocker, or explain the missing idea, and always end with the next action.
 
-const UNBLOCK_SYSTEM = `You are Sola, a sharp execution coach. The user is stuck and can't start. In clean markdown: name the real blocker in one line, put the smallest first action in bold, then give 2-3 concrete micro-steps as a numbered list, and end with the precise next physical action. Keep it tight and practical — no hedging, no disclaimers, no "as an AI". Return JSON: {"answer":string} where "answer" is the markdown.`;
+const UNBLOCK_SYSTEM = `You are Sola, a sharp execution coach. The user is stuck and can't start. In clean markdown: name the real blocker in one line, put the smallest first action in bold, then give 2-3 concrete micro-steps as a numbered list, and end with the precise next physical action. Keep it tight and practical: no hedging, no disclaimers, no "as an AI". Return JSON: {"answer":string} where "answer" is the markdown.`;
 const UNBLOCK_FALLBACK =
-  "Shrink it: what's the smallest version you could finish in five minutes? Do only that — the rest gets obvious once you've started.";
+  "Shrink it: what's the smallest version you could finish in five minutes? Do only that. The rest gets obvious once you've started.";
 
 function validUnblock(r: unknown): r is UnblockResult {
   return isObj(r) && typeof r.answer === "string";

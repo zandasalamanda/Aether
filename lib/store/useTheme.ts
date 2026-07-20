@@ -10,7 +10,7 @@ export type Theme = "light" | "dark";
  * returns "dark" on the server and first client paint, then reconciles on mount.
  *
  * Used by the living map to swap "glow-on-black" orbs for "luminous sphere on
- * cream" in light mode — a treatment too different to express as pure CSS tokens.
+ * cream" in light mode, a treatment too different to express as pure CSS tokens.
  */
 export function useTheme(): Theme {
   const [theme, setTheme] = React.useState<Theme>("dark");

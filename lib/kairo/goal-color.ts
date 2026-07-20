@@ -1,4 +1,4 @@
-// One quiet, premium color per goal — shared across the map and every other
+// One quiet, premium color per goal, shared across the map and every other
 // tab so a goal (and its tasks) read the same everywhere. Desaturated tones so
 // the app stays calm rather than rainbow.
 
@@ -23,7 +23,7 @@ export function goalColorIndex(goalId: string): number {
   return h % GOAL_PALETTE.length;
 }
 
-/** The hex for a goal — the user's chosen slot if set, else the stable default. */
+/** The hex for a goal: the user's chosen slot if set, else the stable default. */
 export function goalColorHex(goalId: string, override?: number): string {
   const raw = override ?? goalColorIndex(goalId);
   const idx = ((raw % GOAL_PALETTE.length) + GOAL_PALETTE.length) % GOAL_PALETTE.length;

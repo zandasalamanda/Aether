@@ -9,7 +9,7 @@ function hashN(s: string): number {
   return h;
 }
 
-/** A faint, seeded surface — a tilted band + soft spots — so each planet looks distinct. */
+/** A faint, seeded surface (a tilted band + soft spots) so each planet looks distinct. */
 export function PlanetSurface({ hex, seed }: { hex: string; seed: string }) {
   const h = hashN(seed);
   const bandRot = h % 360;
@@ -28,7 +28,7 @@ export function PlanetSurface({ hex, seed }: { hex: string; seed: string }) {
 }
 
 /**
- * A glossy goal-planet with an embossed icon — pixel-identical to the real map's
+ * A glossy goal-planet with an embossed icon, pixel-identical to the real map's
  * core (radial highlight, inset shine, outer glow, seeded surface, embossed lucide
  * icon). Shared by the map and the landing so they read the same.
  */

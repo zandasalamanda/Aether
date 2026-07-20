@@ -43,7 +43,7 @@ export function LiveMapDemo() {
     if (sheetOpen) target.current = { x: 0, y: 0 };
   }, [sheetOpen]);
 
-  // A single rAF loop eases the tree toward the pointer target — smooth, never choppy,
+  // A single rAF loop eases the tree toward the pointer target: smooth, never choppy,
   // regardless of how fast the mouse moves.
   React.useEffect(() => {
     let raf = 0;
@@ -74,7 +74,7 @@ export function LiveMapDemo() {
 
   return (
     <div className="relative isolate overflow-hidden rounded-[32px] px-3 py-10 md:py-14">
-      {/* space backdrop — a faint grid + a soft core glow tinted to the goal's colour */}
+      {/* space backdrop: a faint grid + a soft core glow tinted to the goal's colour */}
       <div className="grid-veil pointer-events-none absolute inset-0 -z-10 opacity-30" />
       <div
         className="pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[520px] w-[520px] max-w-[92%] -translate-x-1/2 -translate-y-1/2 rounded-full blur-3xl"

@@ -12,7 +12,7 @@ export function AuthShell({ children }: { children: React.ReactNode }) {
     <div data-theme="dark" className="cockpit relative min-h-[100dvh] md:grid md:grid-cols-[1.05fr_1fr]">
       <OrbBackground />
 
-      {/* brand panel — desktop */}
+      {/* brand panel: desktop */}
       <div className="relative hidden overflow-hidden border-r border-line md:flex md:flex-col md:justify-between md:p-12">
         <div className="pointer-events-none absolute inset-0 grid place-items-center opacity-[0.13]">
           <LivingGoalMap goal={goal} className="w-[130%] max-w-none" />

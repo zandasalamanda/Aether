@@ -50,7 +50,7 @@ export function SettingsForm({ user }: { user: SessionUser }) {
           </div>
           <div className="min-w-0">
             <div className="font-display text-lg font-semibold text-ink">{user.name}</div>
-            <div className="text-sm text-muted">{user.email}</div>
+            <div className="text-[15px] text-muted">{user.email}</div>
           </div>
           <span className="ml-auto rounded-full border border-line px-3 py-1 font-mono text-[11px] uppercase tracking-wide text-muted">
             {user.plan} plan
@@ -64,23 +64,23 @@ export function SettingsForm({ user }: { user: SessionUser }) {
         <div className="flex flex-wrap gap-2.5">
           {/* App Store Guideline 3.1.1: no route to an external purchase in the native build. */}
           {!user.native && (
-            <Link href="/app/billing" className="raised-btn inline-flex h-10 items-center gap-2 rounded-xl px-5 text-sm font-medium text-accent">
+            <Link href="/app/billing" className="raised-btn inline-flex h-11 items-center gap-2 rounded-xl px-5 text-[15px] font-medium text-accent">
               <Zap size={15} /> Manage plan
             </Link>
           )}
           {clerkPublic ? (
             <SignOutButton redirectUrl="/sign-in">
-              <button className="raised-btn inline-flex h-10 items-center gap-2 rounded-xl px-5 text-sm text-muted hover:text-ink">
+              <button className="raised-btn inline-flex h-11 items-center gap-2 rounded-xl px-5 text-[15px] text-muted hover:text-ink">
                 <LogOut size={15} /> Sign out
               </button>
             </SignOutButton>
           ) : (
-            <Link href="/sign-in" className="raised-btn inline-flex h-10 items-center gap-2 rounded-xl px-5 text-sm text-muted hover:text-ink">
+            <Link href="/sign-in" className="raised-btn inline-flex h-11 items-center gap-2 rounded-xl px-5 text-[15px] text-muted hover:text-ink">
               <LogOut size={15} /> Sign out
             </Link>
           )}
           {!clerkPublic && (
-            <button onClick={resetDemo} className="raised-btn inline-flex h-10 items-center gap-2 rounded-xl px-5 text-sm text-muted hover:text-ink">
+            <button onClick={resetDemo} className="raised-btn inline-flex h-11 items-center gap-2 rounded-xl px-5 text-[15px] text-muted hover:text-ink">
               <RotateCcw size={15} /> Reset demo data
             </button>
           )}
@@ -92,22 +92,22 @@ export function SettingsForm({ user }: { user: SessionUser }) {
             {armed ? (
               <div>
                 <div className="flex flex-wrap items-center gap-2.5">
-                  <span className="text-[13px] text-warn">Permanently deletes your account, goals, and all data. Can&rsquo;t be undone.</span>
-                  <button onClick={() => setArmed(false)} disabled={deleting} className="raised-btn inline-flex h-9 items-center rounded-xl px-4 text-[13px] text-muted hover:text-ink">Cancel</button>
-                  <button onClick={remove} disabled={deleting} className="raised-btn inline-flex h-9 items-center gap-1.5 rounded-xl px-4 text-[13px] text-warn">
+                  <span className="text-[15px] text-warn">Permanently deletes your account, goals, and all data. Can&rsquo;t be undone.</span>
+                  <button onClick={() => setArmed(false)} disabled={deleting} className="raised-btn inline-flex h-11 items-center rounded-xl px-4 text-[15px] text-muted hover:text-ink">Cancel</button>
+                  <button onClick={remove} disabled={deleting} className="raised-btn inline-flex h-11 items-center gap-1.5 rounded-xl px-4 text-[15px] text-warn">
                     {deleting ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />} Delete everything
                   </button>
                 </div>
-                {error && <p className="mt-2.5 text-[13px] text-warn">{error}</p>}
+                {error && <p className="mt-2.5 text-[15px] text-warn">{error}</p>}
               </div>
             ) : (
-              <button onClick={() => setArmed(true)} className="raised-btn inline-flex h-10 items-center gap-2 rounded-xl px-5 text-sm text-warn">
+              <button onClick={() => setArmed(true)} className="raised-btn inline-flex h-11 items-center gap-2 rounded-xl px-5 text-[15px] text-warn">
                 <Trash2 size={15} /> Delete my account and data
               </button>
             )}
           </div>
         )}
-        {!clerkPublic && <p className="mt-3 text-[12px] text-faint">Demo edits are stored in this browser. Reset clears them.</p>}
+        {!clerkPublic && <p className="mt-3 text-[15px] text-faint">Demo edits are stored in this browser. Reset clears them.</p>}
       </div>
     </div>
   );

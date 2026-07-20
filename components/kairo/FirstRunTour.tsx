@@ -6,7 +6,7 @@ import { loadPersisted, savePersisted } from "@/lib/store/persist";
 import { cn } from "@/lib/utils";
 
 // A calm, one-time welcome the first time someone opens the map. Big type, high
-// contrast, plain language, large buttons — written for a first-time (older) user
+// contrast, plain language, large buttons, written for a first-time (older) user
 // who has never seen a "goal galaxy" before. Shown once, then never again.
 
 const KEY = "kairo.tutorial.v1";

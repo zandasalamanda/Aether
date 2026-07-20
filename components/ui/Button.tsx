@@ -9,8 +9,15 @@ type Size = "sm" | "md" | "lg" | "icon";
 const base =
   "relative inline-flex items-center justify-center gap-2 rounded-xl font-medium tracking-tight select-none disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none";
 
+/**
+ * Expands the tappable box to Apple's 44pt minimum without changing how the
+ * control looks. Only used where growing the button itself would upset a dense
+ * layout. `base` already sets `relative`, and the parent must not clip overflow.
+ */
+const hitArea = "before:absolute before:-inset-2 before:content-['']";
+
 const variants: Record<Variant, string> = {
-  // The one accent action — "your next move". Used once per view at most.
+  // The one accent action ("your next move"). Used once per view at most.
   primary: "raised-gold",
   solid: "raised-btn text-ink",
   glass: "raised-btn text-ink",
@@ -20,10 +27,12 @@ const variants: Record<Variant, string> = {
 };
 
 const sizes: Record<Size, string> = {
-  sm: "h-8 rounded-lg px-3.5 text-[13px]",
-  md: "h-10 px-5 text-sm",
+  // sm stays visually small (it sits in the landing header and inside input
+  // wells) so the hit area grows instead: 32px box, 48px tappable.
+  sm: `h-8 rounded-lg px-3.5 text-[14px] ${hitArea}`,
+  md: "h-11 px-5 text-[15px]",
   lg: "h-12 px-6 text-[15px]",
-  icon: "h-10 w-10",
+  icon: "h-11 w-11",
 };
 
 export function buttonVariants({

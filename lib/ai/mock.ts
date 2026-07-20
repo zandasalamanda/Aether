@@ -76,7 +76,7 @@ const TEMPLATES: Template[] = [
         { title: "Watch 3 people use it", est: 45, reason: "You'll see what to fix instantly" },
       ] },
       { title: "Craft the landing page", est: 75, reason: "You need a front door before launch" },
-      { title: "Launch", est: 90, reason: "Ship it — done beats perfect" },
+      { title: "Launch", est: 90, reason: "Ship it. Done beats perfect" },
       { title: "Win first customers", est: 60, reason: "Proof the thing matters" },
     ],
   },
@@ -217,7 +217,7 @@ export function mockGoalMap(input: GoalMapInput): GoalMapResult {
 // ---------- daily plan ----------
 
 function difficultyFor(minutes: number, energy: DailyPlanInput["energy"], focusSoFar: number): Difficulty {
-  // Deep into a long day, everything lightens — you don't ask someone to go deep
+  // Deep into a long day, everything lightens. You don't ask someone to go deep
   // in hour five. Fatigue caps the ceiling regardless of the block's length.
   if (energy === "low" || focusSoFar >= 300) return "light";
   let base: Difficulty;
@@ -233,7 +233,7 @@ function breakBlock(minutes: number, long: boolean): PlannedBlock {
   return {
     kind: "break",
     title: long ? "Long break" : "Break",
-    description: long ? "Step away — walk, eat, reset before the next stretch." : "Stretch, breathe, look away from the screen.",
+    description: long ? "Step away: walk, eat, reset before the next stretch." : "Stretch, breathe, look away from the screen.",
     goalId: null,
     nodeId: null,
     durationMinutes: minutes,
@@ -260,11 +260,11 @@ function candidateNodes(input: DailyPlanInput): { node: GoalNode; goalId: string
   });
 }
 
-// Break blocks count against the window, so the plan fits the real time you have —
+// Break blocks count against the window, so the plan fits the real time you have:
 // e.g. a 4h budget becomes ~3h of focus with rests woven through, not 4h straight.
 const MIN_FOCUS = 15;
 const round5 = (n: number) => Math.round(n / 5) * 5;
-// Blocks shrink as the day accumulates — hour one is not hour five.
+// Blocks shrink as the day accumulates. Hour one is not hour five.
 const taper = (focusSoFar: number) => Math.max(0.65, 1 - focusSoFar / 600);
 
 export function mockDailyPlan(input: DailyPlanInput): DailyPlanResult {
@@ -272,7 +272,7 @@ export function mockDailyPlan(input: DailyPlanInput): DailyPlanResult {
   const budget = Math.max(0, Math.round(input.availableMinutes || 0));
   const candidates = candidateNodes(input);
 
-  // Each node can span multiple sessions across the day — a 120-min step becomes
+  // Each node can span multiple sessions across the day: a 120-min step becomes
   // a few focus blocks with breaks between, not one impossible sitting.
   const queue = candidates.map((c) => ({ ...c, remaining: Math.max(MIN_FOCUS, c.node.estimatedMinutes || 30), sessions: 0 }));
 
@@ -333,7 +333,7 @@ export function mockDailyPlan(input: DailyPlanInput): DailyPlanResult {
     }
   }
 
-  // A day should never end on a break — trim any that the loop left dangling.
+  // A day should never end on a break. Trim any that the loop left dangling.
   while (blocks.length && blocks[blocks.length - 1].kind === "break") {
     used -= blocks[blocks.length - 1].durationMinutes;
     blocks.pop();
@@ -346,20 +346,20 @@ export function mockDailyPlan(input: DailyPlanInput): DailyPlanResult {
 
   const summary =
     focusCount === 0
-      ? "No blocks fit today — add time, or make a step smaller to build a plan."
+      ? "No blocks fit today. Add time, or make a step smaller to build a plan."
       : `${focusCount} focus block${focusCount > 1 ? "s" : ""} · ~${focusHours}h of focus${breakCount ? ` · ${breakCount} break${breakCount > 1 ? "s" : ""}` : ""} · ${energy} energy`;
 
   const base =
     focusCount === 0
       ? "Every workable step needs more room than today's budget. Try a longer window, or make a step smaller."
       : energy === "low"
-        ? "Energy is low, so Sola kept the blocks short and gentle — momentum matters more than volume today."
+        ? "Energy is low, so Sola kept the blocks short and gentle. Momentum matters more than volume today."
         : energy === "high"
           ? "Energy is high, so Sola front-loaded the deepest work while you can carry it, then eased off."
           : "Sola balanced the day around what actually moves your goals, with breaks so the focus holds.";
   // Only flag leftover time when real work ran out (not when we simply filled the day).
   const explanation = focusCount > 0 && !hasWork() && spare >= 20
-    ? `${base} You've got about ${Math.round(spare / 5) * 5} min to spare — rest it, or pull a step forward.`
+    ? `${base} You've got about ${Math.round(spare / 5) * 5} min to spare. Rest it, or pull a step forward.`
     : base;
 
   const recoveryNote = atRisk
@@ -374,10 +374,10 @@ export function mockDailyPlan(input: DailyPlanInput): DailyPlanResult {
 // Order matters: urgency wins first, then explicit deferral signals
 // ("maybe/someday") outrank impact keywords, then impact, then quick wins.
 const CATEGORY_RULES: { category: InboxCategory; match: RegExp; reason: string }[] = [
-  { category: "must_do", match: /\b(urgent|today|deadline|due|asap|now|pay|bill|email|submit|call)\b/i, reason: "Time-sensitive — do it first" },
-  { category: "not_worth_doing", match: /\b(maybe|someday|random|scroll|browse|watch)\b/i, reason: "Low value — let it go" },
+  { category: "must_do", match: /\b(urgent|today|deadline|due|asap|now|pay|bill|email|submit|call)\b/i, reason: "Time-sensitive: do it first" },
+  { category: "not_worth_doing", match: /\b(maybe|someday|random|scroll|browse|watch)\b/i, reason: "Low value: let it go" },
   { category: "high_impact", match: /\b(launch|build|design|write|plan|create|ship|grow|study|learn)\b/i, reason: "Moves a goal forward" },
-  { category: "quick_win", match: /\b(fix|update|reply|book|send|order|check|rename|tidy)\b/i, reason: "Small and fast — clear it" },
+  { category: "quick_win", match: /\b(fix|update|reply|book|send|order|check|rename|tidy)\b/i, reason: "Small and fast: clear it" },
   { category: "can_wait", match: /.*/, reason: "Fine to hold for later" },
 ];
 
@@ -413,7 +413,7 @@ export function mockReview(input: ReviewInput): ReviewResult {
   if (done.length) changes.push(`${done.length} step${done.length > 1 ? "s" : ""} completed across your goals`);
   if (moving.length) changes.push(`${moving.length} step${moving.length > 1 ? "s" : ""} now in motion`);
   if (pushed.length) changes.push(`${pushed.length} block${pushed.length > 1 ? "s" : ""} pushed to later`);
-  if (changes.length === 0) changes.push("A quiet stretch — nothing moved yet");
+  if (changes.length === 0) changes.push("A quiet stretch. Nothing moved yet");
 
   const risks: string[] = [
     ...atRisk.map((x) => `"${x.n.title}" is slipping in ${x.g.title}`),
@@ -436,7 +436,7 @@ export function mockReview(input: ReviewInput): ReviewResult {
   const summary = pushed.length
     ? `You pushed ${pushed.length} block${pushed.length > 1 ? "s" : ""}. Your estimate moved, but ${recoverable ? "the plan holds" : "it needs a rebuild"}.`
     : done.length
-      ? `Good movement — ${done.length} step${done.length > 1 ? "s" : ""} done. Keep the rhythm going.`
+      ? `Good movement: ${done.length} step${done.length > 1 ? "s" : ""} done. Keep the rhythm going.`
       : "Here's where your goals stand and the single best move next.";
 
   return {

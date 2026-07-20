@@ -11,7 +11,7 @@ import type { GoalWithNodes, GoalNode, NodeEvidence, InboxItem, UserProfile, Dai
 // Data-access seam. In demo mode (no Supabase + Clerk) these serve seeded data
 // so the app is fully explorable with zero keys. When both are configured,
 // each function queries the signed-in user's rows through a Clerk-scoped client
-// (RLS enforces per-user access) — the call sites (server components) are unchanged.
+// (RLS enforces per-user access). The call sites (server components) are unchanged.
 
 /** True when real per-user persistence is active (Supabase + Clerk both wired). */
 export const isRemote = features.supabase && features.clerk;
@@ -33,7 +33,7 @@ export async function getPlan(): Promise<"free" | "pro"> {
 }
 
 export const getGoals = cache(async (): Promise<GoalWithNodes[]> => {
-  // Demo mode starts with an empty galaxy — the app opens on "create your first
+  // Demo mode starts with an empty galaxy. The app opens on "create your first
   // goal", not on fake data. (buildSeed still backs tests + the sign-in backdrop.)
   if (!isRemote) return [];
   const scoped = await getScopedClient();
@@ -47,7 +47,7 @@ export const getGoals = cache(async (): Promise<GoalWithNodes[]> => {
     .is("archived_at", null)
     .order("created_at", { ascending: true });
   // Surface a real query failure as an error (retry boundary) instead of an
-  // empty galaxy — a transient error must never read as "you have no goals".
+  // empty galaxy. A transient error must never read as "you have no goals".
   if (goalsRes.error) throw new Error(`Failed to load goals: ${goalsRes.error.message}`);
   const goalRows = (goalsRes.data ?? []) as GoalRow[];
   if (goalRows.length === 0) return [];
@@ -109,7 +109,7 @@ export const getInbox = cache(async (): Promise<InboxItem[]> => {
 });
 
 export async function getTodayPlan(): Promise<DailyPlanWithBlocks | null> {
-  // No persisted daily plan — Today (the Cockpit) is derived live from goals.
+  // No persisted daily plan. Today (the Cockpit) is derived live from goals.
   return null;
 }
 

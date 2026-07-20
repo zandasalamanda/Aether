@@ -64,7 +64,7 @@ export function GoalOrb({ className }: { className?: string }) {
           />
         </div>
 
-        {/* the central goal orb — a real sphere, wobbling gently in place, at z-index 1 */}
+        {/* the central goal orb: a real sphere, wobbling gently in place, at z-index 1 */}
         <div className={reduce ? "relative" : "relative animate-bobble"} style={{ zIndex: 1 }}>
           <div
             className="relative grid place-items-center rounded-full"

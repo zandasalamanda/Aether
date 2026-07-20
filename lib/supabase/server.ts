@@ -15,7 +15,7 @@ export function getSupabaseServer(accessToken?: string): SupabaseClient | null {
   );
 }
 
-/** Service-role client — bypasses RLS. Server-only; use only for trusted writes (e.g. Stripe webhooks). */
+/** Service-role client that bypasses RLS. Server-only; use only for trusted writes (e.g. Stripe webhooks). */
 export function getSupabaseAdmin(): SupabaseClient | null {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!features.supabase || !key) return null;

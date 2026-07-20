@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 const clampMinutes = (n: number) => Math.max(5, Math.round(n / 5) * 5);
 
 /**
- * A focus session on a single step — a calm timer that Solaspace sits down with you
+ * A focus session on a single step: a calm timer that Solaspace sits down with you
  * for. On open it plans the session (a first move + a short checklist); for desk
  * steps it can co-write a real draft, and "Stuck?" unblocks you. Completing it
  * logs the step done. Each AI beat is one user-initiated call.
@@ -54,7 +54,7 @@ export function FocusOverlay({
   const [planLoading, setPlanLoading] = React.useState(true);
   const [checked, setChecked] = React.useState<Set<number>>(() => new Set());
 
-  // Stuck? — an unblock answer, only when asked.
+  // Stuck? An unblock answer, only when asked.
   const [stuckLoading, setStuckLoading] = React.useState(false);
   const [stuckAnswer, setStuckAnswer] = React.useState<string | null>(null);
 
@@ -82,7 +82,7 @@ export function FocusOverlay({
     return () => window.clearInterval(id);
   }, [running]);
 
-  // The moment a session lands — a small haptic tap so completing real, sustained
+  // The moment a session lands: a small haptic tap so completing real, sustained
   // work registers in the body, not just on screen (reduced-motion-safe, no-op where
   // unsupported).
   React.useEffect(() => { if (done) fireHaptic([10, 40, 12]); }, [done]);
@@ -137,7 +137,7 @@ export function FocusOverlay({
     <div data-theme="dark" className="fixed inset-0 z-50 overflow-y-auto bg-canvas/95 backdrop-blur-xl">
       <button
         onClick={onClose}
-        className="fixed right-5 top-[calc(env(safe-area-inset-top)+16px)] z-10 grid h-10 w-10 place-items-center rounded-full text-faint transition-colors hover:text-ink"
+        className="fixed right-5 top-[calc(env(safe-area-inset-top)+16px)] z-10 grid h-11 w-11 place-items-center rounded-full text-faint transition-colors hover:text-ink"
         aria-label="Close focus session"
       >
         <X size={18} />
@@ -148,8 +148,8 @@ export function FocusOverlay({
           <span className="font-mono text-[11px] uppercase tracking-[0.22em]" style={done ? { color: hex } : undefined}>{done ? "Session complete" : "Focus session"}</span>
           <h2 className="mt-2 line-clamp-2 font-display text-xl font-semibold text-ink">{title}</h2>
           {done && (
-            <p className="mt-2 text-[13px] leading-relaxed text-muted">
-              You gave this {minutes} focused minute{minutes === 1 ? "" : "s"}. That&apos;s real work — mark it done.
+            <p className="mt-2 text-[15px] leading-relaxed text-muted">
+              You gave this {minutes} focused minute{minutes === 1 ? "" : "s"}. That&apos;s real work. Mark it done.
             </p>
           )}
 
@@ -189,7 +189,10 @@ export function FocusOverlay({
                 <button
                   key={m}
                   onClick={() => setDur(m)}
-                  className={cn("rounded-lg px-4 py-2 text-sm transition-colors", minutes === m ? "raised-btn text-ink" : "text-muted hover:text-ink")}
+                  className={cn(
+                    "inline-flex min-h-11 items-center rounded-lg px-4 py-2 text-[15px] transition-colors",
+                    minutes === m ? "raised-btn text-ink" : "text-muted hover:text-ink"
+                  )}
                 >
                   {m}m
                 </button>
@@ -207,7 +210,7 @@ export function FocusOverlay({
                 <button onClick={() => setRunning((r) => !r)} className="raised-gold inline-flex items-center gap-2 rounded-xl px-6 py-3 text-[15px] font-medium">
                   {running ? <><Pause size={18} /> Pause</> : <><Play size={18} /> {left < total ? "Resume" : "Start"}</>}
                 </button>
-                <button onClick={complete} className="raised-btn inline-flex items-center gap-2 rounded-xl px-5 py-3 text-[14px] text-sage">
+                <button onClick={complete} className="raised-btn inline-flex min-h-11 items-center gap-2 rounded-xl px-5 py-3 text-[15px] text-sage">
                   <Check size={16} /> Done
                 </button>
               </>
@@ -215,24 +218,24 @@ export function FocusOverlay({
           </div>
 
           {!done && left < total && (
-            <button onClick={() => setDur(minutes)} className="mt-4 inline-flex items-center gap-1.5 text-[12px] text-faint transition-colors hover:text-muted">
-              <RotateCcw size={12} /> Reset
+            <button onClick={() => setDur(minutes)} className="mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-lg px-4 text-[15px] text-faint transition-colors hover:text-muted">
+              <RotateCcw size={14} /> Reset
             </button>
           )}
 
-          {/* Session plan — the part that helps you actually start. */}
+          {/* Session plan: the part that helps you actually start. */}
           <div className="mt-8 w-full">
             {drafting ? (
               <div className="panel rounded-2xl p-4 text-left">
                 <div className="flex items-center justify-between">
                   <div className="flex min-w-0 items-center gap-1.5">
-                    <button onClick={() => setDrafting(false)} className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Back to session"><ArrowLeft size={15} /></button>
+                    <button onClick={() => setDrafting(false)} className="-ml-2 grid h-11 w-11 shrink-0 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Back to session"><ArrowLeft size={17} /></button>
                     <span className="truncate font-display text-[15px] font-semibold text-ink">{draft?.title ?? "Drafting"}</span>
                   </div>
                   {!draftLoading && draft && (
-                    <div className="flex shrink-0 items-center gap-3">
-                      <button onClick={() => setEditingDraft((e) => !e)} className="text-[12px] text-faint transition-colors hover:text-muted">{editingDraft ? "Preview" : "Edit"}</button>
-                      <button onClick={() => void fetchDraft()} className="inline-flex items-center gap-1.5 text-[12px] text-faint transition-colors hover:text-muted"><RefreshCw size={12} /> Redo</button>
+                    <div className="-mr-2 flex shrink-0 items-center gap-1">
+                      <button onClick={() => setEditingDraft((e) => !e)} className="inline-flex min-h-11 items-center rounded-lg px-3 text-[15px] text-faint transition-colors hover:text-muted">{editingDraft ? "Preview" : "Edit"}</button>
+                      <button onClick={() => void fetchDraft()} className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-[15px] text-faint transition-colors hover:text-muted"><RefreshCw size={14} /> Redo</button>
                     </div>
                   )}
                 </div>
@@ -250,18 +253,18 @@ export function FocusOverlay({
                         autoFocus
                         value={draftBody}
                         onChange={(e) => { setDraftBody(e.target.value); setSaved(false); }}
-                        className="mt-3 min-h-[220px] w-full resize-none rounded-xl border border-transparent bg-white/[0.03] p-3 text-[14px] leading-relaxed text-ink transition-colors focus:outline-none focus:border-accent/40 focus-visible:shadow-none"
+                        className="mt-3 min-h-[220px] w-full resize-none rounded-xl border border-transparent bg-white/[0.03] p-3 text-base leading-relaxed text-ink transition-colors focus:outline-none focus:border-accent/40 focus-visible:shadow-none"
                       />
                     ) : (
-                      <div className="mt-3 min-h-[220px] rounded-xl bg-white/[0.03] p-3 text-[14px] leading-relaxed text-ink">
+                      <div className="mt-3 min-h-[220px] rounded-xl bg-white/[0.03] p-3 text-base leading-relaxed text-ink">
                         <Markdown>{draftBody}</Markdown>
                       </div>
                     )}
                     <div className="mt-3 flex items-center justify-between gap-2">
-                      <button onClick={saveDraft} disabled={saved || !draftBody.trim()} className="raised-gold inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-[13px] font-medium disabled:opacity-40">
-                        {saved ? <><Check size={14} /> Saved to notebook</> : <><Save size={14} /> Save to notebook</>}
+                      <button onClick={saveDraft} disabled={saved || !draftBody.trim()} className="raised-gold inline-flex min-h-11 items-center gap-1.5 rounded-xl px-4 py-2 text-[15px] font-medium disabled:opacity-40">
+                        {saved ? <><Check size={16} /> Saved to notebook</> : <><Save size={16} /> Save to notebook</>}
                       </button>
-                      <span className="text-[11px] text-faint">Edit freely — it&apos;s yours</span>
+                      <span className="text-[13px] text-faint">Edit freely. It&apos;s yours</span>
                     </div>
                   </>
                 )}
@@ -283,24 +286,24 @@ export function FocusOverlay({
                       </span>
                       <div className="min-w-0">
                         <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">First move</span>
-                        <p className="text-[14px] font-medium leading-snug text-ink">{plan.firstMove}</p>
+                        <p className="text-[15px] font-medium leading-snug text-ink">{plan.firstMove}</p>
                       </div>
                     </div>
 
                     {plan.steps.length > 0 && (
-                      <ul className="mt-3.5 space-y-2 border-t border-line pt-3.5">
+                      <ul className="mt-3.5 space-y-0.5 border-t border-line pt-3">
                         {plan.steps.map((s, i) => {
                           const on = checked.has(i);
                           return (
                             <li key={i}>
-                              <button onClick={() => toggle(i)} className="flex w-full items-center gap-2.5 text-left">
+                              <button onClick={() => toggle(i)} className="flex min-h-11 w-full items-center gap-2.5 py-1.5 text-left">
                                 <span
-                                  className={cn("grid h-5 w-5 shrink-0 place-items-center rounded-lg border transition-colors", on ? "border-transparent" : "border-line")}
+                                  className={cn("grid h-6 w-6 shrink-0 place-items-center rounded-lg border transition-colors", on ? "border-transparent" : "border-line")}
                                   style={on ? { background: hex } : undefined}
                                 >
-                                  {on && <Check size={13} className="text-white" />}
+                                  {on && <Check size={15} className="text-white" />}
                                 </span>
-                                <span className={cn("text-[14px] leading-snug transition-colors", on ? "text-faint line-through" : "text-muted")}>{s}</span>
+                                <span className={cn("text-[15px] leading-snug transition-colors", on ? "text-faint line-through" : "text-muted")}>{s}</span>
                               </button>
                             </li>
                           );
@@ -309,18 +312,18 @@ export function FocusOverlay({
                     )}
 
                     <div className="mt-3.5 flex flex-wrap items-center gap-2 border-t border-line pt-3">
-                      <button onClick={() => void runStuck()} className="raised-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] text-muted transition-colors hover:text-ink">
-                        {stuckLoading ? <Loader2 size={13} className="animate-spin" /> : <HelpCircle size={13} />} Stuck?
+                      <button onClick={() => void runStuck()} className="raised-btn inline-flex min-h-11 items-center gap-1.5 rounded-lg px-4 py-2 text-[15px] text-muted transition-colors hover:text-ink">
+                        {stuckLoading ? <Loader2 size={15} className="animate-spin" /> : <HelpCircle size={15} />} Stuck?
                       </button>
                       {plan.kind === "desk" && (
-                        <button onClick={openDraft} className="raised-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] text-accent transition-colors hover:text-ink">
-                          <PenLine size={13} /> Draft with Sola
+                        <button onClick={openDraft} className="raised-btn inline-flex min-h-11 items-center gap-1.5 rounded-lg px-4 py-2 text-[15px] text-accent transition-colors hover:text-ink">
+                          <PenLine size={15} /> Draft with Sola
                         </button>
                       )}
                     </div>
 
                     {stuckAnswer && (
-                      <div className="mt-3 rounded-xl bg-white/[0.03] p-3 text-[13px] leading-relaxed text-muted"><Markdown>{stuckAnswer}</Markdown></div>
+                      <div className="mt-3 rounded-xl bg-white/[0.03] p-3 text-[15px] leading-relaxed text-muted"><Markdown>{stuckAnswer}</Markdown></div>
                     )}
                   </>
                 ) : null}

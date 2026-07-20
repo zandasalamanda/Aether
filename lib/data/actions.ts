@@ -30,7 +30,7 @@ export async function persistGoalFromMap(input: { result: GoalMapResult }): Prom
   const { result } = input;
 
   // Enforce the Free active-goal cap server-side. The client cap in the map is not
-  // authoritative — /onboarding (which calls this) is reachable directly by an
+  // authoritative. /onboarding (which calls this) is reachable directly by an
   // already-signed-in user, so "unlimited goals" (the headline Pro feature) would
   // otherwise be free by just revisiting onboarding.
   if (profile.plan !== "pro") {
@@ -46,7 +46,7 @@ export async function persistGoalFromMap(input: { result: GoalMapResult }): Prom
       if (await isNativeRequest()) {
         return { ok: false, error: `You can keep ${planLimits.free.activeGoals} active goals at a time. Archive one to start another.`, upgrade: false };
       }
-      return { ok: false, error: `Free is capped at ${planLimits.free.activeGoals} active goals — upgrade to Pro for unlimited.`, upgrade: true };
+      return { ok: false, error: `Free is capped at ${planLimits.free.activeGoals} active goals. Upgrade to Pro for unlimited.`, upgrade: true };
     }
   }
 
@@ -195,16 +195,16 @@ export async function deleteAccount(): Promise<Result> {
       await stripe.customers.del(profile.stripeCustomerId);
     } catch (e) {
       console.error("[deleteAccount] Stripe cancel failed", e instanceof Error ? e.message : e);
-      return { ok: false, error: "We couldn't cancel your subscription. Nothing was deleted — please try again or contact support." };
+      return { ok: false, error: "We couldn't cancel your subscription. Nothing was deleted. Please try again or contact support." };
     }
   }
 
-  // 2) Delete their data. If this fails, stop — don't delete the Clerk account
+  // 2) Delete their data. If this fails, stop. Don't delete the Clerk account
   //    and orphan the rows.
   const { error: delErr } = await scoped.supabase.from("users_profile").delete().eq("id", profile.id);
   if (delErr) {
     console.error("[deleteAccount] data delete failed", delErr.message);
-    return { ok: false, error: "We couldn't delete your data. Nothing was removed — please try again." };
+    return { ok: false, error: "We couldn't delete your data. Nothing was removed. Please try again." };
   }
 
   // 3) Delete the Clerk account only after the data is confirmed gone.
@@ -266,7 +266,7 @@ export async function deleteGoal(input: { goalId: string }): Promise<Result> {
 export async function updateNotificationPrefs(prefs: { email: boolean; deadlines: boolean; nudges: boolean; digest: boolean }): Promise<Result> {
   if (!isRemote) return NO_OP;
   // Write via the service-role client, scoped to the signed-in user's own profile
-  // id — reliable regardless of which Postgres role the Clerk token maps to.
+  // id, reliable regardless of which Postgres role the Clerk token maps to.
   const profile = await ensureProfile();
   const admin = getSupabaseAdmin();
   if (!profile || !admin) return NO_OP;

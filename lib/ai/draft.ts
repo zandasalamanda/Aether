@@ -2,15 +2,15 @@ import { generateJson, isObj, isClient, viaRouteResult, raiseIfBlocked } from ".
 import type { DraftInput, DraftResult } from "./types";
 
 // Co-produced artifacts: for a desk step, Solaspace writes a real first draft of
-// whatever the step calls for — a cover letter, an outline, a study plan, a
-// message — from the user's own context. They edit it and keep it in the notebook.
+// whatever the step calls for: a cover letter, an outline, a study plan, a
+// message, from the user's own context. They edit it and keep it in the notebook.
 
-const SYSTEM = `You are Sola, co-writing with the user on ONE step of their goal. Produce a real, usable first draft of whatever this step calls for — a cover letter, an outline, a study plan, a message, a meal plan, a checklist — using their context. Write the actual artifact, not advice about it, and not a description of what you'd write. Keep it tight and immediately editable. Return JSON: {"title":string,"content":string}. "title" is a 2-4 word label (e.g. "Cover letter draft"). "content" is the draft itself in clean, well-structured markdown — use headings, bullet or numbered lists, and tables as the artifact calls for. If a diagram would make it clearer (a process, timeline, decision tree, or structure), include a fenced code block tagged mermaid. No preamble like "Here's a draft:", no sign-off from you.`;
+const SYSTEM = `You are Sola, co-writing with the user on ONE step of their goal. Produce a real, usable first draft of whatever this step calls for (a cover letter, an outline, a study plan, a message, a meal plan, a checklist) using their context. Write the actual artifact, not advice about it, and not a description of what you'd write. Keep it tight and immediately editable. Return JSON: {"title":string,"content":string}. "title" is a 2-4 word label (e.g. "Cover letter draft"). "content" is the draft itself in clean, well-structured markdown: use headings, bullet or numbered lists, and tables as the artifact calls for. If a diagram would make it clearer (a process, timeline, decision tree, or structure), include a fenced code block tagged mermaid. No preamble like "Here's a draft:", no sign-off from you.`;
 
 const FALLBACK: DraftResult = {
   title: "Starter draft",
   content:
-    "Sola couldn't draft this just now. Write your own rough first pass — even one messy paragraph beats a blank page.",
+    "Sola couldn't draft this just now. Write your own rough first pass. Even one messy paragraph beats a blank page.",
 };
 
 function valid(r: unknown): r is DraftResult {

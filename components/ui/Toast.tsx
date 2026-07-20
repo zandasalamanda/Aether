@@ -4,7 +4,7 @@ import * as React from "react";
 
 // One shared, floating confirmation toast for the whole app, so every surface
 // (map, inbox, today, focus) confirms actions the same way. `chrome` + fade-in,
-// bottom-centred, auto-dismiss — the same feel the map's toast had, now global.
+// bottom-centred, auto-dismiss: the same feel the map's toast had, now global.
 
 type ToastFn = (message: string) => void;
 
@@ -37,7 +37,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {children}
       {toast && (
         <div className="pointer-events-none fixed inset-x-0 bottom-[calc(96px+env(safe-area-inset-bottom))] z-[140] flex justify-center px-4 md:bottom-8">
-          <div key={toast.id} className="chrome animate-fade-in max-w-sm rounded-xl px-4 py-2.5 text-center text-[13px] text-accent">
+          <div key={toast.id} className="chrome animate-fade-in max-w-sm rounded-xl px-4 py-2.5 text-center text-[15px] text-accent">
             {toast.message}
           </div>
         </div>

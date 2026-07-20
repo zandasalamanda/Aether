@@ -9,7 +9,7 @@ import { GoalOrb } from "./GoalOrb";
 
 // The landing hero. Type a goal right here and it hands off the SAME way the
 // onboarding screen does: stash the goal, send you to sign up, and Sola maps it
-// the moment you're back. It never calls the AI itself — nothing is generated,
+// the moment you're back. It never calls the AI itself. Nothing is generated,
 // and no tokens spent, until there's an account. A goal orb rises quietly behind
 // the words for depth; the real example plan lives lower down the page.
 

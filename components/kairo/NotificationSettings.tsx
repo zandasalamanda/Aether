@@ -11,8 +11,8 @@ function Row({ label, desc, on, disabled, onChange }: { label: string; desc: str
   return (
     <div className={cn("flex items-center justify-between gap-4 py-2.5", disabled && "opacity-40")}>
       <div className="min-w-0">
-        <div className="text-[14px] text-ink">{label}</div>
-        <div className="text-[12px] text-faint">{desc}</div>
+        <div className="text-[16px] text-ink">{label}</div>
+        <div className="text-[15px] leading-snug text-faint">{desc}</div>
       </div>
       <button
         type="button"
@@ -21,7 +21,14 @@ function Row({ label, desc, on, disabled, onChange }: { label: string; desc: str
         aria-label={label}
         disabled={disabled}
         onClick={() => onChange(!on)}
-        className={cn("relative h-6 w-11 shrink-0 rounded-full border transition-all", disabled && "cursor-not-allowed")}
+        // The track stays 24x44 so the row keeps its look; the `before` ring
+        // lifts the tappable box to 44x44. 10px of vertical growth stays inside
+        // this row's own padding, so neighbouring switches never overlap.
+        className={cn(
+          "relative h-6 w-11 shrink-0 rounded-full border transition-all",
+          "before:absolute before:-inset-y-2.5 before:inset-x-0 before:content-['']",
+          disabled && "cursor-not-allowed"
+        )}
         style={{
           borderColor: on ? "rgba(230,184,119,0.5)" : "var(--well-border)",
           background: on ? "linear-gradient(180deg,#eabf7e,#c9975a)" : "var(--well-bg)",
@@ -75,7 +82,7 @@ export function NotificationSettings({ initial }: { initial: Prefs }) {
         <Row label="Weekly digest" desc="A short summary of your progress" on={prefs.digest} disabled={!prefs.email} onChange={set("digest")} />
         <Row label="Nudges" desc="A reminder after a quiet week" on={prefs.nudges} disabled={!prefs.email} onChange={set("nudges")} />
       </div>
-      {error && <p className="mt-3 text-[12px] text-warn">{error}</p>}
+      {error && <p className="mt-3 text-[15px] text-warn">{error}</p>}
     </div>
   );
 }

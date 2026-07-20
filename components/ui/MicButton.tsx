@@ -11,7 +11,7 @@ export function MicButton({ listening, onClick, className }: { listening: boolea
       aria-label={listening ? "Stop dictation" : "Dictate"}
       aria-pressed={listening}
       className={cn(
-        "grid h-9 w-9 shrink-0 place-items-center rounded-xl border transition-colors",
+        "grid h-11 w-11 shrink-0 place-items-center rounded-xl border transition-colors",
         listening ? "border-accent/50 bg-accent/10 text-accent" : "border-line text-faint hover:bg-white/5 hover:text-ink",
         className
       )}

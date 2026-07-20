@@ -51,7 +51,7 @@ export function pickGoalCelebration(goalId: string): { title: string; sub: strin
   return GOAL_DONE_LINES[hashId(goalId) % GOAL_DONE_LINES.length];
 }
 
-// A tasteful haptic tap for a real win — no-op where unsupported or when the user
+// A tasteful haptic tap for a real win. No-op where unsupported or when the user
 // prefers reduced motion. Delight, never noise.
 export function fireHaptic(pattern: number | number[] = 12): void {
   if (typeof window === "undefined") return;
@@ -59,6 +59,6 @@ export function fireHaptic(pattern: number | number[] = 12): void {
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
     navigator.vibrate?.(pattern);
   } catch {
-    /* unsupported — ignore */
+    /* unsupported, ignore */
   }
 }

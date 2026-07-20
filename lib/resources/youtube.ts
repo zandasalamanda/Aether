@@ -3,9 +3,9 @@ import type { ResolvedResource } from "@/types";
 import { isObj } from "@/lib/ai/provider";
 
 // Resolve a search query to a REAL YouTube video via the Data API. The model
-// only ever produced the query — the URL comes back from YouTube, so it can't
+// only ever produced the query. The URL comes back from YouTube, so it can't
 // be hallucinated. Returns null with no key or no result (caller falls back to
-// a live search link, i.e. today's behavior — never a dead link).
+// a live search link, i.e. today's behavior, never a dead link).
 
 const KEY = () => process.env.YOUTUBE_API_KEY || "";
 
@@ -29,7 +29,7 @@ export async function searchYouTube(query: string): Promise<ResolvedResource | n
       const id = isObj(it.id) ? it.id.videoId : null;
       const sn = isObj(it.snippet) ? it.snippet : null;
       if (typeof id !== "string" || !id || !sn) continue;
-      // Skip live broadcasts — they end and rot; we want durable content.
+      // Skip live broadcasts: they end and rot; we want durable content.
       if (sn.liveBroadcastContent && sn.liveBroadcastContent !== "none") continue;
       const thumbs = isObj(sn.thumbnails) ? sn.thumbnails : null;
       const medium = thumbs && isObj(thumbs.medium) ? thumbs.medium : null;

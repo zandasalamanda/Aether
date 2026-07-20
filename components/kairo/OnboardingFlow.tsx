@@ -28,7 +28,7 @@ export const PENDING_KEY = "solaspace:pending-goal";
 
 type Step = "input" | "questions" | "mapping" | "result";
 
-// Goal-gradient: the bar never sits at 0 — creating an account already counts as
+// Goal-gradient: the bar never sits at 0. Creating an account already counts as
 // progress earned, so momentum toward the finished map starts the moment you arrive.
 const STEP_PROGRESS: Record<Step, number> = { input: 18, questions: 45, mapping: 75, result: 100 };
 
@@ -38,7 +38,7 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
   const [result, setResult] = React.useState<GoalMapResult | null>(null);
   const [goalId, setGoalId] = React.useState<string | null>(null);
   const [error, setError] = React.useState<string | null>(null);
-  // The same couple of tailored questions the in-app map asks — so the first map
+  // The same couple of tailored questions the in-app map asks, so the first map
   // through "Get started" isn't a worse, question-less version of the real flow.
   const [clarifiers, setClarifiers] = React.useState<Clarifier[]>([]);
   const [answers, setAnswers] = React.useState<Record<string, string>>({});
@@ -60,9 +60,9 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
       await new Promise((r) => setTimeout(r, 1200));
       const res = await generateGoalMap({ prompt: p });
       // If the AI fell back to a generic placeholder for a real account, don't
-      // save it as their goal — surface the failure and let them retry.
+      // save it as their goal. Surface the failure and let them retry.
       if (remote && res.isMock) {
-        // Watch this in analytics — it's the first-impression failure rate.
+        // Watch this in analytics: it's the first-impression failure rate.
         track("goal_map_failed", { reason: "mock_fallback" });
         setError("Sola couldn't map that. You may have hit a limit, or the service is busy. Try again.");
         setStep("input");
@@ -102,10 +102,10 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
     setStep("questions");
     try {
       const cs = await clarifyGoal(p);
-      if (cs.length === 0) { void runMap(p); return; } // nothing worth asking — just map
+      if (cs.length === 0) { void runMap(p); return; } // nothing worth asking, just map
       setClarifiers(cs);
     } catch {
-      void runMap(p); // clarify hiccup — map without questions rather than dead-end
+      void runMap(p); // clarify hiccup: map without questions rather than dead-end
       return;
     } finally {
       setQLoading(false);
@@ -116,14 +116,14 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
   const finishQuestions = () => {
     const parts = Object.entries(answers).filter(([, a]) => a).map(([q, a]) => `${q.replace(/\?$/, "")}: ${a}`);
     if (extra.trim()) parts.push(extra.trim());
-    void runMap(parts.length ? `${prompt} — ${parts.join("; ")}` : prompt);
+    void runMap(parts.length ? `${prompt} (${parts.join("; ")})` : prompt);
   };
   const pick = (q: string, o: string) => setAnswers((a) => ({ ...a, [q]: a[q] === o ? "" : o }));
 
   const submit = () => {
     const p = prompt.trim();
     if (!p) return;
-    // Capture the goal first, then send them to make a free account — we ask the
+    // Capture the goal first, then send them to make a free account. We ask the
     // questions and map the moment they land back here. No anonymous AI calls.
     if (remote && !signedIn) {
       try { window.sessionStorage.setItem(PENDING_KEY, p); } catch { /* private mode */ }
@@ -148,7 +148,7 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
   }, [remote, signedIn, askQuestions]);
 
   const reset = () => {
-    // "Start over" discards the map we just saved — delete it so it doesn't linger
+    // "Start over" discards the map we just saved. Delete it so it doesn't linger
     // as an abandoned goal (which would also silently burn a Free goal slot).
     if (remote && goalId) void deleteGoal({ goalId });
     setStep("input");
@@ -158,7 +158,7 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
 
   return (
     <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col items-center px-5 py-10">
-      {/* Goal-gradient progress — pinned to the top, advances with each step, never 0%. */}
+      {/* Goal-gradient progress: pinned to the top, advances with each step, never 0%. */}
       <div className="fixed inset-x-0 top-0 z-20 h-1 bg-white/[0.04]" aria-hidden>
         <div
           className="h-full bg-accent"
@@ -193,7 +193,7 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
           {error && <p className="mt-4 text-[13px] text-warn">{error}</p>}
 
           {remote && !signedIn && !error && (
-            <p className="mt-3 text-[13px] text-faint">Free to start — you&apos;ll make your account next, and your goal will be waiting.</p>
+            <p className="mt-3 text-[13px] text-faint">Free to start. You&apos;ll make your account next, and your goal will be waiting.</p>
           )}
 
           <div className="mt-5 flex flex-wrap justify-center gap-2">
@@ -215,7 +215,7 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
           <GoalCore size={104} className="mx-auto mb-6" />
           <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">A couple quick things</h1>
           <p className="mx-auto mt-2 max-w-sm text-[14px] text-muted">
-            So Sola maps <span className="text-ink">{prompt}</span> for you specifically — all optional.
+            So Sola maps <span className="text-ink">{prompt}</span> for you specifically. All optional.
           </p>
 
           <div className="panel-2 mt-7 rounded-2xl p-4 text-left">

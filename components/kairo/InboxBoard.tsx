@@ -58,34 +58,34 @@ export function InboxBoard({ initialItems, remote = false }: { initialItems: Inb
 
   return (
     <div>
-      {/* composer — matches the map's prompt bar */}
+      {/* composer: matches the map's prompt bar */}
       <div className="inset-well flex items-center gap-2 rounded-2xl p-1.5 pl-4">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && add()}
           placeholder={speech.listening ? "Listening…" : "Drop anything here…"}
-          className="h-10 flex-1 bg-transparent text-[15px] text-ink placeholder:text-faint focus:outline-none"
+          className="h-11 flex-1 bg-transparent text-base text-ink placeholder:text-faint focus:outline-none"
         />
         {speech.supported && <MicButton listening={speech.listening} onClick={() => speech.toggle(input)} />}
         <button
           onClick={add}
           disabled={!input.trim()}
           aria-label="Add"
-          className="raised-gold grid h-9 w-9 shrink-0 place-items-center rounded-xl disabled:opacity-30"
+          className="raised-gold grid h-11 w-11 shrink-0 place-items-center rounded-xl disabled:opacity-30"
         >
           <Plus size={17} />
         </button>
       </div>
       <div className="mt-3 flex items-center justify-between px-1">
-        <p className="text-[13px] text-muted">{reasoning ?? `${items.length} item${items.length === 1 ? "" : "s"}`}</p>
+        <p className="pr-3 text-[15px] text-muted">{reasoning ?? `${items.length} item${items.length === 1 ? "" : "s"}`}</p>
         <Button variant="glass" size="sm" onClick={sortAll} disabled={sorting || items.length === 0}>
           <Sparkle size={14} className={sorting ? "animate-pulse-soft" : ""} /> {sorting ? "Sorting…" : sorted ? "Re-sort" : "Sort with Sola"}
         </Button>
       </div>
 
       {items.length === 0 ? (
-        <p className="py-16 text-center text-sm text-muted">Inbox zero. Drop new thoughts above whenever they land.</p>
+        <p className="py-16 text-center text-[15px] text-muted">Inbox zero. Drop new thoughts above whenever they land.</p>
       ) : !sorted ? (
         <div className={cn("mt-8 space-y-0.5 transition-opacity", sorting && "opacity-50")}>
           {items.map((item) => <ItemRow key={item.id} item={item} dot="bg-faint" onRemove={remove} />)}

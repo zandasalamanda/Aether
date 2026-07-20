@@ -30,7 +30,11 @@ export function Chip({ tone = "neutral", active = false, icon, pro = false, clas
     <button
       type="button"
       className={cn(
-        "raised-btn inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-medium",
+        // 36px box plus a 4px hit-area ring on every side reaches the 44px
+        // minimum. 4px is chosen so that chips in a `gap-2` row meet exactly
+        // rather than overlapping each other's tappable region.
+        "raised-btn relative inline-flex min-h-9 items-center gap-1.5 rounded-lg px-3 py-1.5 text-[14px] font-medium",
+        "before:absolute before:-inset-1 before:content-['']",
         active ? activeColor[tone] : cn("text-muted", idleHover[tone]),
         className
       )}

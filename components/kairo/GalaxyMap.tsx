@@ -48,9 +48,18 @@ import { FocusOverlay } from "./FocusOverlay";
 import { MappingNarration } from "./MappingNarration";
 import { Markdown } from "./Markdown";
 import { cn, formatDuration, newId, relativeDays, truncate } from "@/lib/utils";
+import { isNativeUserAgent } from "@/lib/native-ua";
 
 const GOLDEN = 2.399963229;
-const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
+// NaN-safe. The plain Math.max(lo, Math.min(hi, v)) form propagates NaN straight
+// through, and a NaN here reaches the canvas transform as scale(NaN), which kills
+// the whole map until a reload. Pinch maths can produce one: two pointers landing
+// on the same coordinate give a starting distance of 0, and 0/0 is NaN.
+const clamp = (v: number, lo: number, hi: number) => (Number.isFinite(v) ? Math.max(lo, Math.min(hi, v)) : lo);
+
+/** Zoom bounds, shared by the buttons, the wheel and the pinch so they cannot disagree. */
+const MIN_SCALE = 0.35;
+const MAX_SCALE = 2.4;
 const nowISO = () => new Date().toISOString();
 
 // A resource is a search intent, not a URL — one tap opens a live search so the
@@ -342,8 +351,11 @@ export function GalaxyMap({
   const [animating, setAnimating] = React.useState(false);
   const [expandedId, setExpandedId] = React.useState<string | null>(initialExpanded);
   const [selectedNodeId, setSelectedNodeId] = React.useState<string | null>(null);
-  // Let the parent (MapView) hide the Ask Sola button while a node sheet covers it.
-  React.useEffect(() => { onSheetChange?.(!!selectedNodeId); }, [selectedNodeId, onSheetChange]);
+  // Let the parent (MapView) hide the Ask Sola button while anything covers the
+  // bottom of the screen. Reporting only the node sheet left the button sitting on
+  // top of the submit control of every other sheet.
+  // (composing, pending, branchFor, breakdownFor and replanForId are declared below;
+  // the effect that reports them lives with them so the dependency list is honest.)
   const [hoverId, setHoverId] = React.useState<string | null>(null);
   const [poppedId, setPoppedId] = React.useState<string | null>(null);
   const [menu, setMenu] = React.useState(false);
@@ -365,6 +377,14 @@ export function GalaxyMap({
   const [replanForId, setReplanForId] = React.useState<string | null>(null);
   const [replanLoading, setReplanLoading] = React.useState(false);
   const [proposals, setProposals] = React.useState<(ReplanProposal & { pid: string })[]>([]);
+
+  // Anything that occupies the bottom of the screen. The parent uses this to pull
+  // the Ask Sola button out of the way; previously only the node sheet was
+  // reported, so the button covered the submit control of every other sheet.
+  const anySheetOpen =
+    !!selectedNodeId || !!expandedId || composing || !!pending || !!branchFor ||
+    !!breakdownFor || !!replanForId || browsingTemplates;
+  React.useEffect(() => { onSheetChange?.(anySheetOpen); }, [anySheetOpen, onSheetChange]);
 
   const speech = useSpeechInput(setPrompt);
   const pointers = React.useRef<Map<number, { x: number; y: number }>>(new Map());
@@ -407,6 +427,9 @@ export function GalaxyMap({
   }, [goals, setColorIdx]);
 
   const expanded = goals.find((g) => g.id === expandedId) ?? null;
+  // App Store Guideline 3.1.1: nothing in the native build may name a paid tier or
+  // point at a purchase. Read once per render, guarded for server rendering.
+  const nativeClient = typeof navigator !== "undefined" && isNativeUserAgent(navigator.userAgent);
   const selectedNode = expanded?.nodes.find((n) => n.id === selectedNodeId) ?? null;
   const dirty = view.tx !== 0 || view.ty !== 0 || Math.abs(view.scale - 0.72) > 0.01;
 
@@ -425,17 +448,112 @@ export function GalaxyMap({
     setView({ tx: -p.x * scale, ty: -p.y * scale, scale });
   }, [goals, positions]);
 
-  const overview = () => {
+  /**
+   * The part of the canvas a user can actually see, in CSS pixels.
+   *
+   * The map is `fixed inset-0`, so its own rect is the whole viewport, but chrome
+   * floats on top of it: the Map/List pill at the top, and on phones the bottom
+   * nav. Framing to the raw rect centres content behind that chrome. Everything
+   * that positions or scales the view reads this instead of assuming a desktop
+   * canvas, which is why the same code now works on a 375px phone and a 1440px
+   * desktop without a mobile branch.
+   */
+  /**
+   * Container size and safe-area insets, held in state rather than read from the
+   * ref on demand. Keeping it in state means the framing helpers stay pure (the
+   * React compiler rightly objects to reading a ref from a function that a
+   * render-time closure can reach), and it gives us re-fitting on resize and
+   * rotation for free, which the map previously had no handling for at all.
+   */
+  const [box, setBox] = React.useState({ w: 1200, h: 800, safeTop: 0, safeBottom: 0 });
+  React.useEffect(() => {
+    const el = viewportRef.current;
+    if (!el || typeof window === "undefined") return;
+    const probe = (side: "top" | "bottom") => {
+      const d = document.createElement("div");
+      d.style.cssText = `position:fixed;visibility:hidden;height:env(safe-area-inset-${side},0px)`;
+      document.body.appendChild(d);
+      const px = parseFloat(getComputedStyle(d).height) || 0;
+      d.remove();
+      return px;
+    };
+    const read = () => {
+      const r = el.getBoundingClientRect();
+      setBox({ w: r.width, h: r.height, safeTop: probe("top"), safeBottom: probe("bottom") });
+    };
+    read();
+    const ro = new ResizeObserver(read);
+    ro.observe(el);
+    window.addEventListener("orientationchange", read);
+    return () => { ro.disconnect(); window.removeEventListener("orientationchange", read); };
+  }, []);
+
+  const clearRect = React.useCallback(() => {
+    const phone = box.w < 768;
+    // Top: the floating Map/List pill. Bottom: the mobile nav (on desktop the
+    // sidebar is on the left, which the container already excludes).
+    const top = (phone ? box.safeTop : 0) + 46;
+    const bottom = phone ? box.safeBottom + 92 : 0;
+    return {
+      w: box.w,
+      h: box.h,
+      clearW: Math.max(120, box.w - 24),
+      clearH: Math.max(120, box.h - top - bottom),
+      /** How far the visible centre sits below the container centre. */
+      offsetY: (top - bottom) / 2,
+    };
+  }, [box]);
+
+  /** Frame a map-space bounding box in the clear area, with a little breathing room. */
+  const frame = React.useCallback(
+    (extentW: number, extentH: number) => {
+      const c = clearRect();
+      const scale = clamp(Math.min(c.clearW / Math.max(1, extentW), c.clearH / Math.max(1, extentH)) * 0.92, MIN_SCALE, 1.2);
+      return { tx: 0, ty: c.offsetY, scale };
+    },
+    [clearRect]
+  );
+
+  const overview = React.useCallback(() => {
+    // Fit every goal rather than trusting a fixed 0.72, which framed a desktop
+    // canvas and left most of the map off screen on a phone.
+    const pts = goals.map((g, i) => positions[g.id] ?? defaultPos(i));
+    const pad = 260; // a planet plus its label and halo
+    const extentW = pts.length ? Math.max(...pts.map((p) => Math.abs(p.x))) * 2 + pad : 600;
+    const extentH = pts.length ? Math.max(...pts.map((p) => Math.abs(p.y))) * 2 + pad : 600;
     setAnimating(true);
-    setView({ tx: 0, ty: 0, scale: 0.72 });
+    setView(frame(extentW, extentH));
     setSelectedNodeId(null);
-  };
+  }, [goals, positions, frame]);
+
+  // Frame the map once on mount, now that the container can actually be measured.
+  // The initial useState value is a guess made before any ref exists, so on a phone
+  // it framed a desktop-sized canvas. Only runs in overview: if the map opened
+  // straight into a goal, that goal's own framing is already correct.
+  const framedOnce = React.useRef(false);
+  React.useEffect(() => {
+    if (framedOnce.current || initialExpanded) return;
+    framedOnce.current = true;
+    overview();
+  }, [initialExpanded, overview]);
+
+  // Re-frame when the device rotates. Nothing used to re-fit, so a layout framed
+  // for 375x635 portrait stayed exactly where it was in landscape, where the usable
+  // height roughly halves, and the only way back was to pinch out by hand.
+  // Deliberately limited to rotation and to overview: re-framing while someone is
+  // zoomed into a goal would yank the map out from under them.
+  React.useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onRotate = () => { if (!expandedId) overview(); };
+    window.addEventListener("orientationchange", onRotate);
+    return () => window.removeEventListener("orientationchange", onRotate);
+  }, [expandedId, overview]);
 
   // Mouse-friendly navigation: buttons for people who'd rather not drag/scroll to
   // get around the map. Zoom steps around the centre; focus flies to the next step.
   const zoomBy = (factor: number) => {
     setAnimating(true);
-    setView((v) => ({ ...v, scale: clamp(v.scale * factor, 0.35, 2.4) }));
+    setView((v) => ({ ...v, scale: clamp(v.scale * factor, MIN_SCALE, MAX_SCALE) }));
   };
   const focusCurrent = () => {
     if (!expanded) { overview(); return; }
@@ -495,6 +613,32 @@ export function GalaxyMap({
     setNewGroupName("");
   };
 
+  /**
+   * Column count for a grid of `n` cells: whichever value lets the finished grid
+   * be drawn largest in the visible canvas.
+   *
+   * Deriving it from the container aspect analytically is close but rounds badly
+   * at small n (two clusters on a wide desktop want two columns, but the formula
+   * lands on 1.46 and rounds to one). Since n is tiny, just score every option
+   * against the thing we actually care about, which is the resulting zoom level.
+   * Portrait phones naturally get one or two columns and wide desktops get the
+   * square-ish grid they had before, with no mobile special case.
+   */
+  const gridCols = React.useCallback(
+    (n: number, cellW: number, cellH: number, pad: number) => {
+      const c = clearRect();
+      let best = 1;
+      let bestFit = -1;
+      for (let cols = 1; cols <= n; cols++) {
+        const rows = Math.ceil(n / cols);
+        const fit = Math.min(c.clearW / (cols * cellW + pad), c.clearH / (rows * cellH + pad));
+        if (fit > bestFit) { bestFit = fit; best = cols; }
+      }
+      return best;
+    },
+    [clearRect]
+  );
+
   // "Tidy": snap every planet onto a clean, evenly-spaced grid centred on the
   // origin. Constellation members are ordered contiguously so a group stays a tight
   // block rather than getting scattered across the grid.
@@ -504,18 +648,21 @@ export function GalaxyMap({
     for (const gr of groups) for (const id of gr.goalIds) if (!seen.has(id) && goals.some((g) => g.id === id)) { seen.add(id); order.push(id); }
     for (const g of goals) if (!seen.has(g.id)) order.push(g.id);
     const n = order.length;
-    const cols = Math.max(1, Math.round(Math.sqrt(n * 1.6))); // a touch wider than tall
-    const rows = Math.ceil(n / cols);
     const CX = 330, CY = 300;
+    // Shape the grid to the container, not to a fixed ratio. The old `n * 1.6`
+    // deliberately made the grid wider than tall, which is exactly backwards on a
+    // portrait phone and pushed most of the grid off the sides.
+    const cols = gridCols(n, CX, CY, 260);
+    const rows = Math.ceil(n / cols);
     const next: Record<string, { x: number; y: number }> = {};
     order.forEach((id, i) => {
       const col = i % cols, row = Math.floor(i / cols);
-      // the last row is short — centre it under the rest
+      // the last row is short, so centre it under the rest
       const inRow = row === rows - 1 ? n - row * cols : cols;
       next[id] = { x: (col - (inRow - 1) / 2) * CX, y: (row - (rows - 1) / 2) * CY };
     });
     setAnimating(true);
-    setView({ tx: 0, ty: 0, scale: 0.72 }); // frame the whole grid
+    setView(frame(cols * CX + 260, rows * CY + 260));
     setPositions(next);
     setSelectedNodeId(null);
     showToast("Tidied up");
@@ -557,9 +704,15 @@ export function GalaxyMap({
     const singles = goals.filter((g) => !inAGroup.has(g.id)).map((g) => [g.id]);
     const clusters: string[][] = [...allGroups.map((gr) => gr.goalIds), ...singles];
 
-    const cols = Math.max(1, Math.ceil(Math.sqrt(clusters.length)));
+    // Cluster spacing scales with the canvas. A flat 560 put two clusters 370px
+    // apart at the old fixed 0.66 zoom, which on a 375px phone landed one goal at
+    // x = -24 and the other at x = 399: both clipped off opposite edges with an
+    // empty middle. Narrow canvases get tighter clusters instead.
+    const c = clearRect();
+    const CX = Math.min(560, Math.max(300, c.clearW * 0.62));
+    const CY = Math.min(500, Math.max(280, c.clearH * 0.42));
+    const cols = gridCols(clusters.length, CX, CY, 300);
     const rows = Math.ceil(clusters.length / cols);
-    const CX = 560, CY = 500;
     const next: Record<string, { x: number; y: number }> = {};
     clusters.forEach((ids, ci) => {
       const col = ci % cols, row = Math.floor(ci / cols);
@@ -574,7 +727,11 @@ export function GalaxyMap({
     });
     setGroups(allGroups);
     setAnimating(true);
-    setView({ tx: 0, ty: 60, scale: 0.66 }); // frame the clusters, nudged down so top labels clear the chrome
+    // Fit the grid we just built. The old literal ty of 60 compensated for desktop
+    // chrome, where only the top is obstructed; on a phone the bottom nav means the
+    // visible centre is slightly ABOVE the container centre, so a positive nudge
+    // pushed content further under the nav. frame() derives the right sign.
+    setView(frame(cols * CX + 300, rows * CY + 300));
     setPositions(next);
     setSelectedNodeId(null);
     setExpandedId(null);
@@ -641,7 +798,10 @@ export function GalaxyMap({
     moved.current = false;
     if (pointers.current.size === 2) {
       const [a, b] = [...pointers.current.values()];
-      pinch.current = { dist: Math.hypot(a.x - b.x, a.y - b.y), scale: view.scale };
+      const dist = Math.hypot(a.x - b.x, a.y - b.y);
+      // Ignore a degenerate start. Two pointers on the same coordinate would make
+      // the scale ratio 0/0, and a NaN scale blanks the map until reload.
+      pinch.current = dist >= 1 ? { dist, scale: view.scale } : null;
     }
   };
   const onMove = (e: React.PointerEvent) => {
@@ -653,8 +813,23 @@ export function GalaxyMap({
     if (pointers.current.size === 2 && pinch.current) {
       const [a, b] = [...pointers.current.values()];
       const d = Math.hypot(a.x - b.x, a.y - b.y);
+      if (d < 1) return; // fingers met: no meaningful ratio, and dividing gives NaN
       setAnimating(false);
-      setView((v) => ({ ...v, scale: clamp((pinch.current!.scale * d) / pinch.current!.dist, 0.35, 2.4) }));
+      // Zoom about the midpoint between the fingers rather than the container
+      // centre, so the map grows and shrinks under the hand instead of sliding
+      // away from it. Without this, pinching out repeatedly walks the content
+      // off screen, which is how the map gets lost.
+      const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 };
+      const r = viewportRef.current?.getBoundingClientRect();
+      setView((v) => {
+        const next = clamp((pinch.current!.scale * d) / pinch.current!.dist, MIN_SCALE, MAX_SCALE);
+        if (!r || next === v.scale) return { ...v, scale: next };
+        // Keep the map point under the midpoint stationary across the zoom.
+        const ox = mid.x - (r.left + r.width / 2);
+        const oy = mid.y - (r.top + r.height / 2);
+        const k = next / v.scale;
+        return { scale: next, tx: ox - (ox - v.tx) * k, ty: oy - (oy - v.ty) * k };
+      });
       moved.current = true;
       return;
     }
@@ -670,7 +845,7 @@ export function GalaxyMap({
   };
   const onWheel = (e: React.WheelEvent) => {
     setAnimating(false);
-    setView((v) => ({ ...v, scale: clamp(v.scale * (1 - e.deltaY * 0.0015), 0.35, 2.4) }));
+    setView((v) => ({ ...v, scale: clamp(v.scale * (1 - e.deltaY * 0.0015), MIN_SCALE, MAX_SCALE) }));
   };
   const onCanvasClick = () => {
     if (moved.current) return;
@@ -842,7 +1017,7 @@ export function GalaxyMap({
     setPending(null);
     const parts = Object.entries(answers).filter(([, a]) => a).map(([q, a]) => `${q.replace(/\?$/, "")}: ${a}`);
     if (extra.trim()) parts.push(extra.trim());
-    void createGoal(parts.length ? `${pend.prompt} — ${parts.join("; ")}` : pend.prompt);
+    void createGoal(parts.length ? `${pend.prompt}. ${parts.join("; ")}` : pend.prompt);
   };
 
   // Fly to the spot the new planet will occupy and coalesce it there. If the goal
@@ -883,7 +1058,9 @@ export function GalaxyMap({
     if (res.isMock) {
       // AI was unavailable / rate-limited — don't persist a junk placeholder map.
       setMapping(false); setFormingPos(null);
-      showToast("Couldn't map that. You may have hit today's AI limit. Try later or upgrade.");
+      showToast(nativeClient
+        ? "Couldn't map that just now. Please try again in a moment."
+        : "Couldn't map that. You may have hit today's AI limit. Try later, or upgrade for more.");
       return;
     }
     await commitMap(res, pos);
@@ -1062,7 +1239,12 @@ export function GalaxyMap({
           // composited layer around a scaled subtree, and Chrome then rasterizes
           // children into clipped textures — which showed up as hard boxes cutting
           // off orb glows and progress rings.
-          style={{ transform, transformOrigin: "center", transition: animating ? "transform 0.6s cubic-bezier(0.22,1,0.36,1)" : "none", willChange: animating ? "transform" : "auto" }}
+          // --map-scale lets labels inside this subtree counter-scale. Text here is
+          // scaled by the zoom like everything else, so at the fit-to-screen zooms a
+          // phone needs, a 13px goal title rendered at about 5px. Publishing the
+          // scale as a variable keeps the fix to the labels themselves, with no
+          // prop threading through the planet components.
+          style={{ ["--map-scale" as string]: view.scale, transform, transformOrigin: "center", transition: animating ? "transform 0.6s cubic-bezier(0.22,1,0.36,1)" : "none", willChange: animating ? "transform" : "auto" } as React.CSSProperties}
         >
           {/* constellation halos — soft tinted nebulae behind grouped planets. The
               one a dragged planet hovers over brightens to signal it'll be filed there. */}
@@ -1071,7 +1253,7 @@ export function GalaxyMap({
             return (
               <div key={c.id} className="pointer-events-none absolute" style={{ left: c.cx, top: c.cy, opacity: active ? 1 : groupOpacity, transition: "opacity 0.3s ease" }}>
                 <div className="rounded-full" style={{ position: "absolute", left: -c.radius, top: -c.radius, width: c.radius * 2, height: c.radius * 2, background: light ? `radial-gradient(circle, ${c.hex}${active ? "40" : "24"}, ${c.hex}${active ? "1c" : "12"} 46%, transparent 70%)` : `radial-gradient(circle, ${c.hex}${active ? "3a" : "1f"}, ${c.hex}${active ? "16" : "0d"} 46%, transparent 70%)` }} />
-                <span className="absolute left-0 -translate-x-1/2 whitespace-nowrap font-mono text-[11px] font-medium uppercase tracking-[0.24em]" style={{ top: -c.radius - 6, color: light ? `color-mix(in srgb, ${c.hex} 70%, #2a2f3a)` : c.hex, opacity: active ? 1 : 0.85, textShadow: "var(--map-label-shadow)" }}>{c.label}</span>
+                <span className="absolute left-0 -translate-x-1/2 whitespace-nowrap font-mono text-[11px] font-medium uppercase tracking-[0.24em]" style={{ top: -c.radius - 6, color: light ? `color-mix(in srgb, ${c.hex} 70%, #2a2f3a)` : c.hex, opacity: active ? 1 : 0.85, textShadow: "var(--map-label-shadow)", transform: "translateX(-50%) scale(clamp(1, calc(1 / var(--map-scale, 1)), 1.8))", transformOrigin: "center bottom" }}>{c.label}</span>
               </div>
             );
           })}
@@ -1133,9 +1315,12 @@ export function GalaxyMap({
           <button
             onClick={() => setMenu((m) => !m)}
             disabled={empty}
-            className="chrome pointer-events-auto inline-flex max-w-[40vw] items-center gap-1.5 rounded-full px-4 py-2 text-sm font-medium text-ink disabled:opacity-40 sm:max-w-[56vw]"
+            // Moving the Map/List toggle off centre freed roughly 188px here, so the
+            // goal name gets most of it instead of being clipped at 40vw. Kept a
+            // margin short of the toggle so the two can never touch again.
+            className="chrome pointer-events-auto inline-flex min-h-11 max-w-[48vw] items-center gap-1.5 rounded-full px-4 text-sm font-medium text-ink disabled:opacity-40 sm:max-w-[56vw]"
           >
-            <span className="truncate">{expanded ? truncate(expanded.title, 30) : empty ? "No goals yet" : "All goals"}</span>
+            <span className="truncate">{expanded ? truncate(expanded.title, 42) : empty ? "No goals yet" : "All goals"}</span>
             {!empty && <ChevronDown size={14} className="shrink-0 text-faint" />}
           </button>
           {menu && !empty && (
@@ -1165,21 +1350,21 @@ export function GalaxyMap({
           <button
             onPointerDown={startGoalDrag}
             onClick={() => setComposing(true)}
-            className="raised-gold pointer-events-auto grid h-10 w-10 cursor-grab touch-none select-none place-items-center rounded-full active:cursor-grabbing"
-            aria-label="New goal — click, or drag onto the map to place it"
-            title="New goal — drag onto the map to place it"
+            className="raised-gold pointer-events-auto grid h-11 w-11 cursor-grab touch-none select-none place-items-center rounded-full active:cursor-grabbing"
+            aria-label="New goal. Tap to name one, or drag onto the map to place it."
+            title="New goal. Drag onto the map to place it."
           >
             <Plus size={18} />
           </button>
-          <div className="chrome pointer-events-auto flex flex-col items-center gap-0.5 rounded-full p-1">
-            <button onClick={() => setBrowsingTemplates(true)} className="grid h-9 w-9 place-items-center rounded-full text-muted transition-colors hover:text-ink" aria-label="Starter templates" title="Starter templates"><LayoutTemplate size={16} /></button>
-            <button onClick={() => { setSearchOpen((s) => !s); setQuery(""); }} aria-pressed={searchOpen} className={cn("grid h-9 w-9 place-items-center rounded-full transition-colors", searchOpen ? "text-accent" : "text-muted hover:text-ink")} aria-label="Find on the map" title="Find on the map"><Search size={16} /></button>
-            <button onClick={() => setFocusLens((f) => !f)} aria-pressed={focusLens} className={cn("grid h-9 w-9 place-items-center rounded-full transition-colors", focusLens ? "text-accent" : "text-muted hover:text-ink")} aria-label="Focus mode" title="Focus mode — dim all but your next steps"><Focus size={16} /></button>
+          <div className="chrome pointer-events-auto flex flex-col items-center gap-1.5 rounded-full p-1">
+            <button onClick={() => setBrowsingTemplates(true)} className="grid h-11 w-11 place-items-center rounded-full text-muted transition-colors hover:text-ink" aria-label="Starter templates" title="Starter templates"><LayoutTemplate size={16} /></button>
+            <button onClick={() => { setSearchOpen((s) => !s); setQuery(""); }} aria-pressed={searchOpen} className={cn("grid h-11 w-11 place-items-center rounded-full transition-colors", searchOpen ? "text-accent" : "text-muted hover:text-ink")} aria-label="Find on the map" title="Find on the map"><Search size={16} /></button>
+            <button onClick={() => setFocusLens((f) => !f)} aria-pressed={focusLens} className={cn("grid h-11 w-11 place-items-center rounded-full transition-colors", focusLens ? "text-accent" : "text-muted hover:text-ink")} aria-label="Focus mode" title="Focus mode. Dims all but your next steps."><Focus size={16} /></button>
             {goals.length > 1 && (
-              <button onClick={organize} className="grid h-9 w-9 place-items-center rounded-full text-muted transition-colors hover:text-ink" aria-label="Sort into groups" title="Sort into groups (Health, Work, Travel…)"><Boxes size={16} /></button>
+              <button onClick={organize} className="grid h-11 w-11 place-items-center rounded-full text-muted transition-colors hover:text-ink" aria-label="Sort into groups" title="Sort into groups (Health, Work, Travel…)"><Boxes size={16} /></button>
             )}
             {goals.length > 1 && (
-              <button onClick={tidy} className="grid h-9 w-9 place-items-center rounded-full text-muted transition-colors hover:text-ink" aria-label="Tidy up" title="Tidy into a clean grid"><LayoutGrid size={15} /></button>
+              <button onClick={tidy} className="grid h-11 w-11 place-items-center rounded-full text-muted transition-colors hover:text-ink" aria-label="Tidy up" title="Tidy into a clean grid"><LayoutGrid size={15} /></button>
             )}
           </div>
           {searchOpen && (
@@ -1206,21 +1391,21 @@ export function GalaxyMap({
       {!empty && (
         <div className="pointer-events-none absolute right-4 top-[calc(env(safe-area-inset-top)+56px)] z-10 flex flex-col items-center gap-1.5 md:top-20">
           <div className="chrome pointer-events-auto flex flex-col overflow-hidden rounded-full">
-            <button onClick={() => zoomBy(1.25)} className="grid h-9 w-9 place-items-center text-muted transition-colors hover:text-ink" aria-label="Zoom in" title="Zoom in">
+            <button onClick={() => zoomBy(1.25)} className="grid h-11 w-11 place-items-center text-muted transition-colors hover:text-ink" aria-label="Zoom in" title="Zoom in">
               <Plus size={16} />
             </button>
             <span className="mx-auto h-px w-4 bg-line" aria-hidden />
-            <button onClick={() => zoomBy(0.8)} className="grid h-9 w-9 place-items-center text-muted transition-colors hover:text-ink" aria-label="Zoom out" title="Zoom out">
+            <button onClick={() => zoomBy(0.8)} className="grid h-11 w-11 place-items-center text-muted transition-colors hover:text-ink" aria-label="Zoom out" title="Zoom out">
               <Minus size={16} />
             </button>
           </div>
           {expanded && (
-            <button onClick={focusCurrent} className="chrome pointer-events-auto grid h-9 w-9 place-items-center rounded-full text-muted transition-colors hover:text-ink" aria-label="Jump to your next step" title="Jump to your next step">
+            <button onClick={focusCurrent} className="chrome pointer-events-auto grid h-11 w-11 place-items-center rounded-full text-muted transition-colors hover:text-ink" aria-label="Jump to your next step" title="Jump to your next step">
               <Crosshair size={15} />
             </button>
           )}
           {dirty && (
-            <button onClick={overview} className="chrome pointer-events-auto grid h-9 w-9 place-items-center rounded-full text-muted transition-colors hover:text-ink" aria-label="Recenter" title="See all goals">
+            <button onClick={overview} className="chrome pointer-events-auto grid h-11 w-11 place-items-center rounded-full text-muted transition-colors hover:text-ink" aria-label="Recenter" title="See all goals">
               <Locate size={15} />
             </button>
           )}
@@ -1276,7 +1461,7 @@ export function GalaxyMap({
                 placeholder="Personalize the breakdown… (optional)"
                 className="h-10 flex-1 bg-transparent text-[15px] text-ink placeholder:text-faint focus:outline-none"
               />
-              <button type="button" onClick={() => { setBreakdownFor(null); setBreakdownText(""); }} className="grid h-9 w-9 place-items-center rounded-xl text-faint hover:text-ink" aria-label="Cancel"><X size={16} /></button>
+              <button type="button" onClick={() => { setBreakdownFor(null); setBreakdownText(""); }} className="grid h-11 w-11 place-items-center rounded-xl text-faint hover:text-ink" aria-label="Cancel"><X size={16} /></button>
               <button type="submit" className="raised-gold inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl px-4 text-[13px] font-medium">Break down</button>
             </form>
           ) : replanForId && expanded ? (
@@ -1661,6 +1846,10 @@ function GoalCluster({
               "mt-1 block transition-opacity duration-200",
               expanded || hovered ? "opacity-100" : "opacity-100 [@media(hover:hover)]:opacity-0"
             )}
+            // Counter-scale the label block so it holds a readable size as the map
+            // zooms out. Only compensates below 1x (zoomed in, the labels are
+            // already large), and is capped so it cannot balloon at minimum zoom.
+            style={{ transform: "scale(clamp(1, calc(1 / var(--map-scale, 1)), 1.8))", transformOrigin: "top center" }}
           >
             <span className="mx-auto block max-w-[170px] truncate text-[13px] font-semibold text-ink" style={{ textShadow: "var(--map-label-shadow)" }}>
               {truncate(goal.title, 30)}
@@ -1861,7 +2050,7 @@ function NewGoalBar({
         />
         {speech.supported && <MicButton listening={speech.listening} onClick={() => speech.toggle(value)} />}
         {onCancel && (
-          <button type="button" onClick={onCancel} className="grid h-9 w-9 place-items-center rounded-xl text-faint hover:text-ink" aria-label="Cancel">
+          <button type="button" onClick={onCancel} className="grid h-11 w-11 place-items-center rounded-xl text-faint hover:text-ink" aria-label="Cancel">
             <X size={16} />
           </button>
         )}
@@ -1914,14 +2103,14 @@ function GoalBar({
             <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: hex, boxShadow: `0 0 8px ${hex}` }} />
             <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-ink">{goal.title}</span>
             {goal.nodes.length > 0 && (
-              <button onClick={onAdapt} className="grid h-9 w-9 place-items-center rounded-lg text-faint hover:text-accent" aria-label="Adapt the plan" title="Adapt the plan to your progress"><Wand2 size={16} /></button>
+              <button onClick={onAdapt} className="grid h-11 w-11 place-items-center rounded-lg text-faint hover:text-accent" aria-label="Adapt the plan" title="Adapt the plan to your progress"><Wand2 size={16} /></button>
             )}
-            <button onClick={onGroup} className="grid h-9 w-9 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Add to a group" title="Add to a group (Health, Work…)"><Boxes size={16} /></button>
-            <button onClick={onShare} className="grid h-9 w-9 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Share this map" title="Copy a public link"><Share2 size={16} /></button>
-            <Link href={`/app/notebook?goal=${goal.id}`} className="grid h-9 w-9 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Notebook" title="Notebook"><NotebookPen size={16} /></Link>
-            <button onClick={onColor} className="grid h-9 w-9 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Change color" title="Change color"><Palette size={16} /></button>
-            <button onClick={() => setArmed(true)} className="grid h-9 w-9 place-items-center rounded-lg text-faint hover:text-warn" aria-label="Delete goal" title="Delete goal"><Trash2 size={16} /></button>
-            <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Close" title="Close"><X size={16} /></button>
+            <button onClick={onGroup} className="grid h-11 w-11 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Add to a group" title="Add to a group (Health, Work…)"><Boxes size={16} /></button>
+            <button onClick={onShare} className="grid h-11 w-11 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Share this map" title="Copy a public link"><Share2 size={16} /></button>
+            <Link href={`/app/notebook?goal=${goal.id}`} className="grid h-11 w-11 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Notebook" title="Notebook"><NotebookPen size={16} /></Link>
+            <button onClick={onColor} className="grid h-11 w-11 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Change color" title="Change color"><Palette size={16} /></button>
+            <button onClick={() => setArmed(true)} className="grid h-11 w-11 place-items-center rounded-lg text-faint hover:text-warn" aria-label="Delete goal" title="Delete goal"><Trash2 size={16} /></button>
+            <button onClick={onClose} className="grid h-11 w-11 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Close" title="Close"><X size={16} /></button>
           </div>
           <form onSubmit={(e) => { e.preventDefault(); onAddStep(); }} className="inset-well flex items-center gap-2 rounded-xl p-1 pl-3.5">
             <input
@@ -2005,7 +2194,7 @@ function MiniInput({
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }} className="chrome animate-sheet-up flex items-center gap-2 rounded-2xl p-1.5 pl-4">
       <span className="text-accent">{icon}</span>
       <input autoFocus value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="h-10 flex-1 bg-transparent text-[15px] text-ink placeholder:text-faint focus:outline-none" />
-      <button type="button" onClick={onClose} className="grid h-9 w-9 place-items-center rounded-xl text-faint hover:text-ink" aria-label="Cancel"><X size={16} /></button>
+      <button type="button" onClick={onClose} className="grid h-11 w-11 place-items-center rounded-xl text-faint hover:text-ink" aria-label="Cancel"><X size={16} /></button>
       <button type="submit" disabled={!value.trim()} className="raised-gold grid h-9 w-9 shrink-0 place-items-center rounded-xl disabled:opacity-30" aria-label="Add"><ArrowUp size={17} /></button>
     </form>
   );
@@ -2286,8 +2475,8 @@ function NodeSheet({
           <h2 className="mt-1 font-display text-lg font-semibold leading-snug text-ink">{node.title}</h2>
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          <button onClick={() => setArmedDel(true)} className="grid h-9 w-9 place-items-center rounded-lg text-faint transition-colors hover:text-warn" aria-label="Delete this step" title="Delete this step"><Trash2 size={16} /></button>
-          <button onClick={onClose} className="grid h-9 w-9 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Close"><X size={17} /></button>
+          <button onClick={() => setArmedDel(true)} className="grid h-11 w-11 place-items-center rounded-lg text-faint transition-colors hover:text-warn" aria-label="Delete this step" title="Delete this step"><Trash2 size={16} /></button>
+          <button onClick={onClose} className="grid h-11 w-11 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Close"><X size={17} /></button>
         </div>
       </div>
       {armedDel && (
@@ -2320,7 +2509,13 @@ function NodeSheet({
           </Chip>
           <Chip tone="accent" icon={<Scissors size={14} />} onClick={breaking ? undefined : onMakeSmaller}>Make it smaller</Chip>
           <Chip tone="accent" icon={<Wand2 size={14} />} onClick={() => void runDraft()}>Do it for me</Chip>
-          <Chip tone="accent" pro={!isPro} icon={<Search size={14} />} onClick={() => void runResearch()}>Research</Chip>
+          {/* App Store 3.1.1: `pro` renders a literal "Pro" badge, and the native
+              build resolves everyone to free, so this would have shown a paid-tier
+              badge on the signature screen to a reviewer. Gated here rather than in
+              Chip, which is a server component: reading the UA there would render
+              the badge during SSR and drop it on hydration, flashing the exact
+              string we are hiding. */}
+          <Chip tone="accent" pro={!isPro && !isNativeUserAgent(typeof navigator === "undefined" ? "" : navigator.userAgent)} icon={<Search size={14} />} onClick={() => void runResearch()}>Research</Chip>
         </div>
       )}
 

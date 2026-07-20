@@ -76,7 +76,7 @@ export function buildSeed(): SeedData {
       node({ id: "n3", goalId: "g_launch", title: "Build the foundation", status: "in_motion", progress: 30, priority: 2, estimatedMinutes: 120, aiReason: "The load-bearing work everything sits on", description: "Auth, data, and the app shell." }),
       node({ id: "n5", goalId: "g_launch", title: "Craft the landing page", status: "at_risk", progress: 10, priority: 2, estimatedMinutes: 75, aiReason: "You need a front door before launch", description: "The page that explains the product.", dueDate: daysFromNow(6) }),
       node({ id: "n4", goalId: "g_launch", title: "Test with real users", status: "not_started", priority: 3, estimatedMinutes: 60, aiReason: "Reality checks the plan early" }),
-      node({ id: "n6", goalId: "g_launch", title: "Launch", status: "not_started", priority: 4, estimatedMinutes: 90, aiReason: "Ship it — done beats perfect" }),
+      node({ id: "n6", goalId: "g_launch", title: "Launch", status: "not_started", priority: 4, estimatedMinutes: 90, aiReason: "Ship it. Done beats perfect" }),
       node({ id: "n7", goalId: "g_launch", title: "Win first customers", status: "not_started", priority: 5, estimatedMinutes: 60, aiReason: "Proof the thing matters" }),
     ],
   };
@@ -126,7 +126,7 @@ export function buildSeed(): SeedData {
     blocks: [
       block("b1", { title: "Design the core flows", goalId: "g_launch", nodeId: "n2", durationMinutes: 45, difficulty: "moderate", reason: "Launch my app · unblocks the build", sortOrder: 0 }),
       block("b2", { title: "Build the foundation", goalId: "g_launch", nodeId: "n3", durationMinutes: 45, difficulty: "deep", reason: "Launch my app · the load-bearing work", sortOrder: 1 }),
-      block("b3", { title: "Make a start: craft the landing page", goalId: "g_launch", nodeId: "n5", durationMinutes: 20, difficulty: "light", reason: "Recovery block — pulls an at-risk step back", sortOrder: 2 }),
+      block("b3", { title: "Make a start: craft the landing page", goalId: "g_launch", nodeId: "n5", durationMinutes: 20, difficulty: "light", reason: "Recovery block: pulls an at-risk step back", sortOrder: 2 }),
     ],
   };
 

@@ -21,7 +21,7 @@ export const PLAN_PRO_FEATURES = [
   "Priority AI + much higher limits",
 ];
 
-// Loss-framed, calm — for the moment-of-intent upgrade modal. Reframes Pro as
+// Loss-framed, calm, for the moment-of-intent upgrade modal. Reframes Pro as
 // keeping the momentum you've already built, never fear or urgency.
 export const PRO_UPGRADE_LINES = [
   "Keep every goal you start",
@@ -33,7 +33,7 @@ export const PRO_UPGRADE_LINES = [
 const round2 = (n: number) => (Math.round(n * 100) / 100).toFixed(2);
 
 // One place that decides how the price reads. Anchoring is honest: the yearly plan
-// is shown against the real monthly price, plus a concrete per-day figure — no
+// is shown against the real monthly price, plus a concrete per-day figure. No
 // invented "value" decoy.
 export const priceDisplay = {
   monthly: pricing.monthly.amount, // 12
@@ -48,5 +48,5 @@ export const priceDisplay = {
 
 /** Shared, loss-framed copy for hitting the free goal cap (map modal + server mirror). */
 export function upgradeReasonForGoalCap(cap: number = planLimits.free.activeGoals): string {
-  return `You've mapped ${cap} goals — keep every goal you start moving. Pro removes the limit so nothing you've built has to wait.`;
+  return `You've mapped ${cap} goals. Keep every goal you start moving. Pro removes the limit so nothing you've built has to wait.`;
 }

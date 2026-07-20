@@ -8,7 +8,7 @@ import { ExternalLink } from "@/components/ui/ExternalLink";
 /**
  * A tiny, dependency-free Markdown renderer for AI-written prose (Ask Sola,
  * "Do it for me" drafts, step answers). It parses a safe subset into React
- * nodes — never HTML — so there's no injection surface, and link hrefs are
+ * nodes, never HTML, so there's no injection surface, and link hrefs are
  * sanitized to http(s)/mailto/relative only. It inherits font-size and colour
  * from its container; it only styles the structural bits (headings, code,
  * lists, links, emphasis).
@@ -107,7 +107,7 @@ function parseBlocks(src: string): React.ReactNode[] {
 
     if (line.trim() === "") { i++; continue; }
 
-    // fenced code block — ```mermaid renders as a diagram, others as code
+    // fenced code block: ```mermaid renders as a diagram, others as code
     const fence = /^\s*```\s*([\w-]*)/.exec(line);
     if (fence) {
       const lang = (fence[1] || "").toLowerCase();

@@ -8,7 +8,7 @@ import { isNativeUserAgent } from "@/lib/native-ua";
 import { planLimits } from "@/lib/config";
 
 /**
- * The moment-of-intent upgrade prompt — shown when a free user hits the goal cap
+ * The moment-of-intent upgrade prompt, shown when a free user hits the goal cap
  * or empties their daily AI. One tap starts checkout (no dead-end toast).
  * `reason` doubles as the open flag: null = closed.
  *

@@ -2,7 +2,7 @@ import type { GoalWithNodes } from "@/types";
 
 // The Mirror: what the map can't show you. Pace toward each deadline (are you
 // actually going to make it?), steps that have quietly stalled, and goals you've
-// stopped touching. All deterministic — computed from goal/node state, no AI.
+// stopped touching. All deterministic, computed from goal/node state, no AI.
 
 const DAY = 86_400_000;
 const STALL_DAYS = 7;    // an in-motion/blocked step untouched this long is stalled
@@ -64,10 +64,10 @@ function pace(g: GoalWithNodes, nowMs: number): PaceInsight {
   const timeFraction = clamp01(elapsed / (target - start));
 
   if (nowMs >= target) {
-    return { ...base, timeFraction: 1, state: "overdue", verdict: `Past deadline — ${Math.round(100 - g.progress)}% still to go` };
+    return { ...base, timeFraction: 1, state: "overdue", verdict: `Past deadline, ${Math.round(100 - g.progress)}% still to go` };
   }
   if (g.progress <= 0) {
-    return { ...base, timeFraction, state: "behind", verdict: `Not started — ${humanDays((target - nowMs) / DAY)} left` };
+    return { ...base, timeFraction, state: "behind", verdict: `Not started, ${humanDays((target - nowMs) / DAY)} left` };
   }
 
   // Project the finish date at the current rate of progress.
@@ -75,9 +75,9 @@ function pace(g: GoalWithNodes, nowMs: number): PaceInsight {
   const projectedFinish = nowMs + (1 - g.progress / 100) / rate;
   const lateDays = (projectedFinish - target) / DAY;
 
-  if (lateDays <= -7) return { ...base, timeFraction, state: "ahead", verdict: `Ahead — on track to finish ~${humanDays(lateDays)} early` };
+  if (lateDays <= -7) return { ...base, timeFraction, state: "ahead", verdict: `Ahead, on track to finish ~${humanDays(lateDays)} early` };
   if (lateDays <= 3) return { ...base, timeFraction, state: "on", verdict: "On track for your deadline" };
-  return { ...base, timeFraction, state: "behind", verdict: `Behind — on this pace you finish ~${humanDays(lateDays)} late` };
+  return { ...base, timeFraction, state: "behind", verdict: `Behind, on this pace you finish ~${humanDays(lateDays)} late` };
 }
 
 /** Most recent activity on a goal (its own row or any of its nodes). */
@@ -116,7 +116,7 @@ export function computeReviewInsights(goals: GoalWithNodes[], nowMs: number): Re
   if (active.length === 0) headline = "No active goals to weigh in on yet.";
   else if (withDeadline === 0) headline = "Set a deadline on a goal and Solaspace will track your pace to it.";
   else if (behind === 0) headline = "You're on pace across every goal with a deadline.";
-  else if (behind === withDeadline) headline = `All ${behind} of your timed goals are behind pace — pick one to pull back.`;
+  else if (behind === withDeadline) headline = `All ${behind} of your timed goals are behind pace. Pick one to pull back.`;
   else headline = `${behind} of ${withDeadline} timed goals ${behind === 1 ? "is" : "are"} slipping behind pace.`;
 
   return { headline, pace: paceList, stalled, neglected };

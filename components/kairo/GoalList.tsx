@@ -11,7 +11,7 @@ import { Markdown } from "./Markdown";
 import { NodeResourceBlock } from "./GalaxyMap";
 import { ExternalLink } from "@/components/ui/ExternalLink";
 
-// The linear alternate to the galaxy — a fast, scannable outline of every goal
+// The linear alternate to the galaxy: a fast, scannable outline of every goal
 // and its steps (research's "one spatial view for delight, one list for scale").
 // Read-only + jump-to-galaxy; the galaxy and Today cockpit are the action surfaces.
 export function GoalList({ goals, onOpen }: { goals: GoalWithNodes[]; onOpen: (id: string) => void }) {
@@ -69,7 +69,7 @@ function GoalRow({ goal, hex, onOpen }: { goal: GoalWithNodes; hex: string; onOp
 function NodeRow({ node, hex, isNext, onOpen, sub }: { node: GoalNode; hex: string; isNext: boolean; onOpen: () => void; sub?: boolean }) {
   const [open, setOpen] = React.useState(false);
   const done = node.status === "done";
-  // The list is a full alternate to the map — a step carries the same detail
+  // The list is a full alternate to the map: a step carries the same detail
   // (description, resource, proof), revealed inline on tap. Detail-less steps
   // just jump to the map instead.
   const hasDetail = !!(node.description?.trim() || node.resource || (node.evidence && node.evidence.length > 0));

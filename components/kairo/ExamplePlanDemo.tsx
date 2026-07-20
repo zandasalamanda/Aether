@@ -6,7 +6,7 @@ import { ShowcaseTree } from "./ShowcaseTree";
 
 // A real example plan that draws itself and cross-fades between goals. It stays
 // mounted the whole time (fades out, swaps the map, fades back in), so it never
-// blinks out on a flip. All canned — no AI, no tokens.
+// blinks out on a flip. All canned: no AI, no tokens.
 function usePrefersReducedMotion() {
   const [reduced, setReduced] = React.useState(false);
   React.useEffect(() => {

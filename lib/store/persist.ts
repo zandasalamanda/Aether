@@ -20,7 +20,7 @@ export function savePersisted<T>(key: string, value: T): void {
   try {
     window.localStorage.setItem(key, JSON.stringify(value));
   } catch {
-    /* quota / private mode — ignore */
+    /* quota / private mode, ignore */
   }
 }
 

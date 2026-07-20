@@ -6,7 +6,7 @@ import { Analytics } from "@vercel/analytics/next";
 import { SpeedInsights } from "@vercel/speed-insights/next";
 import posthog from "posthog-js";
 
-// Traffic + web-vitals via Vercel (zero-config). Product funnel via PostHog —
+// Traffic + web-vitals via Vercel (zero-config). Product funnel via PostHog,
 // only initialized when NEXT_PUBLIC_POSTHOG_KEY is set, so it's a no-op until
 // you add a key. Pageviews are captured manually on route change.
 let phReady = false;

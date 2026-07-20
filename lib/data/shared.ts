@@ -3,7 +3,7 @@ import type { NodeStatus, ResourceKind } from "@/types";
 
 // Public read of a shared goal. Goes through the SECURITY DEFINER RPC
 // get_shared_goal(token), so an anonymous viewer gets ONLY the goal matching the
-// token — no auth, no RLS opened, no way to enumerate other people's goals.
+// token. No auth, no RLS opened, no way to enumerate other people's goals.
 
 export interface SharedNode {
   id: string;

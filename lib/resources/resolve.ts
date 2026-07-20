@@ -5,7 +5,7 @@ import { resolveArticle } from "./web";
 
 // Turn a step's search intent into a real, live link: video-kind steps go to the
 // YouTube Data API, "read" steps to Gemini's Google Search grounding. Both return
-// a real URL or null (caller then keeps today's search link — never a dead link).
+// a real URL or null (caller then keeps today's search link, never a dead link).
 // A small in-memory cache keeps identical queries from re-spending quota within a
 // warm server instance; the node-level DB cache makes it durable across instances.
 

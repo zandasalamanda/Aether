@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { PLAN_FREE_FEATURES, PLAN_PRO_FEATURES, priceDisplay } from "@/lib/kairo/plans";
 import { isNativeRequest } from "@/lib/native";
 
-// The three beats of the real loop — this IS a sequence, so numbering earns its place.
+// The three beats of the real loop. This IS a sequence, so numbering earns its place.
 const BEATS = [
   { icon: Waypoints, k: "Say the goal", desc: "Tell Solaspace what you want in plain words. It maps the whole path in about a minute, every step in the right order." },
   { icon: Sunrise, k: "Get your day", desc: "Say how much time and energy you have. It builds one focused plan for today, so you always know the very next move." },
@@ -83,14 +83,14 @@ export default async function LandingPage() {
         </div>
       </header>
 
-      {/* Hero — type a real goal here; it hands off to sign-up the same way onboarding
+      {/* Hero: type a real goal here; it hands off to sign-up the same way onboarding
           does (no AI, no tokens, until there's an account). The example plan below the
           fold draws itself and cross-fades between goals. */}
       <section className="relative overflow-hidden">
         <HeroSayItSeeIt />
       </section>
 
-      {/* How it works — the loop */}
+      {/* How it works: the loop */}
       <section id="how" className="mx-auto max-w-6xl px-5 py-20">
         <Reveal className="mb-10">
           <SectionLabel className="mb-3">How it works</SectionLabel>
@@ -115,7 +115,7 @@ export default async function LandingPage() {
       </section>
 
       {/* Now the cool part again: a real example plan drawing itself. Words first
-          (above), examples after — the bridge from cool to plain to cool. */}
+          (above), examples after: the bridge from cool to plain to cool. */}
       <section id="see" className="mx-auto max-w-3xl px-5 pb-8 pt-4">
         <Reveal className="text-center">
           <SectionLabel className="mb-3 flex justify-center">See it work</SectionLabel>
@@ -124,7 +124,7 @@ export default async function LandingPage() {
         <ExamplePlanDemo />
       </section>
 
-      {/* The real app — the legible proof, right after the plain-words setup */}
+      {/* The real app: the legible proof, right after the plain-words setup */}
       <section id="app" className="mx-auto max-w-6xl px-5 py-20">
         <Reveal className="mb-10 text-center">
           <SectionLabel className="mb-3 flex justify-center">A look inside</SectionLabel>
@@ -135,7 +135,7 @@ export default async function LandingPage() {
         <Reveal><AppShots /></Reveal>
       </section>
 
-      {/* The four pillars — the trust close-out after the proof */}
+      {/* The four pillars: the trust close-out after the proof */}
       <section id="features" className="mx-auto max-w-6xl px-5 py-20">
         <Reveal className="mb-10">
           <SectionLabel className="mb-3">Built to get you there</SectionLabel>

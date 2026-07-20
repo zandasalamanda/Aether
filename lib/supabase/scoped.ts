@@ -14,7 +14,7 @@ export interface ScopedClient {
  * configured third-party auth provider) and RLS reads `auth.jwt()->>'sub'`
  * (the Clerk user id) so every query is confined to that user's rows.
  *
- * Returns null when Supabase or Clerk isn't configured, or no one is signed in —
+ * Returns null when Supabase or Clerk isn't configured, or no one is signed in;
  * callers fall back to seeded demo data. Memoized per request.
  */
 export const getScopedClient = cache(async (): Promise<ScopedClient | null> => {

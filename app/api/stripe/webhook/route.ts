@@ -9,7 +9,7 @@ import { getSupabaseAdmin } from "@/lib/supabase/server";
 // (instead of silently leaving a paid user on Free).
 
 // A subscription in any of these states keeps Pro. past_due / unpaid are the
-// dunning grace window — we keep access until Stripe finally cancels.
+// dunning grace window. We keep access until Stripe finally cancels.
 const PRO_STATUSES = new Set(["active", "trialing", "past_due", "unpaid"]);
 const planFromStatus = (status: string): "free" | "pro" => (PRO_STATUSES.has(status) ? "pro" : "free");
 
@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ received: true, note: "billing not configured" });
   }
   if (!secret) {
-    // Stripe is enabled but the signing secret is missing — 500 so Stripe retries.
+    // Stripe is enabled but the signing secret is missing. Return 500 so Stripe retries.
     // (A 200 here would make Stripe drop the event permanently.)
     console.error("[stripe.webhook] STRIPE_WEBHOOK_SECRET missing while Stripe is enabled");
     return NextResponse.json({ error: "webhook secret not configured" }, { status: 500 });

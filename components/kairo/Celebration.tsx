@@ -4,7 +4,7 @@ import * as React from "react";
 import { Check } from "lucide-react";
 
 // A small, self-contained "win" flourish: a glowing medallion that grows in with a
-// burst ring sweeping out behind it — the same grammar the map uses on a completed
+// burst ring sweeping out behind it, the same grammar the map uses on a completed
 // node. Reused by Today, focus completion, and whole-goal completion. Motion is all
 // CSS tokens, so prefers-reduced-motion disables it automatically.
 export function Celebration({

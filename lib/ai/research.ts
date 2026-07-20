@@ -2,14 +2,14 @@ import { isObj, isClient, viaRouteResult, raiseIfBlocked } from "./provider";
 import type { ResearchInput, ResearchResult } from "./types";
 
 // Grounded research (Pro): calls Gemini's NATIVE endpoint with Google Search
-// grounding so the answer is current and carries real, cited sources — unlike
+// grounding so the answer is current and carries real, cited sources, unlike
 // the ungrounded generateJson calls. Sources come from groundingMetadata.
 
 const NATIVE = "https://generativelanguage.googleapis.com/v1beta";
 const MODEL = process.env.AI_RESEARCH_MODEL || process.env.AI_MODEL || "gemini-3.1-flash-lite";
 const apiKey = () => process.env.AI_API_KEY || process.env.OPENAI_API_KEY || process.env.GEMINI_API_KEY || "";
 
-const SYSTEM = `You are Sola, doing focused research for the user. The user is working on ONE step of a goal and needs current, factual, sourced information to do it well. Answer in clean, well-structured markdown: a direct, specific answer with concrete numbers and specifics, organized under short headings or bullets. Include a diagram in a fenced code block tagged mermaid ONLY when a process or comparison genuinely helps. Be practical and honest — no padding, no disclaimers. Do NOT paste raw URLs inline; the sources are shown separately.`;
+const SYSTEM = `You are Sola, doing focused research for the user. The user is working on ONE step of a goal and needs current, factual, sourced information to do it well. Answer in clean, well-structured markdown: a direct, specific answer with concrete numbers and specifics, organized under short headings or bullets. Include a diagram in a fenced code block tagged mermaid ONLY when a process or comparison genuinely helps. Be practical and honest: no padding, no disclaimers. Do NOT paste raw URLs inline; the sources are shown separately.`;
 
 async function runResearch(input: ResearchInput): Promise<ResearchResult> {
   const key = apiKey();
@@ -29,7 +29,7 @@ async function runResearch(input: ResearchInput): Promise<ResearchResult> {
     });
     if (!res.ok) {
       console.error("[research] http", res.status);
-      return { answer: "Couldn't complete the research just now — try again in a moment.", sources: [] };
+      return { answer: "Couldn't complete the research just now. Try again in a moment.", sources: [] };
     }
     const data: unknown = await res.json();
     const cand = isObj(data) && Array.isArray(data.candidates) ? data.candidates[0] : null;
@@ -50,11 +50,11 @@ async function runResearch(input: ResearchInput): Promise<ResearchResult> {
         sources.push({ title: title.slice(0, 140), url });
       }
     }
-    if (!answer) return { answer: "Couldn't find a clear answer — try rephrasing your question.", sources };
+    if (!answer) return { answer: "Couldn't find a clear answer. Try rephrasing your question.", sources };
     return { answer, sources: sources.slice(0, 8) };
   } catch (e) {
     console.error("[research]", e instanceof Error ? e.message : e);
-    return { answer: "Couldn't reach research just now — try again.", sources: [] };
+    return { answer: "Couldn't reach research just now. Try again.", sources: [] };
   }
 }
 
@@ -65,7 +65,7 @@ export async function research(input: ResearchInput): Promise<ResearchResult> {
     if (res.data && typeof res.data.answer === "string") {
       return { answer: res.data.answer, sources: Array.isArray(res.data.sources) ? res.data.sources : [] };
     }
-    return { answer: "Couldn't complete the research just now — try again.", sources: [] };
+    return { answer: "Couldn't complete the research just now. Try again.", sources: [] };
   }
   return runResearch(input);
 }

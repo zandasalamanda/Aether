@@ -2,7 +2,7 @@
 
 import * as React from "react";
 
-// A calm activity stream shown while Solaspace maps a goal — narrates the work
+// A calm activity stream shown while Solaspace maps a goal. It narrates the work
 // it's actually doing (decompose → sequence → size → resource → pace), so the
 // wait reads as "it's doing it for me" rather than a blank spinner.
 const STEPS = [

@@ -8,9 +8,9 @@ import { isNativeRequest } from "@/lib/native";
 export type Plan = "free" | "pro";
 
 // Weighted AI budgets. `burst` = calls/min (anti-abuse); `day`/`month` = weighted
-// "credits" (an expensive call spends more — see the `weight` on each route).
+// "credits" (an expensive call spends more, see the `weight` on each route).
 export const LIMITS: Record<Plan, { burst: number; day: number; month: number }> = {
-  // Free is deliberately generous — a good free experience is what drives upgrades.
+  // Free is deliberately generous: a good free experience is what drives upgrades.
   // Flash-Lite is ~$0.0005/call, so a maxed free user still costs pennies; the
   // global daily cap bounds total spend.
   free: { burst: 25, day: 80, month: 1000 },
@@ -35,7 +35,7 @@ async function planFor(userId: string, supabase: SupabaseClient): Promise<Plan> 
 async function rlHit(supabase: SupabaseClient, key: string, limit: number, windowSec: number, cost: number): Promise<boolean> {
   try {
     const { data, error } = await supabase.rpc("rate_limit_hit_cost", { p_key: key, p_limit: limit, p_window_seconds: windowSec, p_cost: cost });
-    // supabase-js returns Postgres errors in `error` rather than throwing — fail closed on them too.
+    // supabase-js returns Postgres errors in `error` rather than throwing, fail closed on them too.
     if (error) { console.error("[guardAi] rate_limit_hit_cost error (denying):", error.message); return false; }
     return data === true;
   } catch (e) {
@@ -66,7 +66,7 @@ export async function guardAi(opts: GuardOptions = {}): Promise<NextResponse | n
   if (!features.clerk) {
     // No Clerk = demo mode, nothing to meter. BUT if a real AI key is configured
     // without Clerk, that's a misconfig that would expose the model unauthenticated
-    // and unmetered — fail CLOSED to protect the budget (mirrors the Supabase branch
+    // and unmetered. Fail CLOSED to protect the budget (mirrors the Supabase branch
     // below). Only a keyless demo deploy is allowed straight through.
     if (features.ai) {
       console.error("[guardAi] AI key present but Clerk not configured — denying to protect the AI budget");
@@ -88,7 +88,7 @@ export async function guardAi(opts: GuardOptions = {}): Promise<NextResponse | n
       console.error("[guardAi] service-role client unavailable — denying to protect the AI budget");
       return NextResponse.json({ error: "AI is temporarily unavailable. Please try again shortly." }, { status: 503 });
     }
-    return null; // demo mode (no DB) — nothing to meter
+    return null; // demo mode (no DB), nothing to meter
   }
 
   const weight = Math.max(1, Math.round(opts.weight ?? 1));
@@ -108,7 +108,7 @@ export async function guardAi(opts: GuardOptions = {}): Promise<NextResponse | n
 
   const L = LIMITS[plan];
   // Per-user budget FIRST. If a user is already over their own limit, we must NOT
-  // charge the shared global counter for their (about-to-be-denied) request —
+  // charge the shared global counter for their (about-to-be-denied) request,
   // otherwise one account firing at its burst limit could inflate `ai:global` past
   // the cap and deny AI to everyone. The global backstop is charged only for calls
   // that actually pass the per-user budget, so it reflects real usage.
@@ -117,21 +117,21 @@ export async function guardAi(opts: GuardOptions = {}): Promise<NextResponse | n
     rlHit(supabase, `ai:cd:${userId}`, L.day, DAY, weight),
     rlHit(supabase, `ai:cmo:${userId}`, L.month, MONTH, weight),
   ]);
-  if (!burst) return NextResponse.json({ error: "You're going a bit fast — give it a moment." }, { status: 429 });
+  if (!burst) return NextResponse.json({ error: "You're going a bit fast. Give it a moment." }, { status: 429 });
   if (!day || !month) {
     if (native) {
       return NextResponse.json({ error: "You've reached today's AI limit. It resets tomorrow." }, { status: 429 });
     }
     return NextResponse.json(
       {
-        error: plan === "pro" ? "You've reached today's AI limit — it resets tomorrow." : "You've used today's free AI. Upgrade to Pro for much more.",
+        error: plan === "pro" ? "You've reached today's AI limit. It resets tomorrow." : "You've used today's free AI. Upgrade to Pro for much more.",
         upgrade: plan !== "pro",
       },
       { status: 429 }
     );
   }
 
-  // Per-feature daily cap — FREE users only (e.g. 2 "Do it for me" drafts/day).
+  // Per-feature daily cap: FREE users only (e.g. 2 "Do it for me" drafts/day).
   // Pro is uncapped. Checked before the global counter so a feature-denied request
   // doesn't inflate global spend.
   if (opts.feature && opts.featureFreeDaily && plan !== "pro") {
@@ -156,7 +156,7 @@ export async function guardAi(opts: GuardOptions = {}): Promise<NextResponse | n
   const globalOk = await rlHit(supabase, "ai:global", globalDaily, DAY, weight);
   if (!globalOk) {
     console.error("[guardAi] global daily AI cap reached");
-    return NextResponse.json({ error: "Solaspace's AI is at capacity right now — please try again later." }, { status: 429 });
+    return NextResponse.json({ error: "Solaspace's AI is at capacity right now. Please try again later." }, { status: 429 });
   }
   return null;
 }

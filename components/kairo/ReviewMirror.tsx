@@ -39,11 +39,11 @@ export function ReviewMirror({ insights, goals }: { insights: ReviewInsights; go
               const hex = g ? color(g.id) : "#e6b877";
               const Icon = goalIcon(g?.icon ?? null);
               return (
-                <Link key={p.goalId} href={`/app/map?goal=${p.goalId}`} className={cn("panel block rounded-2xl p-3.5 transition-transform hover:-translate-y-0.5 animate-fade-up", p.state === "done" && "border-sage/25 bg-sage/[0.04]")} style={{ animationDelay: `${i * 60}ms` }}>
+                <Link key={p.goalId} href={`/app/map?goal=${p.goalId}`} className={cn("panel block min-h-11 rounded-2xl p-3.5 transition-transform hover:-translate-y-0.5 animate-fade-up", p.state === "done" && "border-sage/25 bg-sage/[0.04]")} style={{ animationDelay: `${i * 60}ms` }}>
                   <div className="flex items-center gap-2.5">
                     <Icon size={15} className="shrink-0" style={{ color: hex }} />
-                    <span className="min-w-0 flex-1 truncate text-[14px] font-medium text-ink">{p.title}</span>
-                    <span className={cn("shrink-0 text-[12px] font-medium", STATE_TONE[p.state])}>{p.verdict}</span>
+                    <span className="min-w-0 flex-1 truncate text-[15px] font-medium text-ink">{p.title}</span>
+                    <span className={cn("shrink-0 text-[15px] font-medium", STATE_TONE[p.state])}>{p.verdict}</span>
                   </div>
                   {/* progress fill (where you are) vs a marker for time elapsed (where you should be) */}
                   <div className="inset-well relative mt-2.5 h-2 overflow-hidden rounded-full">
@@ -56,7 +56,7 @@ export function ReviewMirror({ insights, goals }: { insights: ReviewInsights; go
                       />
                     )}
                   </div>
-                  <div className="mt-1.5 flex justify-between font-mono text-[10px] text-faint">
+                  <div className="mt-1.5 flex justify-between gap-2 font-mono text-[13px] tabular-nums text-faint">
                     <span>{Math.round(p.progress)}% done</span>
                     <span>{Math.round(p.timeFraction * 100)}% of time gone</span>
                   </div>
@@ -103,7 +103,7 @@ export function ReviewMirror({ insights, goals }: { insights: ReviewInsights; go
 
 function Callout({ goalId, icon, children }: { goalId: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <Link href={`/app/map?goal=${goalId}`} className="panel flex items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-[13px] text-muted transition-transform hover:-translate-y-0.5">
+    <Link href={`/app/map?goal=${goalId}`} className="panel flex min-h-11 items-center gap-2.5 rounded-xl px-3.5 py-2.5 text-[15px] leading-snug text-muted transition-transform hover:-translate-y-0.5">
       <span className="shrink-0">{icon}</span>
       <span className="min-w-0 flex-1">{children}</span>
     </Link>

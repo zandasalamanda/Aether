@@ -8,7 +8,7 @@ import type { NextMove } from "@/lib/kairo/next-move";
 /**
  * App frame. Deliberately thin: a fixed sidebar (desktop) and bottom nav
  * (mobile) that both surface the single next move, plus a bare content slot.
- * Pages own their layout — padded via <PageContainer>, or full-bleed (the map).
+ * Pages own their layout: padded via <PageContainer>, or full-bleed (the map).
  */
 export function KairoShell({
   user,

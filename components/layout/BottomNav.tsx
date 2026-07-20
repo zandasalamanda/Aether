@@ -19,12 +19,12 @@ export function BottomNav({ nextMove, className }: { nextMove: NextMove | null; 
         {nextMove && !onMap && (
           <Link
             href={`/app/map?goal=${nextMove.goalId}`}
-            className="flex items-center gap-2 rounded-2xl border bg-canvas-2/85 px-4 py-2.5 backdrop-blur-xl"
+            className="flex min-h-11 items-center gap-2 rounded-2xl border bg-canvas-2/85 px-4 py-2.5 backdrop-blur-xl"
             style={{ borderColor: `${moveHex}40` }}
           >
             <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: moveHex, boxShadow: `0 0 8px ${moveHex}` }} />
             <span className="shrink-0 text-[10px] font-medium uppercase tracking-[0.14em]" style={{ color: moveHex }}>Next</span>
-            <span className="min-w-0 flex-1 truncate text-[13px] text-ink">{nextMove.title}</span>
+            <span className="min-w-0 flex-1 truncate text-[15px] text-ink">{nextMove.title}</span>
             <ArrowRight size={14} className="shrink-0 text-faint" />
           </Link>
         )}

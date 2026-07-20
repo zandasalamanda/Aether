@@ -2,18 +2,18 @@ import { generateJson, isObj, isClient, viaRoute } from "./provider";
 import type { ReplanInput, ReplanResult, ReplanKind } from "./types";
 
 // The living map: given where the user actually is (each step's status + their
-// notes), Solaspace proposes 1-3 ADDITIVE changes — an easier on-ramp for a stuck
+// notes), Solaspace proposes 1-3 ADDITIVE changes: an easier on-ramp for a stuck
 // step, a missing phase, a stretch once they're ahead. It never removes or
 // reorders; proposals are shown for accept/dismiss, never auto-applied.
 
 const KINDS: ReplanKind[] = ["onramp", "substep", "milestone", "stretch"];
 
-const SYSTEM = `You are Sola, revising a plan to fit where the user actually is. You get a goal, its steps each with a status (done / in_motion / blocked / not_started), and optional context notes. Propose 1-3 ADDITIVE, concrete changes that move them forward — never removals or reorderings.
+const SYSTEM = `You are Sola, revising a plan to fit where the user actually is. You get a goal, its steps each with a status (done / in_motion / blocked / not_started), and optional context notes. Propose 1-3 ADDITIVE, concrete changes that move them forward, never removals or reorderings.
 Kinds:
-- "onramp": a blocked or stalled step needs an easier step to do FIRST — set parentTitle to that step's exact title.
-- "substep": an in_motion step needs a concrete next action — set parentTitle to that step's exact title.
-- "milestone": the plan is missing a phase between where they are and the goal — parentTitle null.
-- "stretch": most steps are done — add something that pushes past the original goal — parentTitle null.
+- "onramp": a blocked or stalled step needs an easier step to do FIRST. Set parentTitle to that step's exact title.
+- "substep": an in_motion step needs a concrete next action. Set parentTitle to that step's exact title.
+- "milestone": the plan is missing a phase between where they are and the goal. ParentTitle null.
+- "stretch": most steps are done, so add something that pushes past the original goal; parentTitle null.
 Return JSON: {"proposals":[{"kind","parentTitle","title","estimatedMinutes","reason"}]}. parentTitle MUST exactly match one of the given step titles, or be null. title is imperative, <=10 words. estimatedMinutes 10-120. reason <=12 words and refers to their actual progress. Never duplicate an existing step. If the plan genuinely needs nothing, return {"proposals":[]}.`;
 
 function valid(r: unknown): r is ReplanResult {
@@ -46,7 +46,7 @@ function fallback(input: ReplanInput): ReplanResult {
     return { proposals: [{ kind: "onramp", parentTitle: stuck.title, title: `Do a 10-minute first pass at ${short(stuck.title)}`, estimatedMinutes: 15, reason: "Shrink it to get moving again" }] };
   }
   if (input.nodes.length > 0 && input.nodes.every((n) => n.status === "done")) {
-    return { proposals: [{ kind: "stretch", parentTitle: null, title: "Set the next, harder version of this goal", estimatedMinutes: 30, reason: "You finished — raise the bar" }] };
+    return { proposals: [{ kind: "stretch", parentTitle: null, title: "Set the next, harder version of this goal", estimatedMinutes: 30, reason: "You finished. Raise the bar" }] };
   }
   return { proposals: [] };
 }

@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 interface SoftGlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
   /** raise contrast slightly for a more prominent surface */
   tone?: "flat" | "raised";
-  /** the one focal treatment — a restrained accent lift. Use sparingly. */
+  /** the one focal treatment: a restrained accent lift. Use sparingly. */
   focal?: boolean;
   as?: "div" | "section" | "article";
 }

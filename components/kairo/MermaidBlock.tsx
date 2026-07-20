@@ -54,7 +54,7 @@ export function MermaidBlock({ code }: { code: string }) {
   }, [code]);
 
   if (failed) {
-    // Invalid diagram source — fall back to showing it as a code block.
+    // Invalid diagram source. Fall back to showing it as a code block.
     return (
       <pre className="overflow-x-auto rounded-lg border border-line bg-white/[0.04] p-3">
         <code className="whitespace-pre font-mono text-[0.85em] text-muted">{code}</code>

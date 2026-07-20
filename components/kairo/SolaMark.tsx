@@ -1,7 +1,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
-// Sola's mark — a small luminous gold node, not a stock AI "sparkle" and not a
+// Sola's mark: a small luminous gold node, not a stock AI "sparkle" and not a
 // cartoon. It's the same glossy-orb language as the goal cores, shrunk to an inline
 // glyph, so the assistant reads as part of the living map rather than a bolted-on
 // chatbot. `thinking` gives it a soft breath while Sola works (reduced-motion-safe

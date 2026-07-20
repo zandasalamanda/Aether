@@ -57,7 +57,7 @@ export function makeId(prefix = "id"): string {
 }
 
 /**
- * A real UUID for new persisted rows — client-generated so the optimistic id
+ * A real UUID for new persisted rows, client-generated so the optimistic id
  * matches the Supabase primary key exactly (no reconciliation on reload).
  */
 export function newId(): string {

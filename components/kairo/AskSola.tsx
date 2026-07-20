@@ -73,7 +73,7 @@ export function AskSola({ goals, remote, isPro, onClose }: { goals: GoalWithNode
       const ai = e instanceof AiError ? e : null;
       setMessages((m) => [...m, {
         id: newId(), role: "sola",
-        text: ai?.message ?? "Sola couldn't respond just now — try again in a moment.",
+        text: ai?.message ?? "Sola couldn't respond just now. Try again in a moment.",
         upgrade: !!ai?.upgrade,
       }]);
     } finally {

@@ -1,4 +1,5 @@
 import { features } from "@/lib/config";
+import { isNativeUserAgent } from "@/lib/native-ua";
 
 // Provider-agnostic AI adapter over the OpenAI-compatible Chat Completions API.
 // Works with any such endpoint by setting AI_BASE_URL + AI_MODEL + AI_API_KEY:
@@ -55,13 +56,26 @@ export async function viaRoute<T>(path: string, input: unknown): Promise<T | nul
   return (await viaRouteResult<T>(path, input)).data;
 }
 
-/** A human message for a failed AI route, tuned to the status (limit / upgrade / outage). */
+/** True when this code is running inside the native shell's WKWebView.
+ *  SSR-safe: no `navigator` on the server, where it reports false and the
+ *  server-supplied `error` string (already native-aware in lib/ai/guard.ts) wins. */
+function nativeShell(): boolean {
+  return typeof navigator !== "undefined" && isNativeUserAgent(navigator.userAgent);
+}
+
+/** A human message for a failed AI route, tuned to the status (limit / upgrade / outage).
+ *  App Store Guideline 3.1.1: inside the native shell no message may name a paid tier
+ *  or point at a purchase route, so the 402 fallback is neutral there. The server
+ *  normally supplies its own `error`; these are the last-resort fallbacks. */
 export function aiErrorText(r: { status: number; error?: string }): string {
   if (r.status === 401) return "Please sign in to use Solaspace's AI.";
-  if (r.status === 402) return r.error || "That's a Pro feature — upgrade in Settings → Billing to unlock it.";
-  if (r.status === 429) return r.error || "You've reached today's AI limit — it resets soon.";
-  if (r.status === 0) return "You seem to be offline — check your connection and try again.";
-  return r.error || "Sola couldn't respond just now — it may be busy. Try again in a moment.";
+  if (r.status === 402) {
+    if (nativeShell()) return "That feature isn't available on this plan.";
+    return r.error || "That's a Pro feature. Upgrade in Settings under Billing to unlock it.";
+  }
+  if (r.status === 429) return r.error || "You've reached today's AI limit. It resets soon.";
+  if (r.status === 0) return "You seem to be offline. Check your connection and try again.";
+  return r.error || "Sola couldn't respond just now. It may be busy. Try again in a moment.";
 }
 
 /** A typed error for blocking AI responses (sign-in / upgrade / rate-limit) so the
@@ -77,10 +91,14 @@ export class AiError extends Error {
   }
 }
 
-/** Throw an AiError for statuses the UI should surface as a popup / redirect. */
+/** Throw an AiError for statuses the UI should surface as a popup / redirect.
+ *  `upgrade` drives an "Upgrade to Pro" button / a push to /app/billing, so it is
+ *  always false inside the native shell (Guideline 3.1.1: no route to a purchase).
+ *  On the web a 402 implies an upgrade even when the body omits the flag. */
 export function raiseIfBlocked(r: { status: number; error?: string; upgrade?: boolean }): void {
   if (r.status === 401 || r.status === 402 || r.status === 429) {
-    throw new AiError(r.status, aiErrorText(r), r.status === 402 || !!r.upgrade);
+    const upgrade = !nativeShell() && (r.status === 402 || !!r.upgrade);
+    throw new AiError(r.status, aiErrorText(r), upgrade);
   }
 }
 
@@ -115,7 +133,7 @@ export async function generateJson<T>(system: string, user: string, opts?: { max
         // rich nodes) pass a larger budget so the JSON never truncates mid-string.
         max_tokens: opts?.maxTokens ?? 1600,
         messages: [
-          { role: "system", content: `${system}\n\nReturn ONLY a valid minified JSON object — no surrounding prose and no code fences around the JSON. String values inside it may contain rich markdown: headings, bullet and numbered lists, tables, and fenced code blocks (including diagrams tagged mermaid).` },
+          { role: "system", content: `${system}\n\nReturn ONLY a valid minified JSON object, with no surrounding prose and no code fences around the JSON. String values inside it may contain rich markdown: headings, bullet and numbered lists, tables, and fenced code blocks (including diagrams tagged mermaid).` },
           { role: "user", content: user },
         ],
       }),

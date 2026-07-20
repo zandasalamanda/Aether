@@ -33,11 +33,11 @@ export function SegmentedControl<T extends string>({
             onClick={() => onChange(opt.value)}
             aria-pressed={active}
             className={cn(
-              "flex-1 rounded-lg px-3 py-2.5 text-center transition-colors duration-150",
+              "flex min-h-11 flex-1 flex-col justify-center rounded-lg px-3 py-2.5 text-center transition-colors duration-150",
               active ? "raised-btn text-ink" : "text-muted hover:text-ink"
             )}
           >
-            <span className="block text-sm font-medium">{opt.label}</span>
+            <span className="block text-[15px] font-medium">{opt.label}</span>
             {opt.hint && (
               <span className={cn("mt-0.5 block font-mono text-[10px] tracking-wide", active ? "text-accent" : "text-faint")}>
                 {opt.hint}

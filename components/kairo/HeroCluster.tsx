@@ -54,14 +54,14 @@ export function HeroCluster() {
       const t = (now - t0) / 1000;
       const p = reduce ? 1 : easeOut(clamp((now - t0) / 1600, 0, 1));
       // On mobile the text sits at the top, so the cluster lives in the lower half
-      // (and the planets shrink) — otherwise everything piles onto the centre.
+      // (and the planets shrink), otherwise everything piles onto the centre.
       const mobile = w < 768;
       const cx = w / 2, cy = h * (mobile ? 0.66 : 0.5);
       const Rx = (mobile ? w * 0.42 : Math.min(w * 0.34, 400)) * (0.2 + 0.8 * p);
       const Ry = Rx * (mobile ? 0.52 : 0.4);
       const sizeK = mobile ? 0.66 : 1;
 
-      // Smoothed pointer parallax — the glow drifts a little, the planets more, so the
+      // Smoothed pointer parallax: the glow drifts a little, the planets more, so the
       // cluster reads with real depth as you move across it. Disabled for reduced motion.
       px += (ptx - px) * 0.05; py += (pty - py) * 0.05;
       const gx = cx + px * 10, gy = cy + py * 7;    // background glow (subtle)
@@ -106,11 +106,11 @@ export function HeroCluster() {
 
     const onDown = (e: PointerEvent) => {
       if (openIdRef.current) return;
-      // Don't hijack clicks on a control (the CTA link/button) into a drag —
+      // Don't hijack clicks on a control (the CTA link/button) into a drag,
       // otherwise the pointer capture below swallows the click.
       if ((e.target as HTMLElement | null)?.closest("a, button")) return;
       dragging = true; movedRef.current = false; lastX = e.clientX; downX = e.clientX; downY = e.clientY;
-      // On touch, DON'T capture — touch-action: pan-y lets the browser scroll the
+      // On touch, DON'T capture. touch-action: pan-y lets the browser scroll the
       // page on a vertical swipe (it sends pointercancel and we bail). Capturing
       // would swallow that gesture and trap the visitor on the hero. Horizontal
       // drags still spin the cluster since the pointer stays over this element.
@@ -164,7 +164,7 @@ export function HeroCluster() {
     <div ref={wrapRef} className="absolute inset-0 touch-pan-y select-none">
       <canvas ref={canvasRef} className="absolute inset-0 h-full w-full" aria-hidden="true" />
 
-      {/* real glossy planets — positioned each frame by the rAF loop */}
+      {/* real glossy planets: positioned each frame by the rAF loop */}
       {SHOWCASE_MAPS.map((m, i) => (
         <div
           key={m.id}
@@ -182,7 +182,7 @@ export function HeroCluster() {
         </div>
       ))}
 
-      {/* catchphrase + CTA — top on mobile (cluster sits below), centred on desktop */}
+      {/* catchphrase + CTA: top on mobile (cluster sits below), centred on desktop */}
       <div className="pointer-events-none absolute inset-0 z-[120] flex flex-col items-center justify-start px-5 pt-[13vh] text-center md:justify-center md:pt-0">
         <div className="pointer-events-none absolute left-1/2 top-1/2 hidden h-64 w-[38rem] max-w-[92vw] -translate-x-1/2 -translate-y-1/2 rounded-full bg-canvas/55 blur-3xl md:block" />
         <h1 className="relative font-display text-[2.75rem] font-semibold leading-[1.04] tracking-tight text-ink sm:text-6xl md:text-8xl">
@@ -199,7 +199,7 @@ export function HeroCluster() {
         </div>
       </div>
 
-      {/* opened showcase map — a clean, legible preview of the plan. Above the
+      {/* opened showcase map: a clean, legible preview of the plan. Above the
           hero catchphrase (z-120) so the big title never overlaps it. */}
       {openMap && (
         <div className="fixed inset-0 z-[130] grid place-items-center bg-canvas/95 p-5 backdrop-blur-md" onClick={() => setOpenId(null)}>

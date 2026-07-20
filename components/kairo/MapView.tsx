@@ -18,7 +18,11 @@ export function MapView({ goals, initialGoalId, remote, isPro }: { goals: GoalWi
   const [sheetOpen, setSheetOpen] = React.useState(false);
 
   const openInGalaxy = (id: string) => { setOpenId(id); setView("galaxy"); };
-  // A node sheet only exists in the map view; hide the Ask Sola button under it there.
+  // Hide Ask Sola whenever ANY map sheet is open, not just a node sheet. The button
+  // is anchored above the bottom nav, which is exactly where those sheets put their
+  // submit buttons, so it used to sit on top of them: typing a step and tapping Add
+  // opened the Ask Sola panel instead. GalaxyMap now reports every sheet, not only
+  // the node one.
   const askHidden = askOpen || (view === "galaxy" && sheetOpen);
 
   return (
@@ -32,13 +36,18 @@ export function MapView({ goals, initialGoalId, remote, isPro }: { goals: GoalWi
         </div>
       )}
 
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-40 flex justify-center pt-[max(12px,env(safe-area-inset-top))] md:pt-5">
+      {/* Centred on desktop, but right-aligned on phones. Centring put this pill
+          directly on top of the goal-title switcher, which is left-aligned in the
+          map's own top row: at 375px the two overlapped by about 15px, so the right
+          edge of the goal name was untappable and hitting it switched view instead
+          of opening the goal menu. */}
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-40 flex justify-end pr-3 pt-[max(12px,env(safe-area-inset-top))] md:justify-center md:pr-0 md:pt-5">
         <div className="chrome pointer-events-auto inline-flex gap-1 rounded-full p-1">
           {([["galaxy", Waypoints, "Map"], ["list", List, "List"]] as const).map(([v, Icon, label]) => (
             <button
               key={v}
               onClick={() => setView(v)}
-              className={cn("inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[13px] transition-colors", view === v ? "raised-btn text-ink" : "text-muted hover:text-ink")}
+              className={cn("inline-flex min-h-11 items-center gap-1.5 rounded-full px-3.5 text-[13px] transition-colors md:min-h-0 md:py-1.5", view === v ? "raised-btn text-ink" : "text-muted hover:text-ink")}
             >
               <Icon size={14} /> {label}
             </button>

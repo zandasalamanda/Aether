@@ -6,7 +6,7 @@ import { KairoShell } from "@/components/layout/KairoShell";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const [user, goals] = await Promise.all([getSessionUser(), getGoals()]);
-  // No goals? The galaxy map (home) is the first-run experience — it invites
+  // No goals? The galaxy map (home) is the first-run experience. It invites
   // you to create your first goal right there, so no forced onboarding detour.
   const nextMove = computeNextMove(goals);
   // A visible AI-usage indicator in the shell (research: show it before the wall).

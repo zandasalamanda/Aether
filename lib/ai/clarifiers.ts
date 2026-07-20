@@ -1,7 +1,7 @@
 import type { Clarifier } from "./types";
 
 // Clarifiers are chosen LOCALLY (keyword match) and shown BEFORE generating, so
-// the whole flow costs exactly one AI call — the answers are folded into that
+// the whole flow costs exactly one AI call. The answers are folded into that
 // single goal-map prompt. No separate before/after generations.
 
 const DEADLINE: Clarifier = { question: "Target date?", options: ["1 month", "3 months", "6 months", "1 year", "2+ years", "No deadline"] };

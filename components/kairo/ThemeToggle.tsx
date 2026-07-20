@@ -25,7 +25,7 @@ function applyTheme(theme: Theme) {
     if (meta) meta.setAttribute("content", theme === "light" ? "#f6f6f3" : "#0a0b0d");
     window.localStorage.setItem(KEY, theme);
   } catch {
-    /* private mode / quota — the in-memory dataset change still applies */
+    /* private mode / quota: the in-memory dataset change still applies */
   }
 }
 
@@ -54,7 +54,7 @@ export function ThemeToggle() {
   return (
     <div className="panel rounded-2xl p-6">
       <SectionLabel className="mb-1.5">Appearance</SectionLabel>
-      <p className="mb-4 text-[13px] text-muted">
+      <p className="mb-4 text-[15px] text-muted">
         Choose how Solaspace looks. Your map and orbs keep their glow in either theme.
       </p>
       <div
@@ -95,7 +95,7 @@ export function ThemeToggle() {
                 >
                   {label}
                 </span>
-                <span className={active ? "block text-[12px] text-[#4a3208]" : "block text-[12px] text-faint"}>
+                <span className={active ? "block text-[13px] text-[#4a3208]" : "block text-[13px] text-faint"}>
                   {hint}
                 </span>
               </span>

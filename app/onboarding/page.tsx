@@ -6,7 +6,7 @@ import { features } from "@/lib/config";
 
 export const metadata: Metadata = { title: "Create your first goal · Solaspace" };
 
-// Anonymous visitors can still type their goal here — we just capture it and send
+// Anonymous visitors can still type their goal here. We just capture it and send
 // them to sign up before generating (see OnboardingFlow). Sign-in is resolved on
 // the server so the client never needs Clerk hooks (not mounted in demo mode).
 export default async function OnboardingPage() {

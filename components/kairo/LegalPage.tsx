@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Logo } from "./Logo";
 
-/** Shared shell for the privacy / terms pages — quiet, readable prose. */
+/** Shared shell for the privacy / terms pages: quiet, readable prose. */
 export function LegalPage({ title, updated, children }: { title: string; updated: string; children: React.ReactNode }) {
   return (
     <div className="mx-auto min-h-[100dvh] w-full max-w-2xl px-5 py-10">

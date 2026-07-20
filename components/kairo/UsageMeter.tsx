@@ -27,7 +27,7 @@ export function UsageMeter({ plan, dayUsed, dayLimit, monthUsed, monthLimit, pro
         <span className="rounded-full border border-line px-2.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-muted">{plan} plan</span>
       </div>
 
-      <div className="flex items-center justify-between text-[13px]">
+      <div className="flex items-center justify-between text-[15px]">
         <span className="text-muted">Today</span>
         <span className={cn("font-mono", over ? "text-warn" : "text-ink")}>{dayUsed} / {dayLimit}</span>
       </div>
@@ -47,15 +47,21 @@ export function UsageMeter({ plan, dayUsed, dayLimit, monthUsed, monthLimit, pro
       </div>
 
       {plan === "free" && !native && (
-        <div className="mt-2 flex flex-wrap items-center gap-2 text-[12px]">
-          <span className="rounded-full bg-accent/15 px-2 py-0.5 font-mono text-[9px] font-semibold uppercase tracking-wide text-accent">With Pro</span>
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-[15px]">
+          <span className="rounded-full bg-accent/15 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wide text-accent">With Pro</span>
           <span className="text-muted">
-            {proDay} / day · {proMonth} / mo · <Link href="/app/billing" className="text-accent hover:underline">upgrade</Link>
+            {proDay} / day · {proMonth} / mo ·{" "}
+            <Link
+              href="/app/billing"
+              className="relative inline-block text-accent hover:underline before:absolute before:-inset-2 before:content-['']"
+            >
+              upgrade
+            </Link>
           </span>
         </div>
       )}
 
-      <p className={cn("mt-2 text-[12px]", over ? "text-warn" : "text-faint")}>
+      <p className={cn("mt-2 text-[15px]", over ? "text-warn" : "text-faint")}>
         {over ? "You've hit today's limit. It resets within a day." : `${dayLimit - dayUsed} left today`} · {monthUsed} / {monthLimit} this month
       </p>
     </div>

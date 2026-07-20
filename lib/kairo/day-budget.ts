@@ -1,6 +1,6 @@
 import type { EnergyLevel } from "@/types";
 
-// The single source of truth for "how much time and energy do you have today?" —
+// The single source of truth for "how much time and energy do you have today?",
 // consumed by the Today planner. Realistic day-scale amounts, not focus-timer
 // lengths: from a quick 30 minutes to a full 6-hour block. The day-plan engine
 // (mockDailyPlan) slices whatever you pick into focus blocks with breaks.

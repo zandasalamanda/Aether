@@ -6,7 +6,7 @@ import { X, Maximize2, MousePointer2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Imported, not referenced by path. Next then derives each image's real size and
-// fingerprints the URL by CONTENT — so replacing a shot can never serve a stale
+// fingerprints the URL by CONTENT, so replacing a shot can never serve a stale
 // cached copy (the optimizer keys on the URL), and nobody hand-maintains w/h.
 import mapPng from "@/public/shots/map.png";
 import solaPng from "@/public/shots/sola.png";
@@ -46,7 +46,7 @@ const SIDE: Shot[] = [
     img: solaPng,
     alt: "The Ask Sola panel proposing plan changes to accept or dismiss",
     beats: [
-      // Sit beside the text, not on top of it — the cursor points, it shouldn't cover.
+      // Sit beside the text, not on top of it. The cursor points, it shouldn't cover.
       { x: 20, y: 17, label: <><b>Just ask</b>, in your own words.</> },
       { x: 13, y: 49, label: <>It shows you <b>what it would change</b>.</> },
       { x: 24, y: 91, label: <><b>Nothing changes</b> unless you agree.</> },
@@ -84,10 +84,10 @@ const SIDE: Shot[] = [
   },
 ];
 
-/** Document order — the order the relay hands off in (left to right, top down). */
+/** Document order: the order the relay hands off in (left to right, top down). */
 const ORDER = [MAP.id, ...SIDE.map((s) => s.id)];
 
-// Gold, faintly glowing key words — the same treatment the old captions used.
+// Gold, faintly glowing key words, the same treatment the old captions used.
 const MARK = "[&_b]:font-semibold [&_b]:text-accent [&_b]:[text-shadow:0_0_14px_rgba(230,184,119,0.55)]";
 
 // Unhurried, but not sleepy: the cursor takes its time getting there, and each
@@ -109,7 +109,7 @@ function useReducedMotion() {
 }
 
 /**
- * One screenshot. It only animates while it holds the section's single "turn" —
+ * One screenshot. It only animates while it holds the section's single "turn":
  * a cursor glides between its points carrying a glow, and an explainer chip fades
  * in beside the cursor once it lands (never dragged along mid-flight). When it has
  * shown every beat it hands the turn on. Reduced motion drops the cursor entirely
@@ -151,7 +151,7 @@ function ShotTour({
     if (!active || reduced) {
       // Park back at the first beat the moment the turn ends. Otherwise the next
       // turn mounts the cursor at the LAST beat's coordinates and it snaps across
-      // the shot to the start — the teleport.
+      // the shot to the start: the teleport.
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setI(0);
       return;
@@ -195,7 +195,7 @@ function ShotTour({
                 background: "radial-gradient(circle, rgba(230,184,119,0.42), rgba(230,184,119,0.13) 45%, transparent 70%)",
               }}
             />
-            {/* the cursor — its tip lands on the point. It fades in when this shot
+            {/* the cursor: its tip lands on the point. It fades in when this shot
                 takes its turn rather than popping into existence. */}
             <MousePointer2
               size={18}
@@ -209,7 +209,7 @@ function ShotTour({
               }}
             />
             {/* the chip. Keyed on the beat and delayed by the glide, so it is hidden
-                while the cursor travels and fades in where it lands. Desktop only —
+                while the cursor travels and fades in where it lands. Desktop only:
                 on a narrow phone it would run off the image, so mobile reads the
                 note as a line under the shot instead (below). */}
             <span
@@ -284,7 +284,7 @@ export function AppShots() {
     setActive((cur) => (cur && inView[cur] ? cur : (visible[0] ?? null)));
   }, [inView]);
 
-  // Finished its beats — hand the turn to the next visible shot, left to right.
+  // Finished its beats. Hand the turn to the next visible shot, left to right.
   // The cursor leaves first and the next one arrives after a beat of nothing, so
   // it reads as moving on rather than teleporting across the page.
   const onDone = React.useCallback((id: string) => {
@@ -324,7 +324,7 @@ export function AppShots() {
           <button onClick={() => setZoom(null)} className="absolute right-5 top-5 grid h-10 w-10 place-items-center rounded-full text-white/70 transition-colors hover:text-white" aria-label="Close">
             <X size={22} />
           </button>
-          {/* Full-res raw asset scaled to fit — most reliable for a lightbox. */}
+          {/* Full-res raw asset scaled to fit: most reliable for a lightbox. */}
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={zoom.img.src}

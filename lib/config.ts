@@ -17,7 +17,7 @@ export const features = {
   email: has("RESEND_API_KEY"),
 };
 
-/** True when nothing external is wired — the app runs on seeded demo data. */
+/** True when nothing external is wired: the app runs on seeded demo data. */
 export const isDemoMode = !features.clerk && !features.supabase;
 
 /** Client-safe Clerk check (the secret key isn't exposed to the browser). */

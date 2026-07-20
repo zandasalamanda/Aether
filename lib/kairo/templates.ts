@@ -36,7 +36,7 @@ export const TEMPLATES: GoalTemplate[] = [
     targetWeeks: 8,
     milestones: [
       { title: "Build a walk-run base, 3× a week", minutes: 30, resource: watch("Couch to 5K week 1", "couch to 5k week 1 walk run guide") },
-      { title: "Reach 20 minutes of continuous running", minutes: 30, subs: [{ title: "Run 5 min, walk 1 min — repeat 4×", minutes: 30 }] },
+      { title: "Reach 20 minutes of continuous running", minutes: 30, subs: [{ title: "Run 5 min, walk 1 min, repeat 4×", minutes: 30 }] },
       { title: "Run 3K without stopping", minutes: 35 },
       { title: "Complete a full 5K", minutes: 45, resource: read("Beginner race-day tips", "beginner 5k race day tips") },
     ],

@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 
 /**
- * Ambient depth — a single, static, colorless wash. Deliberately quiet:
+ * Ambient depth. A single, static, colorless wash. Deliberately quiet:
  * the atmosphere should be felt, not noticed.
  */
 export function OrbBackground({ className }: { className?: string }) {

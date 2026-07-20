@@ -4,7 +4,7 @@ import { sendEmail, unsubscribeUrl, deadlineEmail, nudgeEmail, digestEmail, esca
 
 // Daily notification cron (wired via vercel.json). Secured with CRON_SECRET.
 // Sends: deadline reminders (≤3 days out), a weekly digest, and an inactivity
-// nudge — each gated by the user's prefs and de-duplicated so nothing repeats.
+// nudge, each gated by the user's prefs and de-duplicated so nothing repeats.
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 

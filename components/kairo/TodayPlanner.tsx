@@ -42,8 +42,8 @@ const DIFF: Record<Difficulty, { label: string; hex: string; bars: number }> = {
   deep: { label: "Deep", hex: "var(--color-warn)", bars: 3 },
 };
 
-// A tiny signal-strength meter for a block's intensity — a visual cue that reads
-// faster than a word: 1 bar light, 2 focused, 3 deep.
+// A tiny signal-strength meter for a block's intensity: a visual cue that reads
+// faster than a word (1 bar light, 2 focused, 3 deep).
 function DiffMeter({ difficulty }: { difficulty: Difficulty }) {
   const d = DIFF[difficulty];
   return (
@@ -57,7 +57,8 @@ function DiffMeter({ difficulty }: { difficulty: Difficulty }) {
 
 // A premium stepped slider: drag the glossy gold fill, click a tick, or use the
 // arrow keys. The two Today inputs use it, so they no longer read as two identical
-// rows of pills. Every stop's label is also a tap target, so nobody has to drag.
+// rows of pills. Every stop's label is also a tap target (44px tall), so nobody
+// has to drag.
 function StepSlider({ ariaLabel, labels, index, onIndex }: { ariaLabel: string; labels: string[]; index: number; onIndex: (i: number) => void }) {
   const trackRef = React.useRef<HTMLDivElement>(null);
   const drag = React.useRef(false);
@@ -111,12 +112,15 @@ function StepSlider({ ariaLabel, labels, index, onIndex }: { ariaLabel: string; 
           <span className="h-2 w-2 rounded-full" style={{ background: "rgba(120,84,30,0.55)" }} />
         </span>
       </div>
-      <div className="mt-1.5 flex justify-between">
+      <div className="flex justify-between">
         {labels.map((l, k) => (
           <button
             key={k}
             onClick={() => onIndex(k)}
-            className={cn("rounded px-1 font-mono text-[11px] tabular-nums transition-colors", k === index ? "font-semibold text-accent" : "text-faint hover:text-muted")}
+            className={cn(
+              "inline-flex min-h-11 min-w-11 items-center justify-center rounded px-1 font-mono text-[15px] tabular-nums transition-colors",
+              k === index ? "font-semibold text-accent" : "text-faint hover:text-muted",
+            )}
           >
             {l}
           </button>
@@ -130,8 +134,8 @@ const round5 = (n: number) => Math.round(n / 5) * 5;
 
 /**
  * The Today screen: plan your day with Sola. Tell it the time and energy you have,
- * and it slices your live goals into a focused day — ordered focus blocks with real
- * breaks — that you run one block at a time. Built locally (instant, deterministic)
+ * and it slices your live goals into a focused day (ordered focus blocks with real
+ * breaks) that you run one block at a time. Built locally (instant, deterministic)
  * and cached for the day; completing a block writes through to the step's status.
  */
 export function TodayPlanner({
@@ -192,7 +196,7 @@ export function TodayPlanner({
     setStored((prev) => (prev ? { ...prev, blocks: prev.blocks.map(fn) } : prev));
 
   const finishStep = (goalId: string, nodeId: string, mins?: number) => {
-    // Finishing the work finishes the step — so every block of that node closes.
+    // Finishing the work finishes the step, so every block of that node closes.
     patchBlocks((b) => (b.nodeId === nodeId ? { ...b, status: "completed" } : b));
     track("step_completed", { goalId, surface: "today" });
     if (remote) {
@@ -216,12 +220,12 @@ export function TodayPlanner({
 
   const pushBlock = (id: string) => {
     patchBlocks((b) => (b.id === id ? { ...b, status: "pushed" } : b));
-    flash("Pushed off today — it'll be first up next time.");
+    flash("Pushed off today. It'll be first up next time.");
   };
   const undoPush = (id: string) => patchBlocks((b) => (b.id === id ? { ...b, status: "planned" } : b));
 
   const shrinkBlock = (id: string) => {
-    // Compute from the live block up front — a state updater runs later, so reading
+    // Compute from the live block up front: a state updater runs later, so reading
     // the new value after setStored would always see the stale (pre-update) number.
     const cur = active?.blocks.find((b) => b.id === id);
     if (!cur) return;
@@ -229,7 +233,7 @@ export function TodayPlanner({
     if (next >= cur.durationMinutes) { flash("That block's already as small as it gets."); return; }
     const difficulty: Difficulty = cur.difficulty === "deep" ? "moderate" : "light";
     patchBlocks((b) => (b.id === id ? { ...b, durationMinutes: next, difficulty } : b));
-    flash(`Trimmed to ${next}m — easier to start.`);
+    flash(`Trimmed to ${next}m. Easier to start.`);
   };
 
   const appendNote = (goalId: string, label: string, body: string) => {
@@ -256,13 +260,13 @@ export function TodayPlanner({
           <div className="chrome animate-sheet-up flex flex-col items-center rounded-2xl px-8 py-6 text-center">
             <Celebration hex={celebration.hex} size={60} />
             <h3 className="mt-3 font-display text-lg font-semibold text-ink">{celebration.title}</h3>
-            <p className="mt-1 max-w-[15rem] text-[13px] leading-relaxed text-muted">{celebration.sub}</p>
+            <p className="mt-1 max-w-[15rem] text-[15px] leading-relaxed text-muted">{celebration.sub}</p>
           </div>
         </div>
       )}
       {note && (
         <div className="pointer-events-none fixed inset-x-0 bottom-[calc(88px+env(safe-area-inset-bottom))] z-[130] flex justify-center px-6 md:bottom-8">
-          <div className="chrome animate-fade-in rounded-full px-4 py-2 text-[13px] text-ink">{note}</div>
+          <div className="chrome animate-fade-in rounded-full px-4 py-2 text-[15px] text-ink">{note}</div>
         </div>
       )}
       {focus && focusGoal && (
@@ -291,7 +295,7 @@ export function TodayPlanner({
           <div className="flex flex-col items-center text-center">
             <GoalCore size={132} className="animate-pulse-soft" />
             <p className="mt-8 font-display text-xl font-medium text-ink">Shaping your day…</p>
-            <p className="mt-2 font-mono text-[12px] uppercase tracking-[0.2em] text-accent/70">Sola is fitting the work to your time</p>
+            <p className="mt-2 font-mono text-[13px] uppercase tracking-[0.2em] text-accent/70">Sola is fitting the work to your time</p>
           </div>
         </div>
       </>
@@ -307,7 +311,7 @@ export function TodayPlanner({
           <EmptyState
             icon={<Sparkles size={22} />}
             title="Nothing to plan yet"
-            description="Map a goal first — then Sola can build your day around it."
+            description="Map a goal first. Then Sola can build your day around it."
             action={<Link href="/app/map"><Button variant="primary" size="lg">Create a goal</Button></Link>}
           />
         </>
@@ -338,12 +342,12 @@ export function TodayPlanner({
           </p>
 
           {!hasWork && (
-            <p className="mt-5 rounded-xl border border-line px-4 py-3 text-[13px] text-muted" style={{ background: "color-mix(in srgb, var(--color-ink) 2.5%, transparent)" }}>
+            <p className="mt-5 rounded-xl border border-line px-4 py-3 text-[15px] leading-relaxed text-muted" style={{ background: "color-mix(in srgb, var(--color-ink) 2.5%, transparent)" }}>
               Every step is done or blocked right now. Add a step on the map, then build your day.
             </p>
           )}
 
-          {/* Time — a slider, not a row of pills, so it reads as one clear question. */}
+          {/* Time: a slider, not a row of pills, so it reads as one clear question. */}
           <div className="mt-10 w-full text-left">
             <div className="flex items-baseline justify-between">
               <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-faint">Time today</span>
@@ -354,7 +358,7 @@ export function TodayPlanner({
             </div>
           </div>
 
-          {/* Energy — a three-stop slider with a word, distinctly different from Time. */}
+          {/* Energy: a three-stop slider with a word, distinctly different from Time. */}
           <div className="mt-9 w-full text-left">
             <div className="flex items-baseline justify-between">
               <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-faint">Energy</span>
@@ -366,7 +370,7 @@ export function TodayPlanner({
           </div>
 
           {/* Says plainly what the button will do, and updates as you slide. */}
-          <p className="mt-9 w-full rounded-2xl border border-accent/15 px-4 py-3.5 text-left text-[13.5px] leading-relaxed text-muted" style={{ background: "color-mix(in srgb, var(--color-accent) 6%, transparent)" }}>
+          <p className="mt-9 w-full rounded-2xl border border-accent/15 px-4 py-3.5 text-left text-[15px] leading-relaxed text-muted" style={{ background: "color-mix(in srgb, var(--color-accent) 6%, transparent)" }}>
             Sola will map the next <span className="font-semibold text-ink">{spokenTime}</span> into {shapeByEnergy[energy]}.
           </p>
 
@@ -391,30 +395,30 @@ export function TodayPlanner({
       <div className="mb-5">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-[0.18em] text-faint">
-              <SolaMark size={13} /> {dateLabel}
+            <div className="flex items-center gap-2 font-mono text-[13px] uppercase tracking-[0.16em] text-faint">
+              <SolaMark size={14} /> {dateLabel}
             </div>
             <h1 className="mt-1.5 font-display text-2xl font-semibold tracking-tight text-ink">Today&apos;s plan</h1>
           </div>
-          <button onClick={rebuild} className="raised-btn inline-flex shrink-0 items-center gap-1.5 rounded-lg px-3 py-2 text-[13px] text-muted transition-colors hover:text-ink">
+          <button onClick={rebuild} className="raised-btn inline-flex h-11 shrink-0 items-center gap-1.5 rounded-lg px-3.5 text-[15px] text-muted transition-colors hover:text-ink">
             <RotateCcw size={14} /> Rebuild
           </button>
         </div>
-        <p className="mt-3 text-[14px] leading-relaxed text-muted">{active.explanation}</p>
-        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[11px] uppercase tracking-[0.12em] text-faint">
+        <p className="mt-3 text-[15px] leading-relaxed text-muted">{active.explanation}</p>
+        <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 font-mono text-[15px] uppercase tracking-[0.08em] text-faint">
           <span>{active.summary}</span>
         </div>
         {active.recoveryNote && (
-          <div className="mt-3 flex items-start gap-2 rounded-xl border border-warn/25 bg-warn/[0.06] px-3.5 py-2.5 text-[13px] leading-relaxed text-warn/90">
-            <Clock3 size={15} className="mt-0.5 shrink-0" /> {active.recoveryNote}
+          <div className="mt-3 flex items-start gap-2 rounded-xl border border-warn/25 bg-warn/[0.06] px-3.5 py-2.5 text-[15px] leading-relaxed text-warn/90">
+            <Clock3 size={16} className="mt-0.5 shrink-0" /> {active.recoveryNote}
           </div>
         )}
-        {/* the shape of today — each segment a block, width by time, coloured by goal;
+        {/* the shape of today: each segment a block, width by time, coloured by goal;
             solid = done, dim = still to do. The whole day, at a glance. */}
         <div className="mt-4">
           <div className="mb-1.5 flex items-center justify-between font-mono text-[10px] uppercase tracking-[0.16em] text-faint">
             <span>The shape of today</span>
-            <span className="text-muted">{doneCount} / {liveCount} done</span>
+            <span className="text-[15px] font-medium tabular-nums tracking-normal text-muted">{doneCount} / {liveCount} done</span>
           </div>
           <div className="inset-well flex h-4 items-stretch gap-[3px] overflow-hidden rounded-full p-[3px]">
             {active.blocks.map((b) => {
@@ -441,12 +445,12 @@ export function TodayPlanner({
           <Celebration size={48} />
           <div>
             <h2 className="font-display text-lg font-semibold text-ink">You cleared your day</h2>
-            <p className="mt-0.5 text-[13px] leading-relaxed text-muted">Every focus block done. Rest it, or build a fresh one.</p>
+            <p className="mt-0.5 text-[15px] leading-relaxed text-muted">Every focus block done. Rest it, or build a fresh one.</p>
           </div>
         </div>
       )}
 
-      {/* the day as a timeline — a spine threads every block; each is a bead on it */}
+      {/* the day as a timeline. A spine threads every block; each is a bead on it */}
       <ol className="relative">
         <span aria-hidden className="pointer-events-none absolute bottom-4 left-[15px] top-4 w-px bg-line" />
         {active.blocks.map((b, i) => {
@@ -456,7 +460,7 @@ export function TodayPlanner({
                 <span className="absolute left-[7px] top-1/2 grid h-4 w-4 -translate-y-1/2 place-items-center rounded-full bg-canvas ring-1 ring-line">
                   <Coffee size={9} />
                 </span>
-                <span className="font-mono text-[10px] uppercase tracking-[0.16em]">{b.title} · {b.durationMinutes}m</span>
+                <span className="font-mono text-[15px] uppercase tracking-[0.1em]">{b.title} · {b.durationMinutes}m</span>
               </li>
             );
           }
@@ -472,9 +476,9 @@ export function TodayPlanner({
 
           return (
             <li key={b.id} className="relative py-1.5 pl-11">
-              {/* bead on the spine — number, or a check when done */}
+              {/* bead on the spine: number, or a check when done */}
               <span
-                className="absolute left-[3px] top-[18px] z-[1] grid h-6 w-6 place-items-center rounded-full font-mono text-[11px] font-semibold"
+                className="absolute left-[3px] top-[18px] z-[1] grid h-6 w-6 place-items-center rounded-full font-mono text-[13px] font-semibold"
                 style={
                   completed
                     ? { background: hex, color: "#0a0b0d" }
@@ -489,50 +493,51 @@ export function TodayPlanner({
                 style={isNext ? { boxShadow: `inset 0 0 0 1px ${hex}55` } : undefined}
               >
                 {isNext && (
-                  <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-2 py-0.5 font-mono text-[9px] uppercase tracking-[0.18em] text-accent">
+                  <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-2 py-0.5 font-mono text-[13px] uppercase tracking-[0.14em] text-accent">
                     Up next
                   </div>
                 )}
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex min-w-0 flex-1 items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-faint">
-                    <Icon size={12} style={{ color: hex }} />
+                  <span className="inline-flex min-w-0 flex-1 items-center gap-1.5 font-mono text-[13px] uppercase tracking-[0.1em] text-faint">
+                    <Icon size={13} style={{ color: hex }} />
                     <span className="truncate">{g?.title ?? "Step"}</span>
                   </span>
                   {pushed ? (
-                    <span className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-medium text-faint" style={{ background: "color-mix(in srgb, var(--color-ink) 7%, transparent)" }}>Pushed</span>
+                    <span className="shrink-0 rounded-full px-2 py-0.5 text-[15px] font-medium text-faint" style={{ background: "color-mix(in srgb, var(--color-ink) 7%, transparent)" }}>Pushed</span>
                   ) : !completed ? (
                     <span className="inline-flex shrink-0 items-center gap-1.5" style={{ color: diff.hex }}>
                       <DiffMeter difficulty={b.difficulty} />
-                      <span className="font-mono text-[10px] uppercase tracking-wide">{diff.label}</span>
+                      <span className="font-mono text-[15px]">{diff.label}</span>
                     </span>
                   ) : null}
-                  <span className="shrink-0 rounded-md px-1.5 py-0.5 font-mono text-[11px] tabular-nums text-muted" style={{ background: "color-mix(in srgb, var(--color-ink) 6%, transparent)" }}>{formatDuration(b.durationMinutes)}</span>
+                  <span className="shrink-0 rounded-md px-1.5 py-0.5 font-mono text-[15px] tabular-nums text-muted" style={{ background: "color-mix(in srgb, var(--color-ink) 6%, transparent)" }}>{formatDuration(b.durationMinutes)}</span>
                 </div>
 
                 <h3 className={cn("mt-2 font-display text-lg font-semibold leading-snug", completed ? "text-muted line-through" : "text-ink")}>{b.title}</h3>
-                {b.reason && !completed && <p className="mt-1 truncate text-[12px] text-faint">{b.reason}</p>}
+                {b.reason && !completed && <p className="mt-1 truncate text-[15px] text-faint">{b.reason}</p>}
 
                 {!completed && !pushed && (
                   <div className="mt-3.5 flex flex-wrap items-center gap-2">
-                    <button onClick={() => startBlock(b)} className="raised-gold inline-flex items-center gap-1.5 rounded-xl px-4 py-2 text-[13px] font-medium">
-                      <Timer size={15} /> Start
+                    <button onClick={() => startBlock(b)} className="raised-gold inline-flex h-11 items-center gap-1.5 rounded-xl px-5 text-[15px] font-medium">
+                      <Timer size={16} /> Start
                     </button>
-                    <button onClick={() => b.goalId && b.nodeId && finishStep(b.goalId, b.nodeId)} className="raised-btn inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-[13px] text-sage">
-                      <Check size={15} /> Done
+                    <button onClick={() => b.goalId && b.nodeId && finishStep(b.goalId, b.nodeId)} className="raised-btn inline-flex h-11 items-center gap-1.5 rounded-xl px-4 text-[15px] text-sage">
+                      <Check size={16} /> Done
                     </button>
-                    <button onClick={() => shrinkBlock(b.id)} className="ml-auto grid h-8 w-8 place-items-center rounded-lg text-faint transition-colors hover:text-ink" aria-label="Make smaller" title="Make it smaller">
-                      <Scissors size={14} />
+                    <button onClick={() => shrinkBlock(b.id)} className="ml-auto grid h-11 w-11 place-items-center rounded-lg text-faint transition-colors hover:text-ink" aria-label="Make smaller" title="Make it smaller">
+                      <Scissors size={16} />
                     </button>
-                    <button onClick={() => pushBlock(b.id)} className="grid h-8 w-8 place-items-center rounded-lg text-faint transition-colors hover:text-ink" aria-label="Push to later" title="Push to later">
-                      <Clock3 size={15} />
+                    {/* Push sits apart from the rest: a mis-tap here moves work off today. */}
+                    <button onClick={() => pushBlock(b.id)} className="ml-2 grid h-11 w-11 place-items-center rounded-lg text-faint transition-colors hover:text-ink" aria-label="Push to later" title="Push to later">
+                      <Clock3 size={17} />
                     </button>
                   </div>
                 )}
 
                 {pushed && (
-                  <div className="mt-3 flex items-center gap-2">
-                    <button onClick={() => undoPush(b.id)} className="inline-flex items-center gap-1.5 text-[13px] text-muted transition-colors hover:text-ink">
-                      <Undo2 size={14} /> Bring back to today
+                  <div className="mt-1 flex items-center gap-2">
+                    <button onClick={() => undoPush(b.id)} className="-ml-1 inline-flex h-11 items-center gap-1.5 rounded-lg px-1 text-[15px] text-muted transition-colors hover:text-ink">
+                      <Undo2 size={15} /> Bring back to today
                     </button>
                   </div>
                 )}
@@ -543,8 +548,8 @@ export function TodayPlanner({
       </ol>
 
       <div className="mt-6 flex items-center justify-center">
-        <Link href="/app/map" className="inline-flex items-center gap-1.5 text-[13px] text-faint transition-colors hover:text-ink">
-          <Waypoints size={14} /> Open the map
+        <Link href="/app/map" className="inline-flex h-11 items-center gap-1.5 rounded-lg px-3 text-[15px] text-faint transition-colors hover:text-ink">
+          <Waypoints size={15} /> Open the map
         </Link>
       </div>
     </>

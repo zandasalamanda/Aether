@@ -11,7 +11,7 @@ import { ExternalLink } from "@/components/ui/ExternalLink";
 // it: the same fishbone layout + collision relaxation, DOM node orbs and an SVG
 // connector layer in one coordinate space, the whole tree measured and framed so it
 // sits centred at any size. `interactive` makes every node tappable, opening a
-// research sheet (real Watch + Read links) — a live showcase of the app's research.
+// research sheet (real Watch + Read links): a live showcase of the app's research.
 //
 // Orientation: the spine flows UP on narrow screens (a tall trunk) and to the RIGHT
 // on wide screens (a roadmap), matching the app's own map on each form factor.
@@ -108,7 +108,7 @@ export function ShowcaseTree({ map, interactive = false, onOpenChange, onInterac
   }, [map, baseDir]);
 
   // Derive the open node from its id, so a map/orientation change (which rebuilds
-  // `placed`) can't leave a stale sheet — no reset effect needed.
+  // `placed`) can't leave a stale sheet, so no reset effect needed.
   const selected = selectedId ? placed.find((p) => p.node.id === selectedId)?.node ?? null : null;
 
   // Hand-holding: if the visitor doesn't tap anything, nudge them toward the research
@@ -198,7 +198,7 @@ export function ShowcaseTree({ map, interactive = false, onOpenChange, onInterac
           className="absolute left-0 top-0"
           style={{ transform: ready ? `translate(${tx.toFixed(2)}px, ${ty.toFixed(2)}px) scale(${s.toFixed(4)})` : "none", transformOrigin: "0 0", opacity: ready ? 1 : 0 }}
         >
-          {/* connectors — same math and offsets as the live map, so lines meet the orbs */}
+          {/* connectors: same math and offsets as the live map, so lines meet the orbs */}
           <svg width={1} height={1} className="absolute left-0 top-0" style={{ overflow: "visible" }} aria-hidden>
             {placed.map((p) => {
               const isNext = p.node.id === "m0";
@@ -223,7 +223,7 @@ export function ShowcaseTree({ map, interactive = false, onOpenChange, onInterac
             })}
           </svg>
 
-          {/* node orbs — the app's NodeOrb styling. Tappable when interactive. */}
+          {/* node orbs: the app's NodeOrb styling. Tappable when interactive. */}
           {placed.map((p) => {
             const isNext = p.node.id === "m0";
             const size = p.spine ? 50 : 38;
@@ -261,7 +261,7 @@ export function ShowcaseTree({ map, interactive = false, onOpenChange, onInterac
             );
           })}
 
-          {/* the goal core — the real glossy planet, scaling with everything else */}
+          {/* the goal core: the real glossy planet, scaling with everything else */}
           <div className="absolute -translate-x-1/2 -translate-y-1/2" style={{ left: 0, top: 0, opacity: on ? 1 : 0, transition: "opacity .5s ease" }}>
             <div data-vis className="grid">
               <PlanetOrb hex={hex} size={92} icon={map.icon} seed={map.id} />
@@ -270,7 +270,7 @@ export function ShowcaseTree({ map, interactive = false, onOpenChange, onInterac
         </div>
       </div>
 
-      {/* idle nudge — if nobody taps, point at a researched step with a little popup */}
+      {/* idle nudge: if nobody taps, point at a researched step with a little popup */}
       {interactive && ready && showHint && hintNode && !selected && (
         <button
           onClick={() => open(hintNode.node.id)}
@@ -289,7 +289,7 @@ export function ShowcaseTree({ map, interactive = false, onOpenChange, onInterac
         </button>
       )}
 
-      {/* research sheet — one real resource per step (a specific video or a cited
+      {/* research sheet: one real resource per step (a specific video or a cited
           article), exactly as the app attaches deep research to each node. */}
       {interactive && selected && (
         <div className="absolute inset-0 z-20 flex items-end justify-center p-3" onClick={() => setSelectedId(null)}>
@@ -335,7 +335,7 @@ export function ShowcaseTree({ map, interactive = false, onOpenChange, onInterac
               </>
             ) : (
               <div className="mt-3 rounded-xl bg-white/[0.03] px-3.5 py-3 text-[12px] leading-relaxed text-muted">
-                Part of your plan. In the app, Sola researches every step for you — a hand-checked video or cited guide.
+                Part of your plan. In the app, Sola researches every step for you: a hand-checked video or cited guide.
               </div>
             )}
 

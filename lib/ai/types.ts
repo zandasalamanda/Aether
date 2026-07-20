@@ -23,7 +23,7 @@ export interface GeneratedNode {
   /**
    * Index (within this same nodes array) of this node's parent, or null for a
    * top-level phase branching off the goal core. Must reference an earlier
-   * index — the map renders the tree from these links.
+   * index. The map renders the tree from these links.
    */
   parentIndex: number | null;
   /** Optional pointer to content that helps do this step (a search intent). */

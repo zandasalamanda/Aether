@@ -3,7 +3,7 @@ import { research } from "@/lib/ai/research";
 import { guardAi, clampText } from "@/lib/ai/guard";
 
 export async function POST(req: Request) {
-  // Grounded search is the priciest call — Pro-only, higher weight.
+  // Grounded search is the priciest call: Pro-only, higher weight.
   const denied = await guardAi({ weight: 4, feature: "research", featureFreeDaily: 1, featureLabel: "deep research" });
   if (denied) return denied;
   const body = (await req.json().catch(() => ({}))) as { goalTitle?: unknown; nodeTitle?: unknown; context?: unknown; question?: unknown };

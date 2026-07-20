@@ -33,7 +33,7 @@ export const ensureProfile = cache(async (): Promise<UserProfile | null> => {
     .single();
   if (inserted.data) return rowToProfile(inserted.data as ProfileRow);
 
-  // Lost a race with a concurrent request — the row now exists; read it back.
+  // Lost a race with a concurrent request. The row now exists; read it back.
   const retry = await supabase
     .from("users_profile")
     .select("*")
