@@ -10,8 +10,6 @@ import { cn } from "@/lib/utils";
 // cached copy (the optimizer keys on the URL), and nobody hand-maintains w/h.
 import mapPng from "@/public/shots/map.png";
 import solaPng from "@/public/shots/sola.png";
-import listPng from "@/public/shots/list.png";
-import reviewPng from "@/public/shots/review.png";
 import focusPng from "@/public/shots/focus.png";
 
 interface Shot {
@@ -50,26 +48,6 @@ const SIDE: Shot[] = [
       { x: 20, y: 17, label: <><b>Just ask</b>, in your own words.</> },
       { x: 13, y: 49, label: <>It shows you <b>what it would change</b>.</> },
       { x: 24, y: 91, label: <><b>Nothing changes</b> unless you agree.</> },
-    ],
-  },
-  {
-    id: "list",
-    img: listPng,
-    alt: "List view of goals with steps checked off and research attached",
-    beats: [
-      { x: 85, y: 8, label: <><b>All your goals</b>, in a simple list.</> },
-      { x: 78, y: 38, label: <><b>Start here.</b></> },
-      { x: 50, y: 61, label: <>The <b>resources</b> sit right on the step.</> },
-    ],
-  },
-  {
-    id: "review",
-    img: reviewPng,
-    alt: "Weekly review showing true pace to each deadline",
-    beats: [
-      { x: 74, y: 23, label: <>It tells you if you are <b>ahead or behind</b>.</> },
-      { x: 50, y: 57, label: <><b>How much is done</b>, next to <b>how much time has passed</b>.</> },
-      { x: 18, y: 83, label: <><b>Proof you showed up</b>.</> },
     ],
   },
   {
@@ -179,7 +157,7 @@ function ShotTour({
   const counter = (unit: string) => <span className={cn("ml-1.5 font-mono font-semibold text-accent/70", unit)}>{idx + 1}/{n}</span>;
 
   return (
-    <figure ref={ref} className="panel-2 rounded-3xl p-2 md:p-3">
+    <figure ref={ref} className={cn("panel-2 mx-auto w-full rounded-3xl p-2 md:p-3", compact ? "max-w-[320px]" : "max-w-[720px]")}>
       <div className="group relative overflow-hidden rounded-2xl">
         <Image src={shot.img} alt={shot.alt} className={cn("w-full", compact ? "rounded-xl" : "rounded-2xl")} />
 
@@ -310,7 +288,14 @@ export function AppShots() {
     <>
       {/* Held a touch narrower than the section so the shots feel composed, not overwhelming. */}
       <div className="mx-auto max-w-5xl">
-        <ShotTour shot={MAP} active={active === MAP.id} onInView={onInView} onDone={onDone} onZoom={setZoom} />
+        {/* The map shot is a desktop capture, roughly 2900px wide. Squeezed into a
+            phone column it is a pretty but unreadable thumbnail, and the landing
+            already shows a live, tappable map higher up the page, so on small
+            screens it is dropped rather than shown illegibly. The relay skips it
+            automatically, because a hidden figure never reports as in view. */}
+        <div className="hidden sm:block">
+          <ShotTour shot={MAP} active={active === MAP.id} onInView={onInView} onDone={onDone} onZoom={setZoom} />
+        </div>
 
         <div className="mt-5 grid gap-4 sm:grid-cols-2">
           {SIDE.map((s) => (

@@ -82,7 +82,21 @@ function relax(placed: Placed[]): Placed[] {
 
 interface Frame { minX: number; minY: number; w: number; h: number }
 
-export function ShowcaseTree({ map, interactive = false, onOpenChange, onInteract }: { map: ShowcaseMap; interactive?: boolean; onOpenChange?: (open: boolean) => void; onInteract?: () => void }) {
+export function ShowcaseTree({ map, interactive = false, maxScale, onOpenChange, onInteract }: {
+  map: ShowcaseMap;
+  interactive?: boolean;
+  /**
+   * Ceiling on the auto-fit scale. Each map has its own natural extent, so a
+   * compact one is allowed to upscale further than a sprawling one and renders
+   * with visibly larger orbs. When several maps are shown side by side under a
+   * switcher, that reads as a bug. Pass 1 to forbid upscaling, which makes every
+   * map draw at a consistent size and keeps the labels crisp.
+   * Omitted by default, so the in-app behaviour is unchanged.
+   */
+  maxScale?: number;
+  onOpenChange?: (open: boolean) => void;
+  onInteract?: () => void;
+}) {
   const hex = map.color;
   const wrapRef = React.useRef<HTMLDivElement>(null);
   const treeRef = React.useRef<HTMLDivElement>(null);
@@ -185,7 +199,7 @@ export function ShowcaseTree({ map, interactive = false, onOpenChange, onInterac
   const halfH = frame ? Math.max(-frame.minY, frame.minY + frame.h) + PAD : 0;
   const W0 = isRight ? (frame ? frame.w + PAD * 2 : 0) : halfW * 2;
   const H0 = isRight ? halfH * 2 : (frame ? frame.h + PAD * 2 : 0);
-  const s = ready ? Math.min(cw / W0, MAXH / H0) : 1;
+  const s = ready ? Math.min(cw / W0, MAXH / H0, maxScale ?? Infinity) : 1;
   React.useLayoutEffect(() => { sRef.current = s; });
   const tx = isRight ? (frame ? (PAD - frame.minX) * s : 0) : halfW * s;
   const ty = isRight ? halfH * s : (frame ? (PAD - frame.minY) * s : 0);
