@@ -36,7 +36,10 @@ interface Stop {
 // travels horizontally inside the wide screenshots section (the ring) and in
 // the whitespace between sections, and it finishes beside the closing button.
 const WALK: Stop[] = [
-  { id: "tree", at: "bottom", off: -36 },
+  // Two stops on the tree: the thread is born deep at the trunk and curves out
+  // from under it, rather than starting abruptly in open space.
+  { id: "tree", at: "bottom", off: -110 },
+  { id: "tree", at: "bottom", off: -8, bow: 36 },
   { id: "s-plan", at: "left", off: 30, bow: 26, dot: true },
   { id: "s-day", at: "left", off: 30, bow: -30, dot: true },
   { id: "s-look", at: "left", off: 30, bow: 28, dot: true },
@@ -64,6 +67,7 @@ export function JourneyThread() {
   const tipRef = React.useRef<SVGGElement>(null);
   const [geo, setGeo] = React.useState<{
     d: string; w: number; h: number; total: number; nodes: Node[];
+    start: { x: number; y: number };
     /** phone-width layout: the rail hugs the edge, so the discs shrink to fit */
     compact: boolean;
     /** monotonic (y, length) checkpoints for the scroll mapping */
@@ -140,7 +144,7 @@ export function JourneyThread() {
       record(b);
     }
     scratch.setAttribute("d", d);
-    setGeo({ d, w, h, total: scratch.getTotalLength(), nodes, marks, compact: w < 640 });
+    setGeo({ d, w, h, total: scratch.getTotalLength(), nodes, marks, compact: w < 640, start: { x: pts[0].x, y: pts[0].y } });
   }, []);
 
   React.useEffect(() => {
@@ -233,6 +237,20 @@ export function JourneyThread() {
       {geo && (
         <svg width={geo.w} height={geo.h} viewBox={`0 0 ${geo.w} ${geo.h}`} className="absolute left-0 top-0">
           <defs>
+            <radialGradient id={`${maskId}-birth`}>
+              <stop offset="0%" stopColor="#000" stopOpacity="1" />
+              <stop offset="55%" stopColor="#000" stopOpacity="0.75" />
+              <stop offset="100%" stopColor="#000" stopOpacity="0" />
+            </radialGradient>
+            <mask id={`${maskId}-start`} maskUnits="userSpaceOnUse" x="0" y="0" width={geo.w} height={geo.h}>
+              <rect x="0" y="0" width={geo.w} height={geo.h} fill="#fff" />
+              <circle cx={geo.start.x} cy={geo.start.y} r={140} fill={`url(#${maskId}-birth)`} />
+            </mask>
+            <radialGradient id={`${maskId}-orb`} cx="38%" cy="32%" r="75%">
+              <stop offset="0%" stopColor="#1d1f26" />
+              <stop offset="60%" stopColor="#0e0f13" />
+              <stop offset="100%" stopColor="#0a0b0d" />
+            </radialGradient>
             <mask id={maskId} maskUnits="userSpaceOnUse" x="0" y="0" width={geo.w} height={geo.h}>
               <path
                 ref={maskRef}
@@ -248,21 +266,23 @@ export function JourneyThread() {
             </mask>
           </defs>
 
-          {/* the faint full route, so the path ahead reads as "still to come" */}
-          <path d={geo.d} fill="none" stroke={GOLD} strokeWidth={1.5} strokeLinecap="round" strokeDasharray="3 8" opacity={0.28} />
+          <g mask={`url(#${maskId}-start)`}>
+            {/* the faint full route, so the path ahead reads as "still to come" */}
+            <path d={geo.d} fill="none" stroke={GOLD} strokeWidth={1.5} strokeLinecap="round" strokeDasharray="3 8" opacity={0.28} />
 
-          {/* the walked thread: the tree's own next-step line, revealed by scroll */}
-          <g mask={`url(#${maskId})`}>
-            <path
-              d={geo.d}
-              fill="none"
-              stroke={GOLD}
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeDasharray="3 8"
-              opacity={0.75}
-              style={reduced ? undefined : { animation: "dash 2.6s linear infinite", filter: `drop-shadow(0 0 4px ${GOLD}66)` }}
-            />
+            {/* the walked thread: the tree's own next-step line, revealed by scroll */}
+            <g mask={`url(#${maskId})`}>
+              <path
+                d={geo.d}
+                fill="none"
+                stroke={GOLD}
+                strokeWidth={2}
+                strokeLinecap="round"
+                strokeDasharray="3 8"
+                opacity={0.75}
+                style={reduced ? undefined : { animation: "dash 2.6s linear infinite", filter: `drop-shadow(0 0 4px ${GOLD}66)` }}
+              />
+            </g>
           </g>
 
           {/* step nodes: lit once the thread reaches them */}
@@ -290,10 +310,11 @@ export function JourneyThread() {
             );
           })}
 
-          {/* the tip: where you are on the path right now */}
+          {/* the tip: an empty goal orb, you, walking the path right now */}
           <g ref={tipRef} style={{ opacity: 0, transition: "opacity .3s ease, transform .25s linear" }}>
-            <circle r={9} fill={GOLD} opacity={0.22} className={reduced ? undefined : "animate-pulse-soft"} />
-            <circle r={3.4} fill={GOLD} style={{ filter: `drop-shadow(0 0 6px ${GOLD})` }} />
+            <circle r={13} fill={GOLD} opacity={0.16} className={reduced ? undefined : "animate-pulse-soft"} />
+            <circle r={7} fill={`url(#${maskId}-orb)`} stroke={GOLD} strokeWidth={1.4} style={{ filter: `drop-shadow(0 0 6px ${GOLD}55)` }} />
+            <ellipse cx={-2.2} cy={-2.6} rx={2.2} ry={1.5} fill="#ffffff" opacity={0.3} />
           </g>
         </svg>
       )}

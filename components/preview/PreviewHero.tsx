@@ -6,6 +6,7 @@ import { ArrowRight } from "lucide-react";
 import { SHOWCASE_MAPS } from "@/lib/kairo/showcase-maps";
 import { ShowcaseTree } from "@/components/kairo/ShowcaseTree";
 import { PENDING_KEY } from "@/components/kairo/OnboardingFlow";
+import { GoalOrb } from "@/components/kairo/GoalOrb";
 
 // The first screen. Stacked, not split: the previous attempt used a sticky
 // two-column layout that mutated while the other half scrolled, which reads as
@@ -38,11 +39,17 @@ export function PreviewHero() {
   };
 
   return (
-    <section className="relative px-5 pb-10 pt-28 md:pt-36">
+    <section className="relative px-5 pb-10 pt-24 md:pt-28">
       <div className="mx-auto max-w-3xl text-center">
         {/* A quiet gold aurora behind the words, so the first screen carries the
             same lit warmth as the orbs instead of flat text on flat black. */}
         <div aria-hidden className="pointer-events-none absolute left-1/2 top-24 -z-10 h-[420px] w-[720px] max-w-[92vw] -translate-x-1/2 rounded-full" style={{ background: "radial-gradient(ellipse at center, rgba(230,184,119,0.13), rgba(230,184,119,0.04) 45%, transparent 70%)" }} />
+        {/* The signature orb: a lit goal core with its moon in orbit, cycling
+            through goal icons. The page's whole story in one object, and the
+            warm counterpart to the empty orb that walks the thread below. */}
+        <div className="flex justify-center">
+          <GoalOrb className="animate-fade-up -mb-2 -mt-6" />
+        </div>
         <h1 className="animate-fade-up font-display text-[2.6rem] font-semibold leading-[1.04] tracking-tight text-ink sm:text-6xl md:text-[4.2rem]">
           Become who you keep
           <br className="hidden sm:block" /> <span className="text-gold-lit">meaning to be.</span>
