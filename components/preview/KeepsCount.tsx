@@ -58,7 +58,7 @@ export function KeepsCount() {
 
   return (
     <section className="mx-auto max-w-3xl px-5 py-24">
-      <h2 className="font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
+      <h2 data-journey="keeps" className="font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
         It keeps count.
       </h2>
       <p className="mt-5 max-w-xl text-[17px] leading-relaxed text-muted">

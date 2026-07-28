@@ -5,8 +5,8 @@ import { Logo } from "@/components/kairo/Logo";
 import { Starfield } from "@/components/kairo/Starfield";
 import { PreviewHero } from "@/components/preview/PreviewHero";
 import { KeepsCount } from "@/components/preview/KeepsCount";
+import { JourneyThread } from "@/components/preview/JourneyThread";
 import { AppShots } from "@/components/kairo/AppShots";
-import { PaceRule } from "@/components/preview/PaceRule";
 import { PLAN_FREE_FEATURES, PLAN_PRO_FEATURES, priceDisplay } from "@/lib/kairo/plans";
 
 // A candidate landing page, at its own route so the live one is untouched.
@@ -29,6 +29,9 @@ export default function PreviewPage() {
   return (
     <div data-theme="dark" className="cockpit relative isolate min-h-screen overflow-hidden bg-canvas text-ink">
       <Starfield className="pointer-events-none fixed inset-0 -z-10 opacity-70" />
+      {/* The page's spine: the goal map's own dotted next-step line, growing
+          down the page as you scroll and looping the screenshots in a ring. */}
+      <JourneyThread />
 
       <header className="absolute inset-x-0 top-0 z-30">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-6">
@@ -46,11 +49,10 @@ export default function PreviewPage() {
 
       <PreviewHero />
 
-      <PaceRule at={26} />
 
       {/* The objection, answered before it is asked. */}
       <section className="mx-auto max-w-3xl px-5 py-24">
-        <h2 className="font-display text-3xl font-semibold leading-tight tracking-tight text-ink sm:text-4xl">
+        <h2 data-journey="s-plan" className="font-display text-3xl font-semibold leading-tight tracking-tight text-ink sm:text-4xl">
           Anything can write you a plan.
           <br />
           <span className="text-gold-lit">Almost nothing keeps one.</span>
@@ -62,11 +64,10 @@ export default function PreviewPage() {
         </p>
       </section>
 
-      <PaceRule at={44} />
 
       {/* The daily loop. Told as a sentence, not as three cards with icons. */}
       <section className="mx-auto max-w-3xl px-5 py-24">
-        <h2 className="font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
+        <h2 data-journey="s-day" className="font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
           Then it builds your day.
         </h2>
         <p className="mt-5 max-w-xl text-[17px] leading-relaxed text-muted">
@@ -81,31 +82,28 @@ export default function PreviewPage() {
         </p>
       </section>
 
-      <PaceRule at={62} />
 
       {/* The real screens, with the cursor tour. A built product that shows itself
           working reads as finished in a way that no amount of copy does. */}
       <section className="mx-auto max-w-6xl px-5 py-24">
-        <h2 className="font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
+        <h2 data-journey="s-look" className="font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
           A look inside.
         </h2>
         <p className="mt-5 max-w-xl text-[17px] leading-relaxed text-muted">
-          The screens you will actually use. Follow the cursor.
+          The screens you will actually use, walking themselves.
         </p>
         <div className="mt-10">
           <AppShots />
         </div>
       </section>
 
-      <PaceRule at={74} />
 
       <KeepsCount />
 
-      <PaceRule at={80} />
 
       {/* One card. Free is the offer; Pro is a line inside it, not a rival column. */}
       <section className="mx-auto max-w-3xl px-5 py-24">
-        <h2 className="font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
+        <h2 data-journey="price" className="font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
           Start free.
         </h2>
         <p className="mt-5 text-[17px] leading-relaxed text-muted">
@@ -139,9 +137,8 @@ export default function PreviewPage() {
         </Link>
       </section>
 
-      {/* The close. The rule finally reaches the end, with no gap left. */}
-      <PaceRule at={96} />
-
+      {/* The close: the thread's terminal node sits on this button and
+          completes with a check once the path has been walked. */}
       <section className="mx-auto max-w-3xl px-5 py-28 text-center">
         <p className="font-display text-3xl font-semibold leading-tight tracking-tight text-ink sm:text-4xl">
           You already know what you want.
@@ -149,6 +146,7 @@ export default function PreviewPage() {
           <span className="text-gold-lit">This is the part that keeps you moving.</span>
         </p>
         <Link
+          data-journey="close"
           href="/onboarding"
           className="raised-gold mt-10 inline-flex min-h-12 items-center gap-2 rounded-xl px-7 text-[15px] font-semibold"
         >

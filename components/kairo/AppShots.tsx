@@ -157,7 +157,7 @@ function ShotTour({
   const counter = (unit: string) => <span className={cn("ml-1.5 font-mono font-semibold text-accent/70", unit)}>{idx + 1}/{n}</span>;
 
   return (
-    <figure ref={ref} className={cn("panel-2 mx-auto w-full rounded-3xl p-2 md:p-3", compact ? "max-w-[320px]" : "max-w-[720px]")}>
+    <figure ref={ref} data-journey={`shot-${shot.id}`} className={cn("panel-2 mx-auto w-full rounded-3xl p-2 md:p-3", compact ? "max-w-[320px]" : "max-w-[720px]")}>
       <div className="group relative overflow-hidden rounded-2xl">
         <Image src={shot.img} alt={shot.alt} className={cn("w-full", compact ? "rounded-xl" : "rounded-2xl")} />
 

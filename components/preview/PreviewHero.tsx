@@ -38,21 +38,25 @@ export function PreviewHero() {
   };
 
   return (
-    <section className="relative px-5 pb-4 pt-28 md:pt-36">
+    <section className="relative px-5 pb-10 pt-28 md:pt-36">
       <div className="mx-auto max-w-3xl text-center">
-        <h1 className="font-display text-[2.6rem] font-semibold leading-[1.04] tracking-tight text-ink sm:text-6xl md:text-[4.2rem]">
+        {/* A quiet gold aurora behind the words, so the first screen carries the
+            same lit warmth as the orbs instead of flat text on flat black. */}
+        <div aria-hidden className="pointer-events-none absolute left-1/2 top-24 -z-10 h-[420px] w-[720px] max-w-[92vw] -translate-x-1/2 rounded-full" style={{ background: "radial-gradient(ellipse at center, rgba(230,184,119,0.13), rgba(230,184,119,0.04) 45%, transparent 70%)" }} />
+        <h1 className="animate-fade-up font-display text-[2.6rem] font-semibold leading-[1.04] tracking-tight text-ink sm:text-6xl md:text-[4.2rem]">
           Become who you keep
-          <br className="hidden sm:block" /> meaning to be.
+          <br className="hidden sm:block" /> <span className="text-gold-lit">meaning to be.</span>
         </h1>
 
-        <p className="mx-auto mt-7 max-w-xl text-balance text-[17px] leading-relaxed text-muted sm:text-[19px]">
+        <p className="animate-fade-up mx-auto mt-7 max-w-xl text-balance text-[17px] leading-relaxed text-muted sm:text-[19px]" style={{ animationDelay: "0.08s" }}>
           Tell Solaspace what you want. It maps every step, finds the video or guide for each
           one, and builds your day around the time you actually have.
         </p>
 
         <form
           onSubmit={(e) => { e.preventDefault(); start(); }}
-          className="chrome mx-auto mt-9 flex w-full max-w-xl flex-col gap-2 rounded-2xl p-2 sm:flex-row sm:items-center sm:py-2 sm:pl-4 sm:pr-2"
+          className="chrome animate-fade-up mx-auto mt-9 flex w-full max-w-xl flex-col gap-2 rounded-2xl p-2 sm:flex-row sm:items-center sm:py-2 sm:pl-4 sm:pr-2"
+          style={{ animationDelay: "0.16s" }}
         >
           <input
             value={goal}
@@ -100,7 +104,7 @@ export function PreviewHero() {
           </div>
         </div>
 
-        <div className="relative">
+        <div className="relative" data-journey="tree">
           {/* maxScale 1 forbids upscaling, so every map draws at the same size under
               the switcher instead of the compact ones rendering visibly larger. */}
           <ShowcaseTree map={map} interactive maxScale={1} />
