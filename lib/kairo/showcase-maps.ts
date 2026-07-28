@@ -21,11 +21,16 @@ export interface ShowcaseResource {
 export interface ShowcaseNode {
   title: string;
   res?: ShowcaseResource;
+  /** For practice steps: the plain cadence ("daily", "4x a week"). Rendered as a
+   *  tiny muted suffix under the label and swaps the node icon to a repeat mark.
+   *  Showcase data stays self-contained; this is NOT the app's GoalNode type. */
+  cadence?: string;
 }
 export interface ShowcaseMilestone {
   title: string;
   subs: ShowcaseNode[];
   res?: ShowcaseResource;
+  cadence?: string;
 }
 export interface ShowcaseMap {
   id: string;
@@ -119,7 +124,7 @@ export const SHOWCASE_MAPS: ShowcaseMap[] = [
         res: watch("7GkMHPe_OXw", "20 Min Full Body Workout for Beginners (No Equipment)",
           "Consistency beats intensity early on. Train 3–4 times a week with full-body sessions for a month. The habit is the real adaptation before the muscle is."),
         subs: [
-          { title: "Train 4× a week for a month", res: watch("7GkMHPe_OXw", "20 Min Full Body Workout for Beginners (No Equipment)",
+          { title: "Train 4× a week for a month", cadence: "4x a week", res: watch("7GkMHPe_OXw", "20 Min Full Body Workout for Beginners (No Equipment)",
             "Four 20–40 minute full-body sessions a week hit each muscle group 2–3 times, the beginner sweet spot. Same days each week makes it automatic.") },
         ],
       },
@@ -149,7 +154,7 @@ export const SHOWCASE_MAPS: ShowcaseMap[] = [
         res: watch("pm7Fhq7p6zU", "100 Most Common Spanish Words",
           "A few hundred high-frequency words cover most everyday speech. Learn the first 500–1,000 with spaced repetition and you'll follow the gist of most conversations."),
         subs: [
-          { title: "15 min of flashcards daily", res: read(ANKI, "Anki for Language Learning: The Complete Guide", "Anki Language Learning",
+          { title: "15 min of flashcards daily", cadence: "daily", res: read(ANKI, "Anki for Language Learning: The Complete Guide", "Anki Language Learning",
             "Use a spaced-repetition app like Anki for 10–15 minutes a day. Learn words inside short example sentences (i+1), not in isolation, so they stick in context.") },
         ],
       },

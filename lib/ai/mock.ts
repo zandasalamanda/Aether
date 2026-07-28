@@ -17,6 +17,7 @@ import type {
 } from "./types";
 import type { Difficulty, GoalNode, InboxCategory } from "@/types";
 import { parseDeadline } from "@/lib/kairo/deadline";
+import { adherence, isRecurring } from "@/lib/kairo/practice";
 
 // ---------- helpers ----------
 
@@ -161,6 +162,69 @@ function pickTemplate(prompt: string): Template {
   return TEMPLATES.find((t) => t.match.test(prompt)) ?? DEFAULT_TEMPLATE;
 }
 
+// ---------- practice detection ----------
+
+// Practice-shaped goals (kept, not finished) get a recurring node alongside the
+// milestones: a repeatable session with a weekly cadence, logged day by day.
+interface PracticeSpec {
+  match: RegExp;
+  title: string;
+  est: number;
+  perWeek: number;
+  reason: string;
+}
+
+const PRACTICES: PracticeSpec[] = [
+  {
+    match: /\b(language|spanish|french|german|italian|japanese|mandarin|chinese|korean|portuguese|vocab|duolingo)\b/i,
+    title: "Practice 20 minutes",
+    est: 20,
+    perWeek: 7,
+    reason: "A short daily session beats a long weekly one for retention",
+  },
+  {
+    match: /\b(gym|workout|lift|lifting|strength|fitness|exercise|train|training)\b/i,
+    title: "Training session",
+    est: 45,
+    perWeek: 4,
+    reason: "Four sessions a week builds strength without burning out",
+  },
+  {
+    // bare "run" only when not "run a business / run my startup" shaped
+    match: /\b(running|jog|jogging|5k|10k|marathon)\b|\brun\b(?!\s+(a|an|my|the|our)\b)/i,
+    title: "Go for a run",
+    est: 30,
+    perWeek: 3,
+    reason: "Three runs a week builds the base with room to recover",
+  },
+  {
+    match: /\b(guitar|piano|violin|drums|bass|instrument|sing|singing)\b/i,
+    title: "Practice session",
+    est: 25,
+    perWeek: 5,
+    reason: "Frequent short practice is how the hands learn",
+  },
+  {
+    match: /\b(meditat\w*|mindful\w*|journal\w*|breathwork)\b/i,
+    title: "Sit for 10 minutes",
+    est: 10,
+    perWeek: 7,
+    reason: "The practice works through repetition, not duration",
+  },
+  {
+    match: /\b(read|reading|books?)\b/i,
+    title: "Read 20 minutes",
+    est: 20,
+    perWeek: 6,
+    reason: "Twenty minutes most days finishes more books than any sprint",
+  },
+];
+
+/** At most two practices per goal, mirroring the real prompt's contract. */
+function practicesFor(prompt: string): PracticeSpec[] {
+  return PRACTICES.filter((p) => p.match.test(prompt)).slice(0, 2);
+}
+
 function isoDaysFromNow(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() + days);
@@ -196,6 +260,25 @@ export function mockGoalMap(input: GoalMapInput): GoalMapResult {
     parentIndex: n.parentIndex,
     resource: n.res ?? null,
   }));
+
+  // Practice-shaped goals also get recurring practice nodes: kept, not
+  // finished, logged per day against a weekly cadence. They hang off the first
+  // milestone so the habit starts alongside the setup work, never at index 0
+  // (the first next action stays a step you can finish today).
+  practicesFor(input.prompt).forEach((p) => {
+    nodes.push({
+      title: p.title,
+      description: p.reason + ".",
+      status: "not_started",
+      estimatedMinutes: p.est,
+      priority: 2,
+      aiReason: p.reason,
+      parentIndex: 0,
+      resource: null,
+      kind: "recurring",
+      targetPerWeek: p.perWeek,
+    });
+  });
   // Honor a deadline written in plain English ("by September", "in 6 weeks");
   // otherwise fall back to the template's suggested horizon.
   const deadline = parseDeadline(input.prompt);
@@ -243,13 +326,14 @@ function breakBlock(minutes: number, long: boolean): PlannedBlock {
   };
 }
 
-/** Workable nodes, best-first: in_motion, then at_risk, then not_started. */
+/** Workable once-steps, best-first: in_motion, then at_risk, then not_started.
+ *  Recurring practices are excluded here; they get their own daily block. */
 function candidateNodes(input: DailyPlanInput): { node: GoalNode; goalId: string; goalTitle: string }[] {
   const rank: Record<string, number> = { in_motion: 0, at_risk: 1, not_started: 2 };
   const out: { node: GoalNode; goalId: string; goalTitle: string }[] = [];
   for (const g of input.goals) {
     for (const n of g.nodes) {
-      if (n.status === "done" || n.status === "blocked") continue;
+      if (n.status === "done" || n.status === "blocked" || isRecurring(n)) continue;
       out.push({ node: n, goalId: g.id, goalTitle: g.title });
     }
   }
@@ -266,6 +350,19 @@ const MIN_FOCUS = 15;
 const round5 = (n: number) => Math.round(n / 5) * 5;
 // Blocks shrink as the day accumulates. Hour one is not hour five.
 const taper = (focusSoFar: number) => Math.max(0.65, 1 - focusSoFar / 600);
+
+/** Recurring practices with no session logged today: they still owe the day one. */
+function unloggedPractices(input: DailyPlanInput, nowMs: number): { node: GoalNode; goalId: string; goalTitle: string }[] {
+  const out: { node: GoalNode; goalId: string; goalTitle: string }[] = [];
+  for (const g of input.goals) {
+    for (const n of g.nodes) {
+      if (!isRecurring(n) || n.status === "blocked" || n.status === "done") continue;
+      if (adherence(n, nowMs).loggedToday) continue;
+      out.push({ node: n, goalId: g.id, goalTitle: g.title });
+    }
+  }
+  return out;
+}
 
 export function mockDailyPlan(input: DailyPlanInput): DailyPlanResult {
   const energy = input.energy;
@@ -288,6 +385,36 @@ export function mockDailyPlan(input: DailyPlanInput): DailyPlanResult {
   let ptr = 0;
   let focusCount = 0;
   const hasWork = () => queue.some((q) => q.remaining >= 10);
+
+  // Practices first: a kept habit is one fixed session, not something to split
+  // across the day, so it books its time before the once-steps share the rest.
+  // Already-logged practices are skipped entirely; the day's session is done.
+  const nowMs = Date.now();
+  for (const p of unloggedPractices(input, nowMs)) {
+    const room = budget - used;
+    if (room < 10) break;
+    let chunk = Math.min(Math.max(10, round5(p.node.estimatedMinutes || 20)), room);
+    // low energy keeps every block gentle, practices included
+    if (energy === "low") chunk = Math.min(chunk, baseChunk);
+    const a = adherence(p.node, nowMs);
+    blocks.push({
+      kind: "focus",
+      title: p.node.title,
+      description: p.node.description || p.node.aiReason || "",
+      goalId: p.goalId,
+      nodeId: p.node.id,
+      durationMinutes: chunk,
+      startTime: null,
+      difficulty: difficultyFor(chunk, energy, totalFocus),
+      reason: `${p.goalTitle} · ${a.weekDone} of ${a.weekTarget} this week`,
+    });
+    used += chunk; totalFocus += chunk; sinceLong += chunk; focusCount++;
+  }
+  // a breather between the practices and the once-steps, if both exist
+  if (focusCount > 0 && hasWork() && budget - used >= shortBreak + MIN_FOCUS) {
+    blocks.push(breakBlock(shortBreak, false));
+    used += shortBreak;
+  }
 
   let guard = 0;
   while (used < budget && hasWork() && guard++ < 80) {

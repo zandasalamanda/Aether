@@ -95,6 +95,14 @@ export interface Goal {
   archivedAt: string | null;
 }
 
+/**
+ * Some steps are projects (do once, then it is done) and some are practices
+ * (do again and again: the gym, twenty minutes of Spanish). Flattening a
+ * practice into a done/not-done step lied twice: it read as 0% forever and
+ * then, once ticked, told the pace math a six-month habit was finished.
+ */
+export type NodeKind = "once" | "recurring";
+
 export interface GoalNode {
   id: string;
   goalId: string;
@@ -104,6 +112,12 @@ export interface GoalNode {
   status: NodeStatus;
   /** 0..100 */
   progress: number;
+  /** Absent means "once", so every existing node keeps meaning what it meant. */
+  kind?: NodeKind;
+  /** recurring only: sessions the practice wants per week (7 = daily). */
+  targetPerWeek?: number | null;
+  /** recurring only: local days ("YYYY-MM-DD") with a logged session. */
+  checkins?: string[];
   /** 1 (highest) .. 5 */
   priority: number;
   estimatedMinutes: number;

@@ -6,7 +6,9 @@ import type {
   DailyPlanWithBlocks,
   DailyPlanBlock,
 } from "@/types";
+import { adherence, progressOf, dayKey } from "@/lib/kairo/practice";
 
+const DAY_MS = 86_400_000;
 const now = () => new Date().toISOString();
 function daysFromNow(days: number): string {
   const d = new Date();
@@ -81,27 +83,64 @@ export function buildSeed(): SeedData {
     ],
   };
 
+  // A recurring practice, three weeks old. Sessions logged on about two of
+  // every three expected days, ending with yesterday logged and today still
+  // open, so the demo shows a practice waiting to be logged.
+  const practiceCreatedAt = daysFromNow(-21);
+  const practiceCheckins = [20, 18, 17, 14, 13, 11, 9, 6, 4, 1]
+    .map((daysAgo) => dayKey(Date.now() - daysAgo * DAY_MS))
+    .sort();
+  const practiceAdherence = adherence(
+    {
+      status: "in_motion",
+      kind: "recurring",
+      targetPerWeek: 5,
+      checkins: practiceCheckins,
+      createdAt: practiceCreatedAt,
+    },
+    Date.now()
+  );
+
   const news: GoalWithNodes = {
     id: "g_news",
     userId: DEMO_USER_ID,
     title: "Grow the newsletter to 1k",
     description: "Build a steady publishing rhythm and reach the first thousand readers.",
     status: "active",
-    progress: 22,
+    // Recomputed below once the nodes exist: one milestone done plus a
+    // three-week-old practice kept at ~2/3 works out to roughly the low 20s.
+    progress: 0,
     targetDate: daysFromNow(120),
     icon: "growth",
     notes: "",
-    createdAt: now(),
+    // The goal must predate its own practice or the practice's three weeks of
+    // history would count for nothing (contribution = elapsed share x adherence).
+    createdAt: practiceCreatedAt,
     updatedAt: now(),
     archivedAt: null,
     nodes: [
       node({ id: "m1", goalId: "g_news", title: "Define the niche", status: "done", progress: 100, priority: 1, estimatedMinutes: 45, aiReason: "A clear niche makes everything easier" }),
       node({ id: "m2", goalId: "g_news", title: "Set up publishing", status: "in_motion", progress: 40, priority: 2, estimatedMinutes: 60, aiReason: "Remove friction before writing" }),
       node({ id: "m3", goalId: "g_news", title: "Write 5 cornerstone essays", status: "not_started", priority: 2, estimatedMinutes: 90, aiReason: "Depth earns subscribers" }),
-      node({ id: "m4", goalId: "g_news", title: "Share consistently", status: "not_started", priority: 3, estimatedMinutes: 30, aiReason: "Distribution is half the work" }),
+      node({
+        id: "m4",
+        goalId: "g_news",
+        title: "Share consistently",
+        description: "Post one piece of the work most weekdays.",
+        status: "in_motion",
+        kind: "recurring",
+        targetPerWeek: 5,
+        checkins: practiceCheckins,
+        progress: Math.round(practiceAdherence.ratio * 100),
+        priority: 3,
+        estimatedMinutes: 30,
+        aiReason: "Distribution is half the work",
+        createdAt: practiceCreatedAt,
+      }),
       node({ id: "m5", goalId: "g_news", title: "Reach 1,000 readers", status: "not_started", priority: 5, estimatedMinutes: 60, aiReason: "The milestone that proves it works" }),
     ],
   };
+  news.progress = progressOf(news.nodes, news, Date.now());
 
   const inbox: InboxItem[] = [
     inboxItem("i1", "Email the designer about the logo", "must_do"),

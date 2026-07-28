@@ -11,6 +11,7 @@ import type {
   GoalStatus,
   NodeStatus,
   InboxCategory,
+  NodeKind,
   ResourceKind,
   ResolvedResource,
   NodeEvidence,
@@ -56,6 +57,9 @@ export interface NodeRow {
   description: string;
   status: NodeStatus;
   progress: number;
+  kind?: NodeKind | null;
+  target_per_week?: number | null;
+  checkins?: string[] | null;
   priority: number;
   estimated_minutes: number;
   due_date: string | null;
@@ -129,6 +133,9 @@ export function rowToNode(r: NodeRow): GoalNode {
     description: r.description,
     status: r.status,
     progress: r.progress,
+    kind: r.kind ?? "once",
+    targetPerWeek: r.target_per_week ?? null,
+    checkins: r.checkins ?? [],
     priority: r.priority,
     estimatedMinutes: r.estimated_minutes,
     dueDate: r.due_date,

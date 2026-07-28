@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Play, BookOpen, X, ArrowUpRight } from "lucide-react";
+import { Play, BookOpen, Repeat, X, ArrowUpRight } from "lucide-react";
 import type { ShowcaseMap, ShowcaseResource } from "@/lib/kairo/showcase-maps";
 import { PlanetOrb } from "./PlanetOrb";
 import { cn } from "@/lib/utils";
@@ -16,9 +16,12 @@ import { ExternalLink } from "@/components/ui/ExternalLink";
 // Orientation: the spine flows UP on narrow screens (a tall trunk) and to the RIGHT
 // on wide screens (a roadmap), matching the app's own map on each form factor.
 
-const SPINE_RAD = 168, LEAF_RAD = 128, SPINE_ARC = 0.04;
+// Spacing tuned for a "path with landmarks" read: milestones sit a touch further
+// apart than the old network-diagram layout, and the connector bows more gently
+// (CURVE) so lines read as a path underfoot rather than wiring.
+const SPINE_RAD = 178, LEAF_RAD = 132, SPINE_ARC = 0.04, CURVE = 0.055;
 
-type LNode = { id: string; parentId: string | null; title: string; sub: boolean; res?: ShowcaseResource };
+type LNode = { id: string; parentId: string | null; title: string; sub: boolean; res?: ShowcaseResource; cadence?: string };
 interface Placed { node: LNode; x: number; y: number; px: number; py: number; spine: boolean }
 
 function layout(nodes: LNode[], baseDir: number): Placed[] {
@@ -65,7 +68,8 @@ function relax(placed: Placed[]): Placed[] {
   const pts = placed.map((p) => ({ ...p }));
   const idx = new Map<string, number>();
   pts.forEach((p, i) => idx.set(p.node.id, i));
-  const MIN_SPINE = 122, MIN_LEAF = 92, CORE_CLEAR = 128;
+  // Scaled up with the wider labels (15px milestones / 13px sub-steps) so nothing collides.
+  const MIN_SPINE = 134, MIN_LEAF = 103, CORE_CLEAR = 132;
   for (let iter = 0; iter < 90; iter++) {
     let moved = false;
     for (let i = 0; i < pts.length; i++) for (let j = i + 1; j < pts.length; j++) {
@@ -113,8 +117,8 @@ export function ShowcaseTree({ map, interactive = false, maxScale, onOpenChange,
   const { placed, maxDist } = React.useMemo(() => {
     const nodes: LNode[] = [];
     map.milestones.slice(0, 5).forEach((m, i) => {
-      nodes.push({ id: `m${i}`, parentId: i > 0 ? `m${i - 1}` : null, title: m.title, sub: false, res: m.res });
-      m.subs.slice(0, 2).forEach((sub, j) => nodes.push({ id: `m${i}s${j}`, parentId: `m${i}`, title: sub.title, sub: true, res: sub.res }));
+      nodes.push({ id: `m${i}`, parentId: i > 0 ? `m${i - 1}` : null, title: m.title, sub: false, res: m.res, cadence: m.cadence });
+      m.subs.slice(0, 2).forEach((sub, j) => nodes.push({ id: `m${i}s${j}`, parentId: `m${i}`, title: sub.title, sub: true, res: sub.res, cadence: sub.cadence }));
     });
     const p = layout(nodes, baseDir);
     const md = Math.max(1, ...p.map((n) => Math.hypot(n.x, n.y)));
@@ -216,22 +220,22 @@ export function ShowcaseTree({ map, interactive = false, maxScale, onOpenChange,
           <svg width={1} height={1} className="absolute left-0 top-0" style={{ overflow: "visible" }} aria-hidden>
             {placed.map((p) => {
               const isNext = p.node.id === "m0";
-              const CORE_R = p.px === 0 && p.py === 0 ? 44 : 22;
-              const NODE_R = p.spine ? 23 : 17;
+              const CORE_R = p.px === 0 && p.py === 0 ? 44 : 24;
+              const NODE_R = p.spine ? 24 : 18;
               const dx = p.x - p.px, dy = p.y - p.py, d = Math.hypot(dx, dy) || 1;
               const sx = p.px + (dx / d) * CORE_R, sy = p.py + (dy / d) * CORE_R;
               const ex = p.x - (dx / d) * NODE_R, ey = p.y - (dy / d) * NODE_R;
-              const mx = (sx + ex) / 2 + dy * 0.08, my = (sy + ey) / 2 - dx * 0.08;
+              const mx = (sx + ex) / 2 + dy * CURVE, my = (sy + ey) / 2 - dx * CURVE;
               const len = Math.hypot(ex - sx, ey - sy) * 1.15 + 4;
               const delay = (Math.hypot(p.x, p.y) / maxDist) * 0.55;
               return (
                 <path
                   key={p.node.id}
                   d={`M ${sx.toFixed(1)} ${sy.toFixed(1)} Q ${mx.toFixed(1)} ${my.toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}`}
-                  fill="none" stroke={hex} strokeWidth={isNext ? 1.9 : p.spine ? 1.6 : 1.0} strokeLinecap="round"
-                  strokeDasharray={isNext ? "3 7" : len}
+                  fill="none" stroke={hex} strokeWidth={isNext ? 2.8 : p.spine ? 2.5 : 2.2} strokeLinecap="round"
+                  strokeDasharray={isNext ? "3 8" : len}
                   className={isNext ? "animate-flow" : undefined}
-                  style={isNext ? { opacity: 0.85 } : { strokeDashoffset: on ? 0 : len, transition: `stroke-dashoffset 0.5s ease ${delay.toFixed(2)}s`, opacity: 0.5 }}
+                  style={isNext ? { opacity: 0.7 } : { strokeDashoffset: on ? 0 : len, transition: `stroke-dashoffset 0.5s ease ${delay.toFixed(2)}s`, opacity: 0.28 }}
                 />
               );
             })}
@@ -240,13 +244,25 @@ export function ShowcaseTree({ map, interactive = false, maxScale, onOpenChange,
           {/* node orbs: the app's NodeOrb styling. Tappable when interactive. */}
           {placed.map((p) => {
             const isNext = p.node.id === "m0";
-            const size = p.spine ? 50 : 38;
+            const size = p.spine ? 52 : 40;
             const isSel = selectedId === p.node.id;
             const isHinted = showHint && hintNode?.node.id === p.node.id;
             const hot = isNext || isSel || isHinted;
-            const glow = hot ? `0 0 26px ${hex}80` : `0 0 13px ${hex}3a`;
-            const bg = `radial-gradient(circle at 40% 34%, ${hex}33, rgba(12,14,18,0.94) 72%)`;
             const delay = (Math.hypot(p.x, p.y) / maxDist) * 0.55 + 0.16;
+            // Landmark disc: a soft filled surface with a quiet inner glow, not a
+            // ring with a dot. The icon says what kind of thing the step is.
+            const glow = hot ? `0 0 26px ${hex}70` : `0 0 12px ${hex}30`;
+            const inner = `inset 0 0 ${p.spine ? 14 : 10}px ${hex}24, inset 0 1px 0 ${hex}1c`;
+            const bg = `radial-gradient(circle at 38% 30%, ${hex}38, rgba(19,21,27,0.97) 74%)`;
+            const iconSize = p.spine ? 17 : 13;
+            const icon = p.node.cadence ? (
+              <Repeat size={iconSize} strokeWidth={2.2} />
+            ) : p.node.res?.kind === "watch" ? (
+              <Play size={iconSize - 1} fill="currentColor" strokeWidth={0} />
+            ) : p.node.res?.kind === "read" ? (
+              <BookOpen size={iconSize} strokeWidth={2.1} />
+            ) : null;
+            const textShadow = "0 1px 10px rgba(8,9,11,0.96), 0 0 4px rgba(8,9,11,0.9)";
             return (
               <div
                 key={p.node.id}
@@ -261,14 +277,23 @@ export function ShowcaseTree({ map, interactive = false, maxScale, onOpenChange,
                   <span
                     data-vis
                     className={cn("grid place-items-center rounded-full border transition-transform", interactive && "group-hover:scale-110")}
-                    style={{ width: size, height: size, borderColor: hot ? hex : `${hex}88`, background: bg, boxShadow: glow, opacity: hot ? 1 : 0.94 }}
+                    style={{ width: size, height: size, borderColor: hot ? hex : `${hex}55`, background: bg, boxShadow: `${glow}, ${inner}`, opacity: hot ? 1 : 0.96 }}
                   >
-                    <span className="rounded-full" style={{ width: p.spine ? 9 : 7, height: p.spine ? 9 : 7, background: hex, boxShadow: `0 0 8px ${hex}` }} />
+                    {icon ? (
+                      <span className="grid place-items-center" style={{ color: hex, filter: `drop-shadow(0 0 4px ${hex}55)` }}>{icon}</span>
+                    ) : (
+                      <span className="rounded-full" style={{ width: p.spine ? 9 : 7, height: p.spine ? 9 : 7, background: hex, boxShadow: `0 0 8px ${hex}` }} />
+                    )}
                   </span>
-                  <span className="pointer-events-none absolute left-1/2 top-full mt-1.5 w-[120px] -translate-x-1/2 text-center leading-tight">
-                    <span data-vis className={cn("block", p.spine ? "text-[13px] font-semibold text-ink" : "text-[11px] text-muted")} style={{ textShadow: "0 1px 10px rgba(8,9,11,0.96), 0 0 4px rgba(8,9,11,0.9)" }}>
+                  <span className={cn("pointer-events-none absolute left-1/2 top-full mt-2 -translate-x-1/2 text-center leading-tight", p.spine ? "w-[150px]" : "w-[136px]")}>
+                    <span data-vis className={cn("block", p.spine ? "text-[15px] font-semibold text-ink" : "text-[13px] text-muted")} style={{ textShadow }}>
                       {p.node.title}
                     </span>
+                    {p.node.cadence && (
+                      <span data-vis className="mt-0.5 block text-[10px] font-medium tracking-wide text-faint" style={{ textShadow }}>
+                        {p.node.cadence}
+                      </span>
+                    )}
                   </span>
                 </div>
               </div>

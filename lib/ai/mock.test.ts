@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { mockGoalMap, mockDailyPlan, mockSortInbox, mockReview } from "./mock";
 import { buildSeed } from "@/lib/mock/seed";
+import { dayKey } from "@/lib/kairo/practice";
 
 describe("mockGoalMap", () => {
   it("produces a structured, ordered map from a prompt", () => {
@@ -34,6 +35,24 @@ describe("mockGoalMap", () => {
     r.nodes.forEach((n, i) => {
       if (n.parentIndex != null) expect(n.parentIndex).toBeLessThan(i);
     });
+  });
+
+  it("adds a recurring practice node for a practice-shaped goal", () => {
+    const r = mockGoalMap({ prompt: "Learn Spanish this year" });
+    const practice = r.nodes.filter((n) => n.kind === "recurring");
+    expect(practice.length).toBeGreaterThanOrEqual(1);
+    practice.forEach((p) => {
+      expect(p.targetPerWeek).toBeGreaterThanOrEqual(1);
+      expect(p.targetPerWeek).toBeLessThanOrEqual(7);
+      expect(p.parentIndex).not.toBeNull();
+    });
+    // the first next action stays a finishable once-step
+    expect(r.nodes[0].kind).not.toBe("recurring");
+  });
+
+  it("emits no recurring nodes for a pure project", () => {
+    const r = mockGoalMap({ prompt: "Launch my app by September" });
+    expect(r.nodes.every((n) => n.kind !== "recurring")).toBe(true);
   });
 });
 
@@ -79,6 +98,34 @@ describe("mockDailyPlan", () => {
   it("surfaces a recovery note when a node is at risk", () => {
     const r = mockDailyPlan({ availableMinutes: 180, energy: "high", context: "", goals });
     expect(r.recoveryNote).toBeTruthy();
+  });
+
+  it("gives an un-logged practice one block of its own, session-sized", () => {
+    // the seed's "Share consistently" practice (m4) has yesterday logged, today open
+    const r = mockDailyPlan({ availableMinutes: 240, energy: "normal", context: "", goals });
+    const practiceBlocks = r.blocks.filter((b) => b.nodeId === "m4");
+    expect(practiceBlocks.length).toBe(1);
+    expect(practiceBlocks[0].durationMinutes).toBe(30);
+    // adherence copy, not gamification: "n of m this week"
+    expect(practiceBlocks[0].reason).toMatch(/\d of \d this week/);
+  });
+
+  it("skips a practice whose session is already logged today", () => {
+    const logged = buildSeed().goals.map((g) => ({
+      ...g,
+      nodes: g.nodes.map((n) =>
+        n.kind === "recurring"
+          ? { ...n, checkins: [...(n.checkins ?? []), dayKey(Date.now())].sort() }
+          : n
+      ),
+    }));
+    const r = mockDailyPlan({ availableMinutes: 240, energy: "normal", context: "", goals: logged });
+    expect(r.blocks.some((b) => b.nodeId === "m4")).toBe(false);
+  });
+
+  it("never splits a practice across sessions the way once-steps split", () => {
+    const r = mockDailyPlan({ availableMinutes: 480, energy: "high", context: "", goals });
+    expect(r.blocks.filter((b) => b.nodeId === "m4").length).toBe(1);
   });
 });
 

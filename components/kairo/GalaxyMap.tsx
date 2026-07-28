@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowUp, Check, Timer, X, ChevronDown, Locate, GitBranch, Plus, Minus, Crosshair, Palette, Trash2, Sparkles, MessageCircle, Loader2, PlayCircle, Dumbbell, BookOpen, ExternalLink, NotebookPen, Wand2, ArrowDownToLine, HelpCircle, LayoutGrid, LayoutTemplate, Focus, Boxes, Share2, Save, Search, Scissors } from "lucide-react";
+import { ArrowUp, Check, Timer, X, ChevronDown, Locate, GitBranch, Plus, Minus, Crosshair, Palette, Trash2, Sparkles, MessageCircle, Loader2, PlayCircle, Dumbbell, BookOpen, ExternalLink, NotebookPen, Wand2, ArrowDownToLine, HelpCircle, LayoutGrid, LayoutTemplate, Focus, Boxes, Share2, Save, Search, Scissors, Repeat } from "lucide-react";
 import type { GoalWithNodes, GoalNode, NodeStatus, NodeResource, ResourceKind, ResolvedResource } from "@/types";
 import { parseDeadline } from "@/lib/kairo/deadline";
 import { generateGoalMap } from "@/lib/ai/generate-goal-map";
@@ -41,6 +41,7 @@ import {
   shareGoal,
   deleteGoal,
   deleteNode,
+  togglePracticeCheckin,
 } from "@/lib/data/actions";
 import { MicButton } from "@/components/ui/MicButton";
 import { Chip } from "@/components/ui/Chip";
@@ -49,6 +50,7 @@ import { MappingNarration } from "./MappingNarration";
 import { Markdown } from "./Markdown";
 import { cn, formatDuration, newId, relativeDays, truncate } from "@/lib/utils";
 import { isNativeUserAgent } from "@/lib/native-ua";
+import { adherence, dayKey, goalProgress, isRecurring, toggleCheckin } from "@/lib/kairo/practice";
 
 const GOLDEN = 2.399963229;
 // NaN-safe. The plain Math.max(lo, Math.min(hi, v)) form propagates NaN straight
@@ -102,7 +104,12 @@ function defaultPos(i: number): { x: number; y: number } {
 
 function nextId(nodes: GoalNode[]): string | null {
   const rank: Record<string, number> = { in_motion: 0, at_risk: 1, not_started: 2 };
-  const open = (n: GoalNode) => n.status !== "done" && n.status !== "blocked";
+  const open = (n: GoalNode) =>
+    n.status !== "done" &&
+    n.status !== "blocked" &&
+    // A practice you have already kept today is done FOR TODAY; the beacon
+    // should point at something still open.
+    !(isRecurring(n) && (n.checkins ?? []).includes(dayKey(Date.now())));
   const ids = new Set(nodes.map((n) => n.id));
   const kids = new Map<string | null, GoalNode[]>();
   for (const n of nodes) {
@@ -469,13 +476,14 @@ export function GalaxyMap({
   React.useEffect(() => {
     const el = viewportRef.current;
     if (!el || typeof window === "undefined") return;
+    // Read the insets from the --sa-* custom properties rather than building an
+    // env() string here. Interpolating into `env(safe-area-inset-${side})` put a
+    // template placeholder inside something Tailwind's scanner treats as a class
+    // candidate, and it emitted `env(safe-area-@\2 top)` into the stylesheet,
+    // which is invalid CSS and failed the whole build with a parse error.
     const probe = (side: "top" | "bottom") => {
-      const d = document.createElement("div");
-      d.style.cssText = `position:fixed;visibility:hidden;height:env(safe-area-inset-${side},0px)`;
-      document.body.appendChild(d);
-      const px = parseFloat(getComputedStyle(d).height) || 0;
-      d.remove();
-      return px;
+      const raw = getComputedStyle(document.documentElement).getPropertyValue(side === "top" ? "--sa-top" : "--sa-bottom");
+      return parseFloat(raw) || 0;
     };
     const read = () => {
       const r = el.getBoundingClientRect();
@@ -896,9 +904,7 @@ export function GalaxyMap({
       prev.map((g) => {
         if (g.id !== goalId) return g;
         const nodes = g.nodes.map((n) => (n.id === id ? { ...n, status, ...(status === "done" ? { progress: 100 } : {}) } : n));
-        const done = nodes.filter((n) => n.status === "done").length;
-        const progress = nodes.length ? Math.round((done / nodes.length) * 100) : g.progress;
-        return { ...g, nodes, progress };
+        return { ...g, nodes, progress: goalProgress({ ...g, nodes }, Date.now()) };
       })
     );
     if (status === "done") {
@@ -914,6 +920,26 @@ export function GalaxyMap({
       }
     }
     if (remote) void setNodeStatus({ goalId, nodeId: id, status });
+  };
+
+
+  // Log (or undo, on a second tap the same day) a session on a practice.
+  // Local-first like setStatus; the server action persists when signed in.
+  const logPractice = (goalId: string, id: string) => {
+    const before = goals.find((x) => x.id === goalId)?.nodes.find((n) => n.id === id);
+    const logging = !(before?.checkins ?? []).includes(dayKey(Date.now()));
+    setGoals((prev) =>
+      prev.map((g) => {
+        if (g.id !== goalId) return g;
+        const nodes = g.nodes.map((n) => (n.id === id ? toggleCheckin(n, Date.now()) : n));
+        return { ...g, nodes, progress: goalProgress({ ...g, nodes }, Date.now()) };
+      })
+    );
+    if (logging) {
+      fireHaptic([10, 40, 14]);
+      track("practice_logged", { goalId, surface: "map" });
+    }
+    if (remote) void togglePracticeCheckin({ goalId, nodeId: id });
   };
 
   const addBranch = (goalId: string, parentId: string | null, title: string, minutes = 30) => {
@@ -966,9 +992,7 @@ export function GalaxyMap({
           for (const n of g.nodes) if (n.parentId && remove.has(n.parentId) && !remove.has(n.id)) { remove.add(n.id); changed = true; }
         }
         const nodes = g.nodes.filter((n) => !remove.has(n.id));
-        const done = nodes.filter((n) => n.status === "done").length;
-        const progress = nodes.length ? Math.round((done / nodes.length) * 100) : 0;
-        return { ...g, nodes, progress };
+        return { ...g, nodes, progress: nodes.length ? goalProgress({ ...g, nodes }, Date.now()) : 0 };
       })
     );
     if (selectedNodeId === nodeId) setSelectedNodeId(null);
@@ -976,8 +1000,22 @@ export function GalaxyMap({
     showToast("Step removed");
   };
 
+  // Render-safe clock for the practice affordances. The React compiler (rightly)
+  // forbids Date.now() during render; this state is refreshed from effects at the
+  // moments the value is actually consulted: opening a sheet or menu, or logging.
+  const [nowMs, setNowMs] = React.useState(0);
+
   // Right-click context menu on a node or a goal core (node = null → the goal core).
   const [ctx, setCtx] = React.useState<{ x: number; y: number; goalId: string; node: GoalNode | null } | null>(null);
+  React.useEffect(() => {
+    // Async on purpose: a synchronous set-state inside an effect trips the
+    // compiler's cascading-render rule. A zero-delay tick lands before anyone
+    // can open a sheet, and the minute interval carries us across midnight.
+    const tick = () => setNowMs(Date.now());
+    const t0 = window.setTimeout(tick, 0);
+    const t = window.setInterval(tick, 60_000);
+    return () => { window.clearTimeout(t0); window.clearInterval(t); };
+  }, []);
   React.useEffect(() => {
     if (!ctx) return;
     const close = () => setCtx(null);
@@ -1292,7 +1330,7 @@ export function GalaxyMap({
         </div>
 
         {mapping && (
-          <div className="pointer-events-none absolute inset-x-0 bottom-[calc(120px+env(safe-area-inset-bottom))] z-10 text-center md:bottom-24">
+          <div className="pointer-events-none absolute inset-x-0 bottom-[calc(120px+var(--sa-bottom))] z-10 text-center md:bottom-24">
             <p className="font-display text-[15px] text-ink">Mapping your goal…</p>
             <MappingNarration />
           </div>
@@ -1310,7 +1348,7 @@ export function GalaxyMap({
       </div>
 
       {/* top chrome: goal switcher (fly-to) + new goal */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-2 px-3 pb-3 pt-[max(12px,env(safe-area-inset-top))] md:px-5 md:pt-5">
+      <div className="pointer-events-none absolute inset-x-0 top-0 flex items-start justify-between gap-2 px-3 pb-3 pt-[max(12px,var(--sa-top))] md:px-5 md:pt-5">
         <div className="relative">
           <button
             onClick={() => setMenu((m) => !m)}
@@ -1346,7 +1384,7 @@ export function GalaxyMap({
       {/* left tools rail — create, browse, find, focus, tidy. Drag "New goal" onto
           the canvas to drop a goal exactly where you let go. */}
       {!empty && (
-        <div className="pointer-events-none absolute left-4 top-[calc(env(safe-area-inset-top)+56px)] z-30 flex flex-col items-center gap-1.5 md:top-20">
+        <div className="pointer-events-none absolute left-4 top-[calc(var(--sa-top)+56px)] z-30 flex flex-col items-center gap-1.5 md:top-20">
           <button
             onPointerDown={startGoalDrag}
             onClick={() => setComposing(true)}
@@ -1389,7 +1427,7 @@ export function GalaxyMap({
 
       {/* right rail — view controls: zoom, jump-to-next, recenter. */}
       {!empty && (
-        <div className="pointer-events-none absolute right-4 top-[calc(env(safe-area-inset-top)+56px)] z-10 flex flex-col items-center gap-1.5 md:top-20">
+        <div className="pointer-events-none absolute right-4 top-[calc(var(--sa-top)+56px)] z-10 flex flex-col items-center gap-1.5 md:top-20">
           <div className="chrome pointer-events-auto flex flex-col overflow-hidden rounded-full">
             <button onClick={() => zoomBy(1.25)} className="grid h-11 w-11 place-items-center text-muted transition-colors hover:text-ink" aria-label="Zoom in" title="Zoom in">
               <Plus size={16} />
@@ -1413,7 +1451,7 @@ export function GalaxyMap({
       )}
 
       {/* bottom: contextual bar */}
-      <div className="absolute inset-x-0 bottom-0 z-10 px-3 pb-[calc(88px+env(safe-area-inset-bottom))] md:pb-6">
+      <div className="absolute inset-x-0 bottom-0 z-10 px-3 pb-[calc(88px+var(--sa-bottom))] md:pb-6">
         <div className="mx-auto max-w-md">
           {toast && (
             <div className="chrome mb-2 animate-fade-in rounded-xl px-4 py-2 text-center text-[13px] text-accent">
@@ -1485,6 +1523,8 @@ export function GalaxyMap({
               onToast={showToast}
               onClose={() => setSelectedNodeId(null)}
               onDone={() => { setStatus(expanded.id, selectedNode.id, "done"); track("step_completed", { goalId: expanded.id, surface: "map" }); }}
+              onLogPractice={() => logPractice(expanded.id, selectedNode.id)}
+              nowMs={nowMs}
               onFocus={() => openFocus(selectedNode)}
               onDelete={() => { removeNode(expanded.id, selectedNode.id); setSelectedNodeId(null); }}
               onBranch={() => setBranchFor(selectedNode.id)}
@@ -1577,7 +1617,9 @@ export function GalaxyMap({
           {(ctx.node
             ? [
                 { label: "Focus", onClick: () => openFocus(ctx.node!) },
-                { label: ctx.node.status === "done" ? "Mark not done" : "Mark done", onClick: () => setStatus(ctx.goalId, ctx.node!.id, ctx.node!.status === "done" ? "not_started" : "done") },
+                isRecurring(ctx.node)
+                  ? { label: nowMs > 0 && (ctx.node.checkins ?? []).includes(dayKey(nowMs)) ? "Un-log today" : "Log today", onClick: () => logPractice(ctx.goalId, ctx.node!.id) }
+                  : { label: ctx.node.status === "done" ? "Mark not done" : "Mark done", onClick: () => setStatus(ctx.goalId, ctx.node!.id, ctx.node!.status === "done" ? "not_started" : "done") },
                 { label: "Add a branch here", onClick: () => setBranchFor(ctx.node!.id) },
                 { label: "Delete step", danger: true, onClick: () => removeNode(ctx.goalId, ctx.node!.id) },
               ]
@@ -1754,7 +1796,7 @@ function GoalCluster({
                 d={`M ${sx.toFixed(1)} ${sy.toFixed(1)} Q ${mx.toFixed(1)} ${my.toFixed(1)} ${ex.toFixed(1)} ${ey.toFixed(1)}`}
                 fill="none"
                 stroke={hex}
-                strokeWidth={isNext ? 2 : lit ? (p.spine ? 2 : 1.5) : p.spine ? 1.5 : 1.0}
+                strokeWidth={isNext ? 2.5 : lit ? (p.spine ? 2.5 : 2) : p.spine ? 2 : 1.5}
                 strokeLinecap="round"
                 strokeDasharray={isNext ? "3 7" : undefined}
                 className={isNext ? "animate-flow" : undefined}
@@ -1950,19 +1992,30 @@ function NodeOrb({
         >
           {done ? (
             <Check size={spine ? 18 : 15} className="text-[#0d1a14]" strokeWidth={2.5} />
+          ) : isRecurring(node) ? (
+            <Repeat size={spine ? 14 : 12} strokeWidth={2.2} style={{ color: hex, filter: light ? "none" : `drop-shadow(0 0 5px ${hex})` }} />
+          ) : node.resource?.kind === "watch" ? (
+            <PlayCircle size={spine ? 14 : 12} strokeWidth={2} style={{ color: hex }} />
+          ) : node.resource?.kind === "read" ? (
+            <BookOpen size={spine ? 14 : 12} strokeWidth={2} style={{ color: hex }} />
           ) : (
             <span className="rounded-full" style={{ width: spine ? 9 : 7, height: spine ? 9 : 7, background: hex, boxShadow: light ? "none" : `0 0 8px ${hex}` }} />
           )}
         </span>
         {/* Label floats below the orb (absolute) so the ORB stays centred on the node
             position — otherwise the label pushes the orb off-centre and connectors miss. */}
-        <span className="pointer-events-none absolute left-1/2 top-full mt-1.5 max-w-[110px] -translate-x-1/2 text-center leading-tight">
+        <span className="pointer-events-none absolute left-1/2 top-full mt-1.5 max-w-[128px] -translate-x-1/2 text-center leading-tight">
           <span
-            className={cn("block truncate text-[11px]", selected ? "font-semibold text-ink" : "text-ink/85")}
+            className={cn("block text-[12.5px] leading-[1.25] line-clamp-2", selected ? "font-semibold text-ink" : "text-ink/85")}
             style={{ textShadow: "var(--map-label-shadow)" }}
           >
             {node.title}
           </span>
+          {isRecurring(node) && (
+            <span className="block text-[10px] text-faint" style={{ textShadow: "var(--map-label-shadow)" }}>
+              {(node.targetPerWeek ?? 7) >= 7 ? "daily" : `${node.targetPerWeek ?? 3}x a week`}
+            </span>
+          )}
         </span>
       </button>
     </div>
@@ -1979,7 +2032,7 @@ function TemplateGallery({ onPick, onClose }: { onPick: (t: GoalTemplate) => voi
     <div className="fixed inset-0 z-50 overflow-y-auto bg-canvas/95 backdrop-blur-xl">
       <button
         onClick={onClose}
-        className="fixed right-5 top-[calc(env(safe-area-inset-top)+16px)] z-10 grid h-10 w-10 place-items-center rounded-full text-faint transition-colors hover:text-ink"
+        className="fixed right-5 top-[calc(var(--sa-top)+16px)] z-10 grid h-10 w-10 place-items-center rounded-full text-faint transition-colors hover:text-ink"
         aria-label="Close templates"
       >
         <X size={18} />
@@ -2324,7 +2377,7 @@ export function NodeResourceBlock({ node, onResolve }: { node: GoalNode; onResol
 }
 
 function NodeSheet({
-  node, hex, goalTitle, goalNotes, breaking, isPro, onToast, onClose, onDone, onFocus, onDelete, onBranch, onBreakDown, onMakeSmaller, onResolveResource, onSaveArtifact,
+  node, hex, goalTitle, goalNotes, breaking, isPro, nowMs, onToast, onClose, onDone, onLogPractice, onFocus, onDelete, onBranch, onBreakDown, onMakeSmaller, onResolveResource, onSaveArtifact,
 }: {
   node: GoalNode;
   hex: string;
@@ -2334,7 +2387,9 @@ function NodeSheet({
   isPro: boolean;
   onToast: (m: string) => void;
   onClose: () => void;
+  nowMs: number;
   onDone: () => void;
+  onLogPractice: () => void;
   onFocus: () => void;
   onDelete: () => void;
   onBranch: () => void;
@@ -2371,6 +2426,15 @@ function NodeSheet({
       return true;
     }
     return false;
+  };
+
+  // A practice is kept, not completed: the primary action logs today's session
+  // (or quietly undoes a mis-tap) and the sheet stays put. No celebration for a
+  // daily log; the reward is the count holding steady.
+  const practice = nowMs > 0 && isRecurring(node) ? adherence(node, nowMs) : null;
+  const logToday = () => {
+    onLogPractice();
+    onToast(practice?.loggedToday ? "Un-logged today's session." : "Session logged.");
   };
 
   const markDone = () => {
@@ -2496,11 +2560,22 @@ function NodeSheet({
           reveal so the sheet reads as a calm command surface, not a 6-button toolbar. */}
       <div className="mt-3 flex flex-wrap items-center gap-2">
         <Chip tone="accent" icon={<Timer size={14} />} onClick={onFocus}>Focus</Chip>
-        <Chip tone="sage" icon={<Check size={14} />} onClick={markDone}>Done</Chip>
+        {practice ? (
+          <Chip tone={practice.loggedToday ? "sage" : "accent"} active={practice.loggedToday} icon={practice.loggedToday ? <Check size={14} /> : <Repeat size={14} />} onClick={logToday}>
+            {practice.loggedToday ? "Logged today" : "Log today"}
+          </Chip>
+        ) : (
+          <Chip tone="sage" icon={<Check size={14} />} onClick={markDone}>Done</Chip>
+        )}
         <Chip tone="accent" active={helpOpen} icon={<Sparkles size={14} />} onClick={() => setHelpOpen((o) => !o)}>
           Sola can help <ChevronDown size={13} className={cn("transition-transform", helpOpen && "rotate-180")} />
         </Chip>
       </div>
+      {practice && (
+        <p className="mt-2.5 font-mono text-[12px] text-faint">
+          {practice.weekDone} of {practice.weekTarget} this week · {practice.done} of the last {practice.expected} sessions
+        </p>
+      )}
       {helpOpen && (
         <div className="mt-2 flex flex-wrap items-center gap-2 border-l border-line pl-3 animate-sheet-up">
           <Chip tone="accent" icon={<MessageCircle size={14} />} onClick={() => { setAsking((a) => !a); setBreakOpen(false); }}>Ask Sola</Chip>
@@ -2509,9 +2584,10 @@ function NodeSheet({
           </Chip>
           <Chip tone="accent" icon={<Scissors size={14} />} onClick={breaking ? undefined : onMakeSmaller}>Make it smaller</Chip>
           <Chip tone="accent" icon={<Wand2 size={14} />} onClick={() => void runDraft()}>Do it for me</Chip>
-          {/* App Store 3.1.1: `pro` renders a literal "Pro" badge, and the native
-              build resolves everyone to free, so this would have shown a paid-tier
-              badge on the signature screen to a reviewer. Gated here rather than in
+          {/* App Store 3.1.1: `pro` renders a literal "Pro" badge, which a native
+              FREE user must never see — a paid-tier label with no purchase path
+              reads as an upsell on the signature screen. (Native Pro users have
+              isPro=true and skip the badge anyway.) Gated here rather than in
               Chip, which is a server component: reading the UA there would render
               the badge during SSR and drop it on hydration, flashing the exact
               string we are hiding. */}

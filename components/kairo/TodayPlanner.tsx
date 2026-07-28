@@ -2,11 +2,12 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Timer, Check, Clock3, Scissors, RotateCcw, Sparkles, Coffee, Waypoints, Undo2 } from "lucide-react";
+import { Timer, Check, Clock3, Scissors, RotateCcw, Sparkles, Coffee, Waypoints, Undo2, Repeat } from "lucide-react";
 import type { GoalWithNodes, GoalNode, EnergyLevel, Difficulty } from "@/types";
 import type { PlannedBlock } from "@/lib/ai/types";
 import { mockDailyPlan } from "@/lib/ai/mock";
-import { setNodeStatus, logFocusSession, setGoalNotes } from "@/lib/data/actions";
+import { setNodeStatus, logFocusSession, setGoalNotes, togglePracticeCheckin } from "@/lib/data/actions";
+import { isRecurring, adherence, toggleCheckin } from "@/lib/kairo/practice";
 import { useGoalColors } from "@/lib/kairo/use-goal-colors";
 import { goalIcon } from "@/lib/kairo/goal-icon";
 import { pickCelebration, fireHaptic } from "@/lib/kairo/celebrate";
@@ -158,6 +159,14 @@ export function TodayPlanner({
   const [celebration, setCelebration] = React.useState<{ title: string; sub: string; hex: string } | null>(null);
   const [note, setNote] = React.useState<string | null>(null);
 
+  // A stable "now" for practice arithmetic: local noon of the day being planned.
+  // Derived from the dayKey prop so it is pure per render, and noon keeps it
+  // safely inside the right local day.
+  const nowMs = React.useMemo(() => {
+    const [y, m, d] = dayKey.split("-").map(Number);
+    return new Date(y, m - 1, d, 12, 0, 0).getTime();
+  }, [dayKey]);
+
   const timers = React.useRef<ReturnType<typeof setTimeout>[]>([]);
   React.useEffect(() => () => { timers.current.forEach(clearTimeout); }, []);
   const later = (fn: () => void, ms: number) => { const id = setTimeout(fn, ms); timers.current.push(id); return id; };
@@ -196,15 +205,30 @@ export function TodayPlanner({
     setStored((prev) => (prev ? { ...prev, blocks: prev.blocks.map(fn) } : prev));
 
   const finishStep = (goalId: string, nodeId: string, mins?: number) => {
-    // Finishing the work finishes the step, so every block of that node closes.
+    // Finishing the work finishes the block, so every block of that node closes.
     patchBlocks((b) => (b.nodeId === nodeId ? { ...b, status: "completed" } : b));
-    track("step_completed", { goalId, surface: "today" });
-    if (remote) {
-      void setNodeStatus({ goalId, nodeId, status: "done" });
-      if (mins) void logFocusSession({ goalId, nodeId, minutes: mins });
+    const n = nodeFor(goalId, nodeId);
+
+    if (n && isRecurring(n)) {
+      // A practice is kept, not finished: completing today's block logs today's
+      // session and the step stays open on the map for tomorrow.
+      if (!adherence(n, nowMs).loggedToday) {
+        Object.assign(n, toggleCheckin(n, nowMs)); // keep the in-memory copy fresh for this session
+        if (remote) void togglePracticeCheckin({ goalId, nodeId });
+      }
+      if (remote && mins) void logFocusSession({ goalId, nodeId, minutes: mins });
+      track("practice_logged", { goalId, surface: "today" });
+      const a = adherence(n, nowMs);
+      setCelebration({ title: "Kept.", sub: `That's ${a.weekDone} of ${a.weekTarget} this week.`, hex: color(goalId) });
+    } else {
+      track("step_completed", { goalId, surface: "today" });
+      if (remote) {
+        void setNodeStatus({ goalId, nodeId, status: "done" });
+        if (mins) void logFocusSession({ goalId, nodeId, minutes: mins });
+      }
+      const line = pickCelebration(nodeId);
+      setCelebration({ title: line.title, sub: line.sub, hex: color(goalId) });
     }
-    const line = pickCelebration(nodeId);
-    setCelebration({ title: line.title, sub: line.sub, hex: color(goalId) });
     fireHaptic();
     later(() => setCelebration(null), 1700);
   };
@@ -265,7 +289,7 @@ export function TodayPlanner({
         </div>
       )}
       {note && (
-        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(88px+env(safe-area-inset-bottom))] z-[130] flex justify-center px-6 md:bottom-8">
+        <div className="pointer-events-none fixed inset-x-0 bottom-[calc(88px+var(--sa-bottom))] z-[130] flex justify-center px-6 md:bottom-8">
           <div className="chrome animate-fade-in rounded-full px-4 py-2 text-[15px] text-ink">{note}</div>
         </div>
       )}
@@ -468,6 +492,8 @@ export function TodayPlanner({
           const stepNo = active.blocks.slice(0, i + 1).filter((x) => x.kind === "focus").length;
           const hex = b.goalId ? color(b.goalId) : "#e6b877";
           const g = b.goalId ? goals.find((x) => x.id === b.goalId) : null;
+          const node = b.goalId && b.nodeId ? nodeFor(b.goalId, b.nodeId) : null;
+          const practice = node && isRecurring(node) ? adherence(node, nowMs) : null;
           const Icon = goalIcon(g?.icon);
           const diff = DIFF[b.difficulty];
           const completed = b.status === "completed";
@@ -514,7 +540,18 @@ export function TodayPlanner({
                 </div>
 
                 <h3 className={cn("mt-2 font-display text-lg font-semibold leading-snug", completed ? "text-muted line-through" : "text-ink")}>{b.title}</h3>
-                {b.reason && !completed && <p className="mt-1 truncate text-[15px] text-faint">{b.reason}</p>}
+                {practice ? (
+                  // A practice reads as a practice: the cadence, not a one-off reason.
+                  <p className="mt-1 flex items-center gap-1.5 text-[15px] text-faint">
+                    <Repeat size={13} className="shrink-0" style={{ color: hex }} aria-hidden />
+                    <span className="truncate">
+                      {practice.weekDone} of {practice.weekTarget} this week
+                      {b.reason && !completed ? ` · ${b.reason}` : ""}
+                    </span>
+                  </p>
+                ) : (
+                  b.reason && !completed && <p className="mt-1 truncate text-[15px] text-faint">{b.reason}</p>
+                )}
 
                 {!completed && !pushed && (
                   <div className="mt-3.5 flex flex-wrap items-center gap-2">

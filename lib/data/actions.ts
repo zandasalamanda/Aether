@@ -9,6 +9,7 @@ import { isNativeRequest } from "@/lib/native";
 import { ensureProfile } from "./profile";
 import { isRemote } from "./index";
 import { newId } from "@/lib/utils";
+import { progressOf, toggleCheckin, type PracticeNodeSlice } from "@/lib/kairo/practice";
 import type { GoalMapResult } from "@/lib/ai/types";
 import type { NodeStatus, InboxCategory } from "@/types";
 
@@ -84,6 +85,8 @@ export async function persistGoalFromMap(input: { result: GoalMapResult }): Prom
     resource_query: n.resource?.query ?? null,
     sort_order: i,
     parent_id: null as string | null,
+    kind: n.kind === "recurring" ? "recurring" : "once",
+    target_per_week: n.kind === "recurring" ? Math.max(1, Math.min(7, Math.round(n.targetPerWeek ?? 7))) : null,
   }));
   const insErr = (await supabase.from("goal_nodes").insert(rows)).error;
   if (insErr) return NO_OP;
@@ -132,6 +135,35 @@ export async function addNode(input: {
   return { ok: true, id: input.id };
 }
 
+
+/** Recompute a goal's progress from its nodes. Once-steps count when done;
+ *  practices count by elapsed-time x adherence (see lib/kairo/practice.ts). */
+async function recomputeGoalProgress(
+  supabase: NonNullable<Awaited<ReturnType<typeof getScopedClient>>>["supabase"],
+  goalId: string
+): Promise<void> {
+  const [goalRes, nodesRes] = await Promise.all([
+    supabase.from("goals").select("created_at,target_date").eq("id", goalId).single(),
+    supabase.from("goal_nodes").select("status,kind,target_per_week,checkins,created_at").eq("goal_id", goalId),
+  ]);
+  if (goalRes.error || nodesRes.error || !goalRes.data) return;
+  const rows = (nodesRes.data ?? []) as {
+    status: string; kind: string | null; target_per_week: number | null;
+    checkins: string[] | null; created_at: string;
+  }[];
+  if (rows.length === 0) return;
+  const nodes: PracticeNodeSlice[] = rows.map((r) => ({
+    status: r.status as PracticeNodeSlice["status"],
+    kind: r.kind === "recurring" ? "recurring" : "once",
+    targetPerWeek: r.target_per_week,
+    checkins: r.checkins ?? [],
+    createdAt: r.created_at,
+  }));
+  const g = goalRes.data as { created_at: string; target_date: string | null };
+  const progress = progressOf(nodes, { createdAt: g.created_at, targetDate: g.target_date }, Date.now());
+  await supabase.from("goals").update({ progress }).eq("id", goalId);
+}
+
 /** Change a node's status and recompute its goal's overall progress. */
 export async function setNodeStatus(input: {
   goalId: string;
@@ -148,15 +180,55 @@ export async function setNodeStatus(input: {
   const upd = await supabase.from("goal_nodes").update(patch).eq("id", input.nodeId);
   if (upd.error) return NO_OP;
 
-  // Recompute goal progress from its nodes (share of done nodes).
-  const nodesRes = await supabase.from("goal_nodes").select("status").eq("goal_id", input.goalId);
-  const nodes = (nodesRes.data ?? []) as { status: NodeStatus }[];
-  if (nodes.length > 0) {
-    const done = nodes.filter((n) => n.status === "done").length;
-    const progress = Math.round((done / nodes.length) * 100);
-    await supabase.from("goals").update({ progress }).eq("id", input.goalId);
-  }
+  await recomputeGoalProgress(supabase, input.goalId);
 
+  revalidatePath("/app", "layout");
+  return { ok: true, id: input.nodeId };
+}
+
+
+/**
+ * Log (or un-log, on a second tap the same day) a session on a recurring
+ * practice, then refresh the goal's progress. The client applies the same
+ * toggle locally for instant feedback; this persists it.
+ */
+export async function togglePracticeCheckin(input: { goalId: string; nodeId: string }): Promise<Result> {
+  if (!isRemote) return NO_OP;
+  const scoped = await getScopedClient();
+  if (!scoped) return NO_OP;
+  const { supabase } = scoped;
+
+  const row = await supabase
+    .from("goal_nodes")
+    .select("status,kind,target_per_week,checkins,created_at,updated_at,progress")
+    .eq("id", input.nodeId)
+    .single();
+  if (row.error || !row.data) return NO_OP;
+  const r = row.data as {
+    status: string; kind: string | null; target_per_week: number | null;
+    checkins: string[] | null; created_at: string; updated_at: string; progress: number;
+  };
+  if (r.kind !== "recurring") return NO_OP;
+
+  const next = toggleCheckin(
+    {
+      status: r.status as PracticeNodeSlice["status"],
+      kind: "recurring" as const,
+      targetPerWeek: r.target_per_week,
+      checkins: r.checkins ?? [],
+      createdAt: r.created_at,
+      updatedAt: r.updated_at,
+      progress: r.progress,
+    },
+    Date.now()
+  );
+  const upd = await supabase
+    .from("goal_nodes")
+    .update({ checkins: next.checkins, progress: next.progress, status: next.status, updated_at: next.updatedAt })
+    .eq("id", input.nodeId);
+  if (upd.error) return NO_OP;
+
+  await recomputeGoalProgress(supabase, input.goalId);
   revalidatePath("/app", "layout");
   return { ok: true, id: input.nodeId };
 }
@@ -242,10 +314,7 @@ export async function deleteNode(input: { goalId: string; nodeId: string }): Pro
   const del = await supabase.from("goal_nodes").delete().in("id", [...remove]);
   if (del.error) return NO_OP;
 
-  const left = rows.filter((r) => !remove.has(r.id));
-  const done = left.filter((r) => r.status === "done").length;
-  const progress = left.length ? Math.round((done / left.length) * 100) : 0;
-  await supabase.from("goals").update({ progress }).eq("id", input.goalId);
+  await recomputeGoalProgress(supabase, input.goalId);
 
   revalidatePath("/app", "layout");
   return { ok: true, id: input.nodeId };

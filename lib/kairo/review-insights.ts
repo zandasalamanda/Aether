@@ -1,4 +1,5 @@
 import type { GoalWithNodes } from "@/types";
+import { adherence, isRecurring } from "./practice";
 
 // The Mirror: what the map can't show you. Pace toward each deadline (are you
 // actually going to make it?), steps that have quietly stalled, and goals you've
@@ -30,11 +31,25 @@ export interface NeglectedGoal {
   title: string;
   days: number;
 }
+/** How a kept-again-and-again step is actually being kept. */
+export interface PracticeInsight {
+  goalId: string;
+  goalTitle: string;
+  nodeTitle: string;
+  /** e.g. "3 of 5 this week" */
+  week: string;
+  /** e.g. "12 of the last 21 days" */
+  window: string;
+  /** 0..1, the rolling adherence. */
+  ratio: number;
+  loggedToday: boolean;
+}
 export interface ReviewInsights {
   headline: string;
   pace: PaceInsight[];
   stalled: StalledStep[];
   neglected: NeglectedGoal[];
+  practice: PracticeInsight[];
 }
 
 function clamp01(n: number): number {
@@ -94,9 +109,28 @@ export function computeReviewInsights(goals: GoalWithNodes[], nowMs: number): Re
   const rank: Record<PaceState, number> = { overdue: 0, behind: 1, on: 2, ahead: 3, none: 4, done: 5 };
   const paceList = active.map((g) => pace(g, nowMs)).sort((a, b) => rank[a.state] - rank[b.state]);
 
+  const practice: PracticeInsight[] = [];
+  for (const g of active) {
+    for (const n of g.nodes) {
+      if (!isRecurring(n) || n.status === "done") continue;
+      const a = adherence(n, nowMs);
+      practice.push({
+        goalId: g.id,
+        goalTitle: g.title,
+        nodeTitle: n.title,
+        week: `${a.weekDone} of ${a.weekTarget} this week`,
+        window: `${a.done} of the last ${a.expected} sessions`,
+        ratio: a.ratio,
+        loggedToday: a.loggedToday,
+      });
+    }
+  }
+  practice.sort((a, b) => a.ratio - b.ratio);
+
   const stalled: StalledStep[] = [];
   for (const g of active) {
     for (const n of g.nodes) {
+      if (isRecurring(n)) continue; // practices report through adherence above
       if (n.status !== "in_motion" && n.status !== "blocked") continue;
       const days = (nowMs - (Date.parse(n.updatedAt) || nowMs)) / DAY;
       if (days >= STALL_DAYS) stalled.push({ goalId: g.id, goalTitle: g.title, nodeTitle: n.title, days: Math.round(days) });
@@ -119,5 +153,5 @@ export function computeReviewInsights(goals: GoalWithNodes[], nowMs: number): Re
   else if (behind === withDeadline) headline = `All ${behind} of your timed goals are behind pace. Pick one to pull back.`;
   else headline = `${behind} of ${withDeadline} timed goals ${behind === 1 ? "is" : "are"} slipping behind pace.`;
 
-  return { headline, pace: paceList, stalled, neglected };
+  return { headline, pace: paceList, stalled, neglected, practice };
 }

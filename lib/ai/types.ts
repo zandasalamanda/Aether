@@ -28,6 +28,14 @@ export interface GeneratedNode {
   parentIndex: number | null;
   /** Optional pointer to content that helps do this step (a search intent). */
   resource?: NodeResource | null;
+  /**
+   * "recurring" marks a practice: a step done again and again (daily Spanish,
+   * gym sessions) rather than finished once. Practices carry a weekly cadence
+   * and are logged per day instead of being marked done. Absent means "once".
+   */
+  kind?: "once" | "recurring";
+  /** recurring only: sessions per week the plan calls for (7 = daily). */
+  targetPerWeek?: number | null;
 }
 
 /** A short question the AI can pose to sharpen the plan (answered with a tap). */
