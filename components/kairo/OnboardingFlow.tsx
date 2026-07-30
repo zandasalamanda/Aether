@@ -12,7 +12,7 @@ import { GoalCore } from "./GoalCore";
 import { GoalCoreCycle } from "./GoalCoreCycle";
 import { Logo } from "./Logo";
 import { Button, buttonVariants } from "@/components/ui/Button";
-import { Chip } from "@/components/ui/Chip";
+import { OptionChip } from "@/components/ui/Chip";
 import { MicButton } from "@/components/ui/MicButton";
 import { useSpeechInput } from "@/lib/hooks/use-speech-input";
 import { nodeStatusMeta } from "@/lib/kairo/status";
@@ -158,9 +158,9 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
   };
 
   return (
-    <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col items-center px-5 py-10">
+    <div className="relative mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col items-center px-5 pb-[calc(2.5rem+var(--sa-bottom))] pt-[calc(2.5rem+var(--sa-top))]">
       {/* Goal-gradient progress: pinned to the top, advances with each step, never 0%. */}
-      <div className="fixed inset-x-0 top-0 z-20 h-1 bg-white/[0.04]" aria-hidden>
+      <div className="fixed inset-x-0 top-[var(--sa-top)] z-20 h-1 bg-white/[0.04]" aria-hidden>
         <div
           className="h-full bg-accent"
           style={{ width: `${STEP_PROGRESS[step]}%`, transition: "width 0.6s cubic-bezier(0.22,1,0.36,1)", boxShadow: "0 0 8px var(--color-accent)" }}
@@ -178,17 +178,17 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
             Tell Solaspace your goal. It will map the path and help build your day.
           </p>
 
-          <div className="panel-2 mt-8 flex items-center gap-2 rounded-2xl p-2 pl-4 text-left">
+          <div className="panel-2 mt-8 flex flex-wrap items-center gap-2 rounded-2xl p-2 text-left sm:flex-nowrap sm:pl-4">
             <input
               autoFocus
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && submit()}
               placeholder={speech.listening ? "Listening…" : "Launch my app by September…"}
-              className="h-11 min-w-0 flex-1 bg-transparent pl-2 text-[15px] text-ink placeholder:text-faint focus:outline-none"
+              className="h-11 w-full min-w-0 flex-1 bg-transparent px-2 text-[16px] text-ink placeholder:text-faint focus:outline-none sm:pl-2"
             />
             {speech.supported && <MicButton listening={speech.listening} onClick={() => speech.toggle(prompt)} />}
-            <Button variant="primary" onClick={submit} disabled={!prompt.trim()} className="shrink-0 whitespace-nowrap">
+            <Button variant="primary" onClick={submit} disabled={!prompt.trim()} className="w-full shrink-0 whitespace-nowrap sm:w-auto">
               Map my goal <ArrowRight size={16} />
             </Button>
           </div>
@@ -200,14 +200,10 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
           )}
 
           <div className="mt-5 flex flex-wrap justify-center gap-2">
+            {/* Same control as the answers on the next step. These two screens
+                used to disagree about what an option looks like. */}
             {CHIPS.map((c) => (
-              <button
-                key={c}
-                onClick={() => setPrompt(c)}
-                className="rounded-full border border-line px-3.5 py-2 text-[13px] text-muted transition-colors hover:border-accent/40 hover:text-ink"
-              >
-                {c}
-              </button>
+              <OptionChip key={c} onClick={() => setPrompt(c)}>{c}</OptionChip>
             ))}
           </div>
         </div>
@@ -218,7 +214,7 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
           <GoalCore size={104} className="mx-auto mb-6" />
           <h1 className="font-display text-2xl font-semibold tracking-tight text-ink">A couple quick things</h1>
           <p className="mx-auto mt-2 max-w-sm text-[14px] text-muted">
-            So Sola maps <span className="text-ink">{prompt}</span> for you specifically. All optional.
+            So Sola maps <span className="text-ink [overflow-wrap:anywhere]">{prompt}</span> for you specifically. All optional.
           </p>
 
           <div className="panel-2 mt-7 rounded-2xl p-4 text-left">
@@ -233,7 +229,7 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
                     <div className="mb-1.5 text-[13px] text-ink/80">{c.question}</div>
                     <div className="flex flex-wrap gap-1.5">
                       {c.options.map((o) => (
-                        <Chip key={o} tone="accent" active={answers[c.question] === o} onClick={() => pick(c.question, o)}>{o}</Chip>
+                        <OptionChip key={o} active={answers[c.question] === o} onClick={() => pick(c.question, o)}>{o}</OptionChip>
                       ))}
                     </div>
                   </div>
@@ -244,10 +240,10 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
                     value={extra}
                     onChange={(e) => setExtra(e.target.value)}
                     placeholder="Anything else? Your level, constraints, what you already have…"
-                    className="inset-well min-h-[64px] w-full resize-none rounded-xl px-3.5 py-2.5 text-[13px] text-ink placeholder:text-faint focus-visible:outline-none"
+                    className="inset-well min-h-[64px] w-full resize-none rounded-xl px-3.5 py-2.5 text-[16px] text-ink placeholder:text-faint focus-visible:outline-none"
                   />
                 ) : (
-                  <button onClick={() => setShowMore(true)} className="inline-flex items-center gap-1.5 text-[13px] text-muted transition-colors hover:text-ink">
+                  <button onClick={() => setShowMore(true)} className="inline-flex min-h-11 items-center gap-1.5 text-[14px] text-muted transition-colors hover:text-ink">
                     <Plus size={13} /> Tell me more
                   </button>
                 )}
@@ -274,11 +270,11 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
 
       {step === "result" && result && (
         <div className="my-auto w-full animate-fade-up">
-          <div className="mb-6 flex items-center gap-4">
-            <GoalCore size={72} orbit={false} pulse={false} />
+          <div className="mb-6 flex items-start gap-4">
+            <GoalCore size={72} orbit={false} pulse={false} className="shrink-0" />
             <div className="min-w-0">
-              <h1 className="truncate font-display text-2xl font-semibold text-ink">{result.title}</h1>
-              <p className="font-mono text-[12px] text-faint">
+              <h1 className="font-display text-xl font-semibold leading-snug text-ink [overflow-wrap:anywhere] sm:text-2xl">{result.title}</h1>
+              <p className="mt-1 font-mono text-[12px] text-faint">
                 Target {relativeDays(result.suggestedTargetDate)} · {result.weeklyRhythm}
               </p>
             </div>

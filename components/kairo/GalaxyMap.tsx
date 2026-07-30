@@ -44,7 +44,7 @@ import {
   togglePracticeCheckin,
 } from "@/lib/data/actions";
 import { MicButton } from "@/components/ui/MicButton";
-import { Chip } from "@/components/ui/Chip";
+import { Chip, OptionChip } from "@/components/ui/Chip";
 import { FocusOverlay } from "./FocusOverlay";
 import { MappingNarration } from "./MappingNarration";
 import { Markdown } from "./Markdown";
@@ -1872,9 +1872,14 @@ function GoalCluster({
           {/* the goal's icon, embossed into the planet's shine */}
           {React.createElement(goalIcon(goal.icon), {
             size: expanded ? 50 : 42,
-            strokeWidth: 1.5,
+            strokeWidth: 1.7,
             className: "relative",
-            style: { color: "#ffffff", opacity: light ? 0.6 : 0.72, filter: "drop-shadow(0 1px 2px rgba(50,34,8,0.4))" },
+            style: {
+              color: light ? `color-mix(in srgb, ${hex} 28%, #2a2f3a)` : "#ffffff",
+              filter: light
+                ? "drop-shadow(0 1px 1px rgba(255,255,255,0.65))"
+                : "drop-shadow(0 1px 3px rgba(40,26,6,0.7))",
+            },
           })}
         </span>
 
@@ -2284,7 +2289,7 @@ function PreGenClarifier({ clarifiers, loading, onCreate, onCancel }: { clarifie
             <div className="mb-1.5 text-[12px] text-ink/80">{c.question}</div>
             <div className="flex flex-wrap gap-1.5">
               {c.options.map((o) => (
-                <Chip key={o} tone="accent" active={answers[c.question] === o} onClick={() => pick(c.question, o)}>{o}</Chip>
+                <OptionChip key={o} active={answers[c.question] === o} onClick={() => pick(c.question, o)}>{o}</OptionChip>
               ))}
             </div>
           </div>

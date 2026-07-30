@@ -47,9 +47,9 @@ export function PlanetOrb({ hex, size, icon, seed }: { hex: string; size: number
       {icon &&
         React.createElement(goalIcon(icon), {
           size: Math.round(size * 0.46),
-          strokeWidth: 1.5,
+          strokeWidth: 1.7,
           className: "relative",
-          style: { color: "#ffffff", opacity: 0.72, filter: "drop-shadow(0 1px 2px rgba(50,34,8,0.4))" },
+          style: { color: "#ffffff", filter: "drop-shadow(0 1px 3px rgba(40,26,6,0.7))" },
         })}
     </span>
   );

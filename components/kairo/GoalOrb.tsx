@@ -84,7 +84,7 @@ export function GoalOrb({ className }: { className?: string }) {
               size: 34,
               strokeWidth: 1.7,
               className: "animate-fade-in relative",
-              style: { color: "#ffffff", opacity: 0.82, filter: "drop-shadow(0 1px 2px rgba(50,34,8,0.55))" },
+              style: { color: "#ffffff", filter: "drop-shadow(0 1px 3px rgba(40,26,6,0.7))" },
             })}
           </div>
         </div>

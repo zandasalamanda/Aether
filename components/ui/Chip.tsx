@@ -48,3 +48,36 @@ export function Chip({ tone = "neutral", active = false, icon, pro = false, clas
     </button>
   );
 }
+
+/**
+ * Pick-one-of-these, as opposed to Chip's do-something.
+ *
+ * These are different jobs and they were wearing the same clothes. Chip is the
+ * app's raised action button, and `raised-btn` plus `rounded-lg` on a 36px
+ * control reads as a lifted rectangle. Used for the answers in "Map my goal" it
+ * put a row of little square boxes one screen after the same question was asked
+ * with soft outlined pills, so the two steps of one flow disagreed about what an
+ * option looks like.
+ *
+ * Outlined pill, flat, 44px. The selected state changes the border and the fill,
+ * not just the text colour: Chip only recoloured the label, which left the
+ * answer you had chosen almost invisible.
+ */
+export function OptionChip({ active = false, className, children, ...props }: Omit<ChipProps, "tone" | "pro">) {
+  return (
+    <button
+      type="button"
+      aria-pressed={active}
+      className={cn(
+        "inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3.5 text-[14px] transition-colors",
+        active
+          ? "border-accent/50 bg-accent/10 text-accent"
+          : "border-line bg-transparent text-muted hover:border-accent/40 hover:text-ink",
+        className,
+      )}
+      {...props}
+    >
+      {children}
+    </button>
+  );
+}
