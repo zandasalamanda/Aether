@@ -1,253 +1,195 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { ArrowRight, ChevronDown, Waypoints, Sunrise, CircleCheck, Search, Bell, ShieldCheck, Activity, Check } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { Logo } from "@/components/kairo/Logo";
-import { AppShots } from "@/components/kairo/AppShots";
-import { HeroSayItSeeIt } from "@/components/kairo/HeroSayItSeeIt";
-import { ExamplePlanDemo } from "@/components/kairo/ExamplePlanDemo";
 import { Starfield } from "@/components/kairo/Starfield";
-import { Reveal } from "@/components/kairo/Reveal";
-import { SectionLabel } from "@/components/kairo/PageHeader";
-import { Button } from "@/components/ui/Button";
+import { PreviewHero } from "@/components/preview/PreviewHero";
+import { KeepsCount } from "@/components/preview/KeepsCount";
+import { JourneyThread } from "@/components/preview/JourneyThread";
+import { AppShots } from "@/components/kairo/AppShots";
 import { PLAN_FREE_FEATURES, PLAN_PRO_FEATURES, priceDisplay } from "@/lib/kairo/plans";
 import { isNativeRequest } from "@/lib/native";
 
-// The three beats of the real loop. This IS a sequence, so numbering earns its place.
-const BEATS = [
-  { icon: Waypoints, k: "Say the goal", desc: "Tell Solaspace what you want in plain words. It maps the whole path in about a minute, every step in the right order." },
-  { icon: Sunrise, k: "Get your day", desc: "Say how much time and energy you have. It builds one focused plan for today, so you always know the very next move." },
-  { icon: CircleCheck, k: "Follow and finish", desc: "Each step already has the video or guide you need. Reminders and a weekly report carry you all the way to done." },
-];
+// The landing page.
+//
+// Three rules it follows, each a reaction to a specific failure of the page it replaced:
+//  1. Show the product before describing it. The real map is above the fold and
+//     tappable; there is not a single feature card on the page.
+//  2. Answer the "why would I not just improvise this myself" doubt by IMPLICATION
+//     rather than by naming anyone. Naming a competitor on your own page is
+//     defensive, and it drags a rival's brand into a premium surface. The claim
+//     that a plan is easy and keeping one is hard does the same work, quietly.
+//  3. Say nothing that is not true. No testimonials, no counts, no "most popular",
+//     because we have no users yet and an invented number poisons everything near it.
+//
+// The whole page is threaded by one continuous dotted line (JourneyThread) drawn
+// in the goal map's own next-step vocabulary: the page is itself a goal map, and
+// scrolling it is walking the path.
 
-// The four things Solaspace is built around.
-const PILLARS = [
-  { icon: Search, title: "Every resource, already found", desc: "Each step comes with the exact video or cited guide you need, found and laid out for you. No hunting, no dead links, no made-up sources." },
-  { icon: Bell, title: "It keeps you moving", desc: "Calm reminders for what's due and what's next. Never noisy, never guilt. Just the one thing to do today." },
-  { icon: ShieldCheck, title: "Real accountability", desc: "Share your progress and keep an honest record of what you actually finished, not just boxes ticked." },
-  { icon: Activity, title: "Progress you can see", desc: "A weekly report of what you produced and your true pace to every deadline. A clear picture, every week." },
-];
-
-// Honest answers to the questions a first-time visitor actually asks.
-const FAQS = [
-  { q: "Do I need to be an expert to use it?", a: "No. Tell Solaspace your goal in plain words, and it handles the mapping, the order, and the research for each step, so you just follow the next move." },
-  { q: "What powers the AI?", a: "Solaspace uses leading large language models to map your goals, break steps down, and draft alongside you. If AI is ever unavailable, it falls back to solid built-in plans so the app always works." },
-  { q: "What happens to my data?", a: "Your goals and progress are yours. They're stored securely, never sold, and you can delete your account and all of your data anytime from Settings." },
-  { q: "Is payment secure, and can I cancel?", a: "Payments run through Stripe, so we never see your card. Cancel in one click from Settings anytime; you keep Pro through the end of the period you paid for." },
-  { q: "What if I fall behind?", a: "That's exactly what it's built for. Solaspace shows your true pace, reschedules what slipped, and rebuilds today around the time and energy you actually have." },
-  { q: "Can I use it for free?", a: "Yes. The free plan maps up to two goals with daily planning, research picks, and a weekly review. Upgrade to Pro only when you want unlimited goals and the full AI." },
-];
+// The homepage is the only route that canonicalizes to "/"; every other page
+// declares its own canonical in its metadata export.
+export const metadata: Metadata = { alternates: { canonical: "/" } };
 
 export default async function LandingPage() {
   // App Store Guideline 3.1.1: this page is the app's only public price list.
-  // The native shell never sees it, which removes every pricing surface at once.
-  // Guarded before any render so nothing can paint first.
+  // The native shell must never reach it, which removes every pricing surface
+  // at once. Guarded before any render so nothing can paint first.
   if (await isNativeRequest()) redirect("/app/today");
+
   return (
-    <div data-theme="dark" className="cockpit relative isolate overflow-hidden">
-      {/* isolate on the root = its own stacking context, so the -z-10 starfield and
-          hero orb paint ABOVE the cockpit background instead of being buried under it. */}
-      <Starfield className="pointer-events-none fixed inset-0 -z-10 opacity-80" />
+    <div data-theme="dark" className="cockpit relative isolate min-h-screen overflow-hidden bg-canvas text-ink">
+      <Starfield className="pointer-events-none fixed inset-0 -z-10 opacity-70" />
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
           __html: JSON.stringify({
             "@context": "https://schema.org",
-            "@graph": [
-              {
-                "@type": "SoftwareApplication",
-                name: "Solaspace",
-                applicationCategory: "ProductivityApplication",
-                operatingSystem: "Web",
-                description: "An AI goal-execution app that turns your goals into a living map and builds the best plan for the time you actually have today.",
-                offers: [
-                  { "@type": "Offer", price: "0", priceCurrency: "USD", name: "Free" },
-                  { "@type": "Offer", price: "10", priceCurrency: "USD", name: "Pro" },
-                ],
-              },
-              {
-                "@type": "FAQPage",
-                mainEntity: FAQS.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })),
-              },
+            "@type": "SoftwareApplication",
+            name: "Solaspace",
+            applicationCategory: "ProductivityApplication",
+            operatingSystem: "Web",
+            description:
+              "An AI goal-execution app that turns your goals into a living map and builds the best plan for the time you actually have today.",
+            offers: [
+              { "@type": "Offer", price: "0", priceCurrency: "USD", name: "Free" },
+              { "@type": "Offer", price: String(priceDisplay.monthly), priceCurrency: "USD", name: "Pro" },
             ],
           }),
         }}
       />
-      {/* Header */}
-      <header className="fixed inset-x-0 top-0 z-40 border-b border-line/50 bg-canvas/50 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-3.5">
+      {/* The page's spine: the goal map's own dotted next-step line, growing
+          down the page as you scroll and looping the screenshots in a ring. */}
+      <JourneyThread />
+
+      <header className="absolute inset-x-0 top-0 z-30">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-6">
           <Logo />
-          <div className="flex items-center gap-2">
-            <Link href="/sign-in" className="rounded-full px-4 py-2 text-sm text-muted transition-colors hover:text-ink">Sign in</Link>
-            <Link href="/onboarding"><Button variant="primary" size="sm">Get started</Button></Link>
+          <div className="flex items-center gap-1">
+            <Link href="/sign-in" className="inline-flex min-h-11 items-center rounded-full px-4 text-[15px] text-muted transition-colors hover:text-ink">
+              Sign in
+            </Link>
+            <Link href="/onboarding" className="raised-btn inline-flex min-h-11 items-center rounded-full px-4 text-[15px] text-ink">
+              Start
+            </Link>
           </div>
         </div>
       </header>
 
-      {/* Hero: type a real goal here; it hands off to sign-up the same way onboarding
-          does (no AI, no tokens, until there's an account). The example plan below the
-          fold draws itself and cross-fades between goals. */}
-      <section className="relative overflow-hidden">
-        <HeroSayItSeeIt />
+      <PreviewHero />
+
+
+      {/* The objection, answered before it is asked. */}
+      <section className="mx-auto max-w-3xl px-5 py-24">
+        <h2 data-journey="s-plan" className="font-display text-3xl font-semibold leading-tight tracking-tight text-ink sm:text-4xl">
+          Anything can write you a plan.
+          <br />
+          <span className="text-gold-lit">Almost nothing keeps one.</span>
+        </h2>
+        <p className="mt-7 max-w-xl text-[17px] leading-relaxed text-muted">
+          The plan was never the hard part. The hard part is week three, when the first
+          version no longer matches your life and there is nobody keeping score. Solaspace
+          holds the real record: every step, with a date, and what you actually finished.
+        </p>
       </section>
 
-      {/* How it works: the loop */}
-      <section id="how" className="mx-auto max-w-6xl px-5 py-20">
-        <Reveal className="mb-10">
-          <SectionLabel className="mb-3">How it works</SectionLabel>
-          <h2 className="max-w-2xl font-display text-3xl font-semibold tracking-tight text-ink md:text-4xl">You bring the goal. Solaspace does the rest.</h2>
-          <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-muted">No planning, no blank page, no figuring out where to start. Say what you want and Solaspace maps it, plans it, and walks you through every step.</p>
-        </Reveal>
-        <div className="grid gap-4 md:grid-cols-3">
-          {BEATS.map((b, i) => {
-            const Icon = b.icon;
-            return (
-              <Reveal key={b.k} className="panel rounded-2xl p-6" delay={i * 90}>
-                <div className="flex items-center gap-3">
-                  <span className="grid h-9 w-9 place-items-center rounded-xl border border-accent/20 bg-accent/5 text-accent"><Icon size={18} /></span>
-                  <span className="font-mono text-[12px] font-semibold text-faint">{String(i + 1).padStart(2, "0")}</span>
-                  <h3 className="font-display text-xl font-semibold text-ink">{b.k}</h3>
-                </div>
-                <p className="mt-3 text-[14px] leading-relaxed text-muted">{b.desc}</p>
-              </Reveal>
-            );
-          })}
+
+      {/* The daily loop. Told as a sentence, not as three cards with icons. */}
+      <section className="mx-auto max-w-3xl px-5 py-24">
+        <h2 data-journey="s-day" className="font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
+          Then it builds your day.
+        </h2>
+        <p className="mt-5 max-w-xl text-[17px] leading-relaxed text-muted">
+          Tell Solaspace how much time you have and how much energy you have. It picks the steps
+          that genuinely fit today and leaves the rest on the map. Fall behind and nothing is
+          lost. Push anything, and the plan rebuilds around where you actually are.
+        </p>
+        <p className="mt-8 max-w-xl text-[17px] leading-relaxed text-muted">
+          Every step arrives with the video or guide you need already attached, from a publisher
+          you have heard of. No searching, no blank page, no wondering whether you are starting
+          in the right place.
+        </p>
+      </section>
+
+
+      {/* The real screens, with the cursor tour. A built product that shows itself
+          working reads as finished in a way that no amount of copy does. */}
+      <section className="mx-auto max-w-6xl px-5 py-24">
+        <h2 data-journey="s-look" className="font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
+          A look inside.
+        </h2>
+        <p className="mt-5 max-w-xl text-[17px] leading-relaxed text-muted">
+          The screens you will actually use, walking themselves.
+        </p>
+        <div className="mt-10">
+          <AppShots />
         </div>
       </section>
 
-      {/* Now the cool part again: a real example plan drawing itself. Words first
-          (above), examples after: the bridge from cool to plain to cool. */}
-      <section id="see" className="mx-auto max-w-3xl px-5 pb-8 pt-4">
-        <Reveal className="text-center">
-          <SectionLabel className="mb-3 flex justify-center">See it work</SectionLabel>
-          <h2 className="font-display text-3xl font-semibold tracking-tight text-ink md:text-4xl">Watch it map a real goal.</h2>
-        </Reveal>
-        <ExamplePlanDemo />
-      </section>
 
-      {/* The real app: the legible proof, right after the plain-words setup */}
-      <section id="app" className="mx-auto max-w-6xl px-5 py-20">
-        <Reveal className="mb-10 text-center">
-          <SectionLabel className="mb-3 flex justify-center">A look inside</SectionLabel>
-          <h2 className="font-display text-3xl font-semibold tracking-tight text-ink md:text-4xl">See exactly what you get.</h2>
-          <p className="mx-auto mt-3 max-w-xl text-[15px] leading-relaxed text-muted">Every screen below explains itself. Follow the cursor.</p>
-        </Reveal>
+      <KeepsCount />
 
-        <Reveal><AppShots /></Reveal>
-      </section>
 
-      {/* The four pillars: the trust close-out after the proof */}
-      <section id="features" className="mx-auto max-w-6xl px-5 py-20">
-        <Reveal className="mb-10">
-          <SectionLabel className="mb-3">Built to get you there</SectionLabel>
-          <h2 className="max-w-2xl font-display text-3xl font-semibold tracking-tight text-ink md:text-4xl">A guide that holds your hand the whole way.</h2>
-          <p className="mt-3 max-w-xl text-[15px] leading-relaxed text-muted">Most apps hand you a plan and walk away. Solaspace stays with you: it does the research, lays out every step, sends the reminders, and shows exactly where you stand.</p>
-        </Reveal>
-        <div className="grid gap-4 sm:grid-cols-2">
-          {PILLARS.map((f, i) => {
-            const Icon = f.icon;
-            return (
-              <Reveal key={f.title} className="panel flex gap-4 rounded-2xl p-6 transition-all hover:border-line-strong hover:-translate-y-0.5" delay={i * 80}>
-                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-xl border border-accent/20 bg-accent/5 text-accent">
-                  <Icon size={22} />
-                </div>
-                <div>
-                  <h3 className="font-display text-lg font-semibold text-ink">{f.title}</h3>
-                  <p className="mt-1.5 text-[14px] leading-relaxed text-muted">{f.desc}</p>
-                </div>
-              </Reveal>
-            );
-          })}
-        </div>
-      </section>
+      {/* One card. Free is the offer; Pro is a line inside it, not a rival column. */}
+      <section className="mx-auto max-w-3xl px-5 py-24">
+        <h2 data-journey="price" className="font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
+          Start free.
+        </h2>
+        <p className="mt-5 text-[17px] leading-relaxed text-muted">
+          {PLAN_FREE_FEATURES[0]}, and enough of everything else to know whether this works for
+          you. No card, and nothing expires.
+        </p>
 
-      {/* Pricing */}
-      <section id="pricing" className="mx-auto max-w-6xl px-5 py-20">
-        <Reveal className="mb-10 text-center">
-          <SectionLabel className="mb-3 flex justify-center">Pricing</SectionLabel>
-          <h2 className="font-display text-3xl font-semibold tracking-tight text-ink md:text-4xl">Start free. Upgrade when it&apos;s moving.</h2>
-          <p className="mt-3 text-[14px] text-muted">Free to start · no credit card · cancel anytime.</p>
-        </Reveal>
-        {/* items-stretch + flex-col + mt-auto CTAs → both cards are exactly the same
-            height with their buttons aligned, whatever the feature counts. */}
-        <div className="mx-auto grid max-w-3xl items-stretch gap-4 md:grid-cols-2">
-          <div className="panel flex flex-col rounded-3xl p-8">
-            <div className="text-sm font-semibold text-muted">Free</div>
-            <div className="mt-2 font-display text-4xl font-semibold text-ink">$0</div>
-            <p className="mt-2 text-sm text-muted">Everything you need to map a goal and start moving.</p>
-            <ul className="mt-6 space-y-2.5">
-              {PLAN_FREE_FEATURES.map((f) => (
-                <li key={f} className="flex items-start gap-2.5 text-[14px] text-ink/90"><Check size={15} className="mt-0.5 shrink-0 text-sage" />{f}</li>
-              ))}
-            </ul>
-            <Link href="/onboarding" className="mt-auto inline-flex items-center gap-2 pt-7 text-sm font-medium text-accent hover:underline">Get started <ArrowRight size={15} /></Link>
-          </div>
-          <div className="panel-2 relative flex flex-col overflow-hidden rounded-3xl border border-accent/25 p-8">
-            <div className="pointer-events-none absolute -right-8 -top-8 h-40 w-40 animate-pulse-soft rounded-full bg-accent/20 blur-3xl" />
-            <div className="flex items-center gap-2"><div className="text-sm font-semibold text-accent">Pro</div><span className="rounded-full bg-accent/12 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-accent">Most popular</span></div>
-            <div className="mt-2 flex items-end gap-1.5">
-              <span className="font-display text-4xl font-semibold text-ink">${priceDisplay.monthly}</span>
-              <span className="mb-1.5 text-sm text-muted">/mo</span>
-            </div>
-            <p className="mt-1 text-[13px] text-faint">or ${priceDisplay.yearly}/year · save {priceDisplay.savingsPct}%</p>
-            <p className="mt-2 text-sm text-muted">Everything in Free, plus the full AI that does the heavy lifting on every goal.</p>
-            <ul className="mt-6 space-y-2.5">
-              {PLAN_PRO_FEATURES.map((f) => (
-                <li key={f} className="flex items-start gap-2.5 text-[14px] text-ink"><Check size={15} className="mt-0.5 shrink-0 text-accent" />{f}</li>
-              ))}
-            </ul>
-            <Link href="/onboarding" className="mt-auto inline-flex items-center gap-2 pt-7 text-sm font-medium text-ink hover:underline">Start free, upgrade in-app <ArrowRight size={15} /></Link>
-          </div>
-        </div>
-      </section>
-
-      {/* FAQ */}
-      <section id="faq" className="mx-auto max-w-3xl px-5 py-20">
-        <Reveal className="mb-8 text-center">
-          <SectionLabel className="mb-3 flex justify-center">Questions</SectionLabel>
-          <h2 className="font-display text-3xl font-semibold tracking-tight text-ink md:text-4xl">Good questions, honest answers.</h2>
-        </Reveal>
-        <div className="space-y-2.5">
-          {FAQS.map((f) => (
-            <details key={f.q} className="panel group rounded-2xl px-5 py-4">
-              <summary className="flex cursor-pointer list-none items-center justify-between gap-4 text-[15px] font-medium text-ink [&::-webkit-details-marker]:hidden">
-                {f.q}
-                <ChevronDown size={18} className="shrink-0 text-faint transition-transform group-open:rotate-180" />
-              </summary>
-              <p className="mt-3 text-[14px] leading-relaxed text-muted">{f.a}</p>
-            </details>
+        <ul className="mt-9 space-y-3">
+          {PLAN_FREE_FEATURES.map((f) => (
+            <li key={f} className="flex gap-3 text-[17px] text-ink">
+              <span aria-hidden className="mt-[0.6em] h-[3px] w-4 shrink-0 bg-accent" />
+              {f}
+            </li>
           ))}
+        </ul>
+
+        <div className="mt-10 border-t border-line pt-7">
+          <p className="text-[17px] leading-relaxed text-muted">
+            When two goals is not enough, Pro is ${priceDisplay.monthly} a month (or $
+            {priceDisplay.yearly} a year, saving {priceDisplay.savingsPct}%) and adds{" "}
+            {PLAN_PRO_FEATURES.slice(0, 2).join(", ").toLowerCase()}. You upgrade from inside the
+            app, when you want it, not before.
+          </p>
         </div>
+
+        <Link
+          href="/onboarding"
+          className="raised-gold mt-10 inline-flex min-h-12 items-center gap-2 rounded-xl px-6 text-[15px] font-semibold"
+        >
+          Map my first goal <ArrowRight size={16} />
+        </Link>
       </section>
 
-      {/* Final CTA */}
-      <section className="relative mx-auto max-w-6xl overflow-hidden px-5 py-24 text-center">
-        <div className="pointer-events-none absolute inset-0 -z-10">
-          <div className="absolute left-1/2 top-1/2 h-72 w-72 -translate-x-1/2 -translate-y-1/2 animate-breathe rounded-full bg-accent/15 blur-[90px]" />
-        </div>
-        <Reveal>
-          <h2 className="mx-auto max-w-2xl font-display text-4xl font-semibold tracking-tight text-ink md:text-5xl">Become who you keep meaning to be.</h2>
-          <p className="mx-auto mt-4 max-w-lg text-[16px] leading-relaxed text-muted">Pick one goal. Solaspace maps the way, lays out every step, and walks you there.</p>
-          <Link href="/onboarding" className="mt-8 inline-block">
-            <Button variant="primary" size="lg">Start your map <ArrowRight size={18} /></Button>
-          </Link>
-        </Reveal>
+      {/* The close: the thread's terminal node sits on this button and
+          completes with a check once the path has been walked. */}
+      <section className="mx-auto max-w-3xl px-5 py-28 text-center">
+        <p className="font-display text-3xl font-semibold leading-tight tracking-tight text-ink sm:text-4xl">
+          You already know what you want.
+          <br />
+          <span className="text-gold-lit">This is the part that keeps you moving.</span>
+        </p>
+        <Link
+          data-journey="close"
+          href="/onboarding"
+          className="raised-gold mt-10 inline-flex min-h-12 items-center gap-2 rounded-xl px-7 text-[15px] font-semibold"
+        >
+          Start free <ArrowRight size={16} />
+        </Link>
       </section>
 
-      {/* Footer */}
       <footer className="border-t border-line">
-        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-3 px-5 pt-8 sm:flex-row">
-          <Logo size={22} />
-          <div className="flex flex-wrap justify-center gap-x-4 gap-y-1 text-sm text-muted">
-            <Link href="/sign-in" className="inline-block py-1.5 hover:text-ink">Sign in</Link>
-            <a href="#features" className="inline-block py-1.5 hover:text-ink">Features</a>
-            <a href="#pricing" className="inline-block py-1.5 hover:text-ink">Pricing</a>
-            <a href="#faq" className="inline-block py-1.5 hover:text-ink">FAQ</a>
-            <Link href="/privacy" className="inline-block py-1.5 hover:text-ink">Privacy</Link>
-            <Link href="/terms" className="inline-block py-1.5 hover:text-ink">Terms</Link>
+        <div className="mx-auto flex max-w-6xl flex-col gap-4 px-5 py-10 sm:flex-row sm:items-center sm:justify-between">
+          <p className="text-[15px] text-muted">Map the way. Build the day.</p>
+          <div className="flex gap-1">
+            <Link href="/privacy" className="inline-flex min-h-11 items-center px-3 text-[15px] text-muted transition-colors hover:text-ink">Privacy</Link>
+            <Link href="/terms" className="inline-flex min-h-11 items-center px-3 text-[15px] text-muted transition-colors hover:text-ink">Terms</Link>
           </div>
-        </div>
-        <div className="mx-auto max-w-6xl px-5 pb-8 pt-3 text-center sm:text-left">
-          <p className="font-mono text-[12px] text-faint">© 2026 Solaspace · Chart it. Focus. Arrive.</p>
         </div>
       </footer>
     </div>
