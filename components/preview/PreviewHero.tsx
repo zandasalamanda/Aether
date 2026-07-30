@@ -39,7 +39,7 @@ export function PreviewHero() {
   };
 
   return (
-    <section className="relative px-5 pb-10 pt-24 md:pt-28">
+    <section className="relative px-5 max-lg:pl-12 pb-10 pt-24 md:pt-28">
       <div className="mx-auto max-w-3xl text-center">
         {/* A quiet gold aurora behind the words, so the first screen carries the
             same lit warmth as the orbs instead of flat text on flat black. */}

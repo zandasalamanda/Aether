@@ -80,7 +80,7 @@ export default async function LandingPage() {
 
 
       {/* The objection, answered before it is asked. */}
-      <section className="mx-auto max-w-3xl px-5 py-24">
+      <section className="mx-auto max-w-3xl px-5 max-lg:pl-12 py-24">
         <h2 data-journey="s-plan" className="font-display text-3xl font-semibold leading-tight tracking-tight text-ink sm:text-4xl">
           Anything can write you a plan.
           <br />
@@ -95,7 +95,7 @@ export default async function LandingPage() {
 
 
       {/* The daily loop. Told as a sentence, not as three cards with icons. */}
-      <section className="mx-auto max-w-3xl px-5 py-24">
+      <section className="mx-auto max-w-3xl px-5 max-lg:pl-12 py-24">
         <h2 data-journey="s-day" className="font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
           Then it builds your day.
         </h2>
@@ -114,7 +114,7 @@ export default async function LandingPage() {
 
       {/* The real screens, with the cursor tour. A built product that shows itself
           working reads as finished in a way that no amount of copy does. */}
-      <section className="mx-auto max-w-6xl px-5 py-24">
+      <section className="mx-auto max-w-6xl px-5 max-lg:pl-12 py-24">
         <h2 data-journey="s-look" className="font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
           A look inside.
         </h2>
@@ -131,7 +131,7 @@ export default async function LandingPage() {
 
 
       {/* One card. Free is the offer; Pro is a line inside it, not a rival column. */}
-      <section className="mx-auto max-w-3xl px-5 py-24">
+      <section className="mx-auto max-w-3xl px-5 max-lg:pl-12 py-24">
         <h2 data-journey="price" className="font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
           Start free.
         </h2>
@@ -168,7 +168,7 @@ export default async function LandingPage() {
 
       {/* The close: the thread's terminal node sits on this button and
           completes with a check once the path has been walked. */}
-      <section className="mx-auto max-w-3xl px-5 py-28 text-center">
+      <section className="mx-auto max-w-3xl px-5 py-28 max-lg:pl-12 max-lg:text-left lg:text-center">
         <p className="font-display text-3xl font-semibold leading-tight tracking-tight text-ink sm:text-4xl">
           You already know what you want.
           <br />

@@ -73,7 +73,14 @@ export function GoalCoreCycle({ size = 140, className }: { size?: number; classN
             }}
           >
             <GoalCore size={size} hex={stop.hex} pulse={!reduce}>
-              <Icon size={iconSize} strokeWidth={1.7} />
+              {/* White, with a shadow rather than a darker ink: the sphere runs
+                  from a near-white highlight to a deep shade, so a flat white
+                  icon needs the shadow to stay legible across all eight hues. */}
+              <Icon
+                size={iconSize}
+                strokeWidth={1.7}
+                style={{ color: "#ffffff", filter: "drop-shadow(0 1px 3px rgba(40,26,6,0.7))" }}
+              />
             </GoalCore>
           </div>
         );

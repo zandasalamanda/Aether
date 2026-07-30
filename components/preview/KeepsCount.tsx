@@ -57,7 +57,7 @@ export function KeepsCount() {
   const r = computeReviewInsights(FIXTURE, NOW);
 
   return (
-    <section className="mx-auto max-w-3xl px-5 py-24">
+    <section className="mx-auto max-w-3xl px-5 max-lg:pl-12 py-24">
       <h2 data-journey="keeps" className="font-display text-3xl font-semibold tracking-tight text-ink sm:text-4xl">
         It keeps count.
       </h2>
