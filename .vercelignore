@@ -3,7 +3,10 @@
 node_modules
 .next
 .next-preview
+.next-build
+.next-demo
 everdeck
+portfolio
 .claude
 app/devpreview
 
