@@ -41,7 +41,7 @@ export function MapView({ goals, initialGoalId, remote, isPro }: { goals: GoalWi
           map's own top row: at 375px the two overlapped by about 15px, so the right
           edge of the goal name was untappable and hitting it switched view instead
           of opening the goal menu. */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-40 flex justify-end pr-3 pt-[max(12px,env(safe-area-inset-top))] md:justify-center md:pr-0 md:pt-5">
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-40 flex justify-end pr-3 pt-[max(12px,var(--sa-top))] md:justify-center md:pr-0 md:pt-5">
         <div className="chrome pointer-events-auto inline-flex gap-1 rounded-full p-1">
           {([["galaxy", Waypoints, "Map"], ["list", List, "List"]] as const).map(([v, Icon, label]) => (
             <button
@@ -60,7 +60,7 @@ export function MapView({ goals, initialGoalId, remote, isPro }: { goals: GoalWi
       {goals.length > 0 && !askHidden && (
         <button
           onClick={() => setAskOpen(true)}
-          className="raised-gold absolute bottom-[calc(96px+env(safe-area-inset-bottom))] right-4 z-40 inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-[14px] font-medium md:bottom-6"
+          className="raised-gold absolute bottom-[calc(96px+var(--sa-bottom))] right-4 z-40 inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-[14px] font-medium md:bottom-6"
         >
           <MessageCircle size={16} /> Ask Sola
           {!isPro && <span className="rounded-full bg-black/15 px-1.5 py-0.5 text-[10px] font-semibold uppercase">Free</span>}

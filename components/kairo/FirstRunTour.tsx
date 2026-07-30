@@ -112,7 +112,7 @@ export function FirstRunTour() {
     // right of the 248px sidebar (mirrors app/app/map/page.tsx), so the card
     // centers on the map rather than drifting left under the sidebar.
     <div className="fixed inset-y-0 left-0 right-0 z-[300] grid place-items-center bg-canvas/95 px-6 backdrop-blur-md md:left-[248px]" role="dialog" aria-modal="true" aria-label="Welcome tour">
-      <button onClick={dismiss} className="absolute right-5 top-[calc(env(safe-area-inset-top)+16px)] grid h-11 w-11 place-items-center rounded-full text-faint transition-colors hover:text-ink" aria-label="Skip the tour">
+      <button onClick={dismiss} className="absolute right-5 top-[calc(var(--sa-top)+16px)] grid h-11 w-11 place-items-center rounded-full text-faint transition-colors hover:text-ink" aria-label="Skip the tour">
         <X size={20} />
       </button>
 

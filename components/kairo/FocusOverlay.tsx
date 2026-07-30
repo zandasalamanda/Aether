@@ -137,7 +137,7 @@ export function FocusOverlay({
     <div data-theme="dark" className="fixed inset-0 z-50 overflow-y-auto bg-canvas/95 backdrop-blur-xl">
       <button
         onClick={onClose}
-        className="fixed right-5 top-[calc(env(safe-area-inset-top)+16px)] z-10 grid h-11 w-11 place-items-center rounded-full text-faint transition-colors hover:text-ink"
+        className="fixed right-5 top-[calc(var(--sa-top)+16px)] z-10 grid h-11 w-11 place-items-center rounded-full text-faint transition-colors hover:text-ink"
         aria-label="Close focus session"
       >
         <X size={18} />

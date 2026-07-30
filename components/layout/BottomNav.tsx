@@ -14,7 +14,7 @@ export function BottomNav({ nextMove, className }: { nextMove: NextMove | null; 
   const goalColor = useGoalColors();
   const moveHex = nextMove ? goalColor(nextMove.goalId) : "#e6b877";
   return (
-    <div className={cn("fixed inset-x-0 bottom-0 z-40 px-4 pb-[max(12px,env(safe-area-inset-bottom))] pt-2", className)}>
+    <div className={cn("fixed inset-x-0 bottom-0 z-40 px-4 pb-[max(12px,var(--sa-bottom))] pt-2", className)}>
       <div className="mx-auto max-w-md space-y-1.5">
         {nextMove && !onMap && (
           <Link

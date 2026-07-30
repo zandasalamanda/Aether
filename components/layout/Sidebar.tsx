@@ -23,7 +23,7 @@ export function Sidebar({ user, nextMove, usage, className }: { user: SessionUse
       className={cn(
         "fixed inset-y-0 left-0 z-30 w-[248px] flex-col justify-between border-r border-line bg-canvas-2/70 backdrop-blur-xl",
         // Insets resolve to 0 on the web, so max()/calc() collapse to the original px-4 py-6.
-        "pl-[max(1rem,env(safe-area-inset-left))] pr-4 pt-[calc(1.5rem+env(safe-area-inset-top))] pb-[max(1.5rem,env(safe-area-inset-bottom))]",
+        "pl-[max(1rem,var(--sa-left))] pr-4 pt-[calc(1.5rem+var(--sa-top))] pb-[max(1.5rem,var(--sa-bottom))]",
         className
       )}
     >

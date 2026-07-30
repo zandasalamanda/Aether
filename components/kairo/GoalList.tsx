@@ -21,7 +21,7 @@ export function GoalList({ goals, onOpen }: { goals: GoalWithNodes[]; onOpen: (i
     return <div className="grid h-full place-items-center px-6 text-center text-[14px] text-muted">No goals yet. Switch to Map to add your first.</div>;
   }
   return (
-    <div className="mx-auto max-w-2xl space-y-3 px-5 pb-28 pt-[calc(72px+env(safe-area-inset-top))]">
+    <div className="mx-auto max-w-2xl space-y-3 px-5 pb-28 pt-[calc(72px+var(--sa-top))]">
       {active.map((g) => <GoalRow key={g.id} goal={g} hex={color(g.id)} onOpen={() => onOpen(g.id)} />)}
     </div>
   );
