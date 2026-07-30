@@ -47,44 +47,39 @@ export function GoalCoreCycle({ size = 140, className }: { size?: number; classN
   }, [reduce]);
 
   // Two fixed slots that ping-pong. A radial-gradient cannot be interpolated,
-  // so the colour cannot be transitioned on one element; instead each slot
-  // holds a whole core and only opacity animates. Slot 0 shows the even steps
-  // and slot 1 the odd ones, which means a slot's contents only ever change
-  // while it is invisible, and the swap is never seen.
-  const slots = [0, 1].map((slot) => {
-    const step = i % 2 === slot ? i : i - 1;
-    const stop = STOPS[((step % STOPS.length) + STOPS.length) % STOPS.length];
-    return { stop, front: i % 2 === slot };
-  });
-
+  // so the colour cannot be transitioned on one element; each layer holds a
+  // whole core instead.
+  //
+  // Crucially the two layers do NOT cross-fade. Fading one out while the other
+  // fades in puts both near 50% mid-transition, which lets the page show
+  // through the orb and ghosts two icons over each other. Instead the outgoing
+  // stop sits underneath at full opacity and the incoming one fades in ON TOP
+  // of it, so total coverage is constant and only one icon is ever legible.
+  const at = (n: number) => STOPS[((n % STOPS.length) + STOPS.length) % STOPS.length];
   const iconSize = Math.round(size * 0.24);
+
+  const layer = (stop: { hex: string; icon: string }) => {
+    const Icon = goalIcon(stop.icon);
+    return (
+      <GoalCore size={size} hex={stop.hex} pulse={!reduce}>
+        {/* White, with a shadow rather than a darker ink: the sphere runs from a
+            near-white highlight to a deep shade, so a flat white icon needs the
+            shadow to stay legible across all eight hues. */}
+        <Icon size={iconSize} strokeWidth={1.7} style={{ color: "#ffffff", filter: "drop-shadow(0 1px 3px rgba(40,26,6,0.7))" }} />
+      </GoalCore>
+    );
+  };
 
   return (
     <div className={className} style={{ width: size, height: size, position: "relative" }} aria-hidden>
-      {slots.map(({ stop, front }, slot) => {
-        const Icon = goalIcon(stop.icon);
-        return (
-          <div
-            key={slot}
-            className="absolute inset-0"
-            style={{
-              opacity: reduce ? (slot === 0 ? 1 : 0) : front ? 1 : 0,
-              transition: reduce ? undefined : `opacity ${FADE}ms ease-in-out`,
-            }}
-          >
-            <GoalCore size={size} hex={stop.hex} pulse={!reduce}>
-              {/* White, with a shadow rather than a darker ink: the sphere runs
-                  from a near-white highlight to a deep shade, so a flat white
-                  icon needs the shadow to stay legible across all eight hues. */}
-              <Icon
-                size={iconSize}
-                strokeWidth={1.7}
-                style={{ color: "#ffffff", filter: "drop-shadow(0 1px 3px rgba(40,26,6,0.7))" }}
-              />
-            </GoalCore>
-          </div>
-        );
-      })}
+      {/* the stop being left, held at full opacity underneath */}
+      <div className="absolute inset-0">{layer(at(reduce ? 0 : i - 1))}</div>
+      {/* the stop being arrived at, keyed so it remounts and fades in each time */}
+      {!reduce && (
+        <div key={i} className="animate-fade-in absolute inset-0" style={{ animationDuration: `${FADE}ms` }}>
+          {layer(at(i))}
+        </div>
+      )}
     </div>
   );
 }
