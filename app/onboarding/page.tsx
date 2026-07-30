@@ -4,7 +4,12 @@ import { OnboardingFlow } from "@/components/kairo/OnboardingFlow";
 import { isRemote } from "@/lib/data";
 import { features } from "@/lib/config";
 
-export const metadata: Metadata = { title: "Create your first goal · Solaspace" };
+export const metadata: Metadata = {
+  title: "Create your first goal · Solaspace",
+  description:
+    "Say your goal in plain words and watch Solaspace map every step, with the videos and guides you need to get there.",
+  alternates: { canonical: "/onboarding" },
+};
 
 // Anonymous visitors can still type their goal here. We just capture it and send
 // them to sign up before generating (see OnboardingFlow). Sign-in is resolved on

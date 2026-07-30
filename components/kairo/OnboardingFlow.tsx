@@ -184,7 +184,7 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && submit()}
-              placeholder={speech.listening ? "Listening…" : "Launch my app by September…"}
+              placeholder={speech.listening ? "Listening…" : "Save $5,000 by June…"}
               className="h-11 w-full min-w-0 flex-1 bg-transparent px-2 text-[16px] text-ink placeholder:text-faint focus:outline-none sm:pl-2"
             />
             {speech.supported && <MicButton listening={speech.listening} onClick={() => speech.toggle(prompt)} />}

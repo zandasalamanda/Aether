@@ -1,0 +1,7 @@
+User-Agent: *
+Allow: /
+Disallow: /app/
+Disallow: /api/
+
+Host: https://solaspace.app
+Sitemap: https://solaspace.app/sitemap.xml

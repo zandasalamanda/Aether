@@ -7,7 +7,7 @@ type Variant = "primary" | "solid" | "glass" | "ghost" | "outline" | "danger";
 type Size = "sm" | "md" | "lg" | "icon";
 
 const base =
-  "relative inline-flex items-center justify-center gap-2 rounded-xl font-medium tracking-tight select-none disabled:opacity-40 disabled:pointer-events-none focus-visible:outline-none";
+  "relative inline-flex items-center justify-center gap-2 rounded-xl font-medium tracking-tight select-none disabled:opacity-40 disabled:pointer-events-none";
 
 /**
  * Expands the tappable box to Apple's 44pt minimum without changing how the

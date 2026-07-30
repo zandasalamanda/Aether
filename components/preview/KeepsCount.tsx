@@ -41,7 +41,7 @@ const node = (title: string, daysSinceTouched: number): GoalWithNodes["nodes"][n
 const FIXTURE: GoalWithNodes[] = [
   goal({ id: "a", title: "Run a half marathon", progress: 45, targetDate: at(28), nodes: [node("Build to 10k", 9)] }),
   goal({ id: "b", title: "Conversational Spanish", progress: 60, targetDate: at(28) }),
-  goal({ id: "c", title: "Ship the side project", progress: 42, targetDate: at(28), updatedAt: at(-14) }),
+  goal({ id: "c", title: "Start the side business", progress: 42, targetDate: at(28), updatedAt: at(-14) }),
 ];
 
 const TONE: Record<string, string> = {

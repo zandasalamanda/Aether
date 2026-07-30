@@ -18,7 +18,7 @@ import { planLimits } from "@/lib/config";
  * never on first paint, so there is no priced frame to flash.
  */
 export function UpgradeModal({ reason, onClose }: { reason: string | null; onClose: () => void }) {
-  const [loading, setLoading] = React.useState(false);
+  const [loading, setLoading] = React.useState<"monthly" | "yearly" | null>(null);
   const [err, setErr] = React.useState<string | null>(null);
   const native = isNativeUserAgent(typeof navigator === "undefined" ? "" : navigator.userAgent);
 
@@ -31,14 +31,14 @@ export function UpgradeModal({ reason, onClose }: { reason: string | null; onClo
 
   if (!reason) return null;
 
-  const upgrade = async () => {
-    setLoading(true);
+  const upgrade = async (interval: "monthly" | "yearly") => {
+    setLoading(interval);
     setErr(null);
     try {
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ interval: "yearly" }),
+        body: JSON.stringify({ interval }),
       });
       const data = (await res.json()) as { url?: string; error?: string };
       if (data.url) { window.location.href = data.url; return; }
@@ -46,7 +46,7 @@ export function UpgradeModal({ reason, onClose }: { reason: string | null; onClo
     } catch {
       setErr("Couldn't reach billing. Try again.");
     } finally {
-      setLoading(false);
+      setLoading(null);
     }
   };
 
@@ -85,10 +85,13 @@ export function UpgradeModal({ reason, onClose }: { reason: string | null; onClo
           ))}
         </ul>
         <p className="mt-4 text-center text-[12px] text-faint">
-          Pro is <span className="text-muted">${priceDisplay.monthly}/mo</span>, or ${priceDisplay.yearly}/year.
+          Yearly works out to <span className="text-muted">${priceDisplay.yearlyPerMonth}/mo</span> — save {priceDisplay.savingsPct}%.
         </p>
-        <button onClick={() => void upgrade()} disabled={loading} className="raised-gold mt-5 inline-flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 text-[14px] font-medium disabled:opacity-50">
-          {loading ? "Starting…" : "Upgrade to Pro"}
+        <button onClick={() => void upgrade("yearly")} disabled={loading !== null} className="raised-gold mt-3 inline-flex w-full items-center justify-center gap-1.5 rounded-xl py-2.5 text-[14px] font-medium disabled:opacity-50">
+          {loading === "yearly" ? "Starting…" : `Upgrade yearly — $${priceDisplay.yearly}/yr`}
+        </button>
+        <button onClick={() => void upgrade("monthly")} disabled={loading !== null} className="raised-btn mt-2 inline-flex w-full items-center justify-center rounded-xl py-2.5 text-[14px] font-medium text-ink disabled:opacity-50">
+          {loading === "monthly" ? "Starting…" : `Upgrade monthly — $${priceDisplay.monthly}/mo`}
         </button>
         <div className="mt-2.5 text-center">
           <Link href="/app/billing" onClick={onClose} className="text-[12px] text-faint transition-colors hover:text-muted">See plans &amp; pricing</Link>

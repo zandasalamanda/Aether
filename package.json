@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "dev:preview": "NEXT_DIST_DIR=.next-preview next dev"
+    "dev:preview": "NEXT_DIST_DIR=.next-preview next dev",
+    "dev:demo": "NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY= CLERK_SECRET_KEY= NEXT_PUBLIC_SUPABASE_URL= NEXT_PUBLIC_SUPABASE_ANON_KEY= NEXT_DIST_DIR=.next-demo next dev -p 3100"
   },
   "dependencies": {
     "@capacitor/app": "^8.1.1",

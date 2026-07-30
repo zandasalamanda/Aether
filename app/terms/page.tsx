@@ -1,8 +1,14 @@
 import type { Metadata } from "next";
 import { LegalPage, LegalSection } from "@/components/kairo/LegalPage";
 import { ExternalLink } from "@/components/ui/ExternalLink";
+import { priceDisplay } from "@/lib/kairo/plans";
 
-export const metadata: Metadata = { title: "Terms · Solaspace" };
+export const metadata: Metadata = {
+  title: "Terms of Service · Solaspace",
+  description:
+    "The terms that govern your use of Solaspace, the AI goal planner: accounts, subscriptions, acceptable use, and your rights.",
+  alternates: { canonical: "/terms" },
+};
 
 const CONTACT = "support@solaspace.app";
 
@@ -38,7 +44,8 @@ export default function TermsPage() {
       <LegalSection heading="Subscriptions &amp; billing">
         <p>
           Solaspace has a free plan and a paid <strong>Pro</strong> subscription. Pro is billed in advance on a recurring
-          basis (monthly at $12/month or yearly at $96/year) through our payment processor, Stripe. Applicable taxes may
+          basis (monthly at ${priceDisplay.monthly}/month or yearly at ${priceDisplay.yearly}/year) through our payment
+          processor, Stripe. Applicable taxes may
           be added.
         </p>
         <p>

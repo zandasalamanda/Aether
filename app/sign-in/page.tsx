@@ -5,7 +5,11 @@ import { AuthShell } from "@/components/kairo/AuthShell";
 import { AuthCard } from "@/components/kairo/AuthCard";
 import { clerkAppearance } from "@/lib/clerk/appearance";
 
-export const metadata: Metadata = { title: "Sign in · Solaspace" };
+export const metadata: Metadata = {
+  title: "Sign in · Solaspace",
+  description: "Sign in to Solaspace to pick up your goal map and today's plan.",
+  alternates: { canonical: "/sign-in" },
+};
 
 export default function SignInPage() {
   return (

@@ -23,10 +23,11 @@ export interface SessionUser {
   /**
    * True when the request came from the native iOS shell.
    *
-   * Kept separate from `plan` on purpose. The native build resolves everyone to
-   * the free tier (see below), but several surfaces branch on `plan === "free"`
-   * to show an *upgrade* prompt, so collapsing the two would switch those
-   * prompts on in exactly the build that must never show them.
+   * `plan` is the user's real plan on every platform — App Store Guideline
+   * 3.1.3(b) (multiplatform services) lets an entitlement bought on the web
+   * light up on iOS. What the iOS build must never show is a PURCHASE path, so
+   * every surface that upsells (upgrade cards, billing links, price text)
+   * branches on this flag to stay hidden natively.
    */
   native: boolean;
 }
@@ -61,11 +62,10 @@ export async function getSessionUser(): Promise<SessionUser> {
       id: userId,
       name,
       email: u?.primaryEmailAddress?.emailAddress ?? "",
-      // App Store Guideline 3.1.1: the iOS build may not unlock paid features
-      // bought outside the app. Apple rejects *consuming* an external purchase,
-      // not merely selling one, so hiding the upgrade button is not enough. The
-      // native build serves the free tier to everyone until StoreKit ships.
-      plan: native ? "free" : (profile?.plan ?? "free"),
+      // App Store Guideline 3.1.3(b) (multiplatform services): a subscription
+      // bought on the web is honoured in the iOS app too. The native build hides
+      // the PURCHASE path (see the `native` flag above), not the entitlement.
+      plan: profile?.plan ?? "free",
       initials: initialsOf(name),
       native,
     };
@@ -76,7 +76,7 @@ export async function getSessionUser(): Promise<SessionUser> {
     id: p.id,
     name: p.displayName,
     email: p.email,
-    plan: native ? "free" : p.plan,
+    plan: p.plan,
     initials: initialsOf(p.displayName),
     native,
   };

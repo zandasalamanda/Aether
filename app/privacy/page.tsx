@@ -2,7 +2,12 @@ import type { Metadata } from "next";
 import { LegalPage, LegalSection } from "@/components/kairo/LegalPage";
 import { ExternalLink } from "@/components/ui/ExternalLink";
 
-export const metadata: Metadata = { title: "Privacy · Solaspace" };
+export const metadata: Metadata = {
+  title: "Privacy Policy · Solaspace",
+  description:
+    "How Solaspace handles your data: what we collect, how goal plans are generated, what we never share, and how to delete your account.",
+  alternates: { canonical: "/privacy" },
+};
 
 const CONTACT = "support@solaspace.app";
 

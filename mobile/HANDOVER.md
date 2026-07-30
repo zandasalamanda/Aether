@@ -6,29 +6,26 @@ and what needs you.
 
 ---
 
-## The one thing you have to decide
+## The payments decision (decided 20 July 2026)
 
-**Paying web subscribers will get the free tier on iPhone.**
+**Paying web subscribers keep their Pro entitlement on iPhone. Only the purchase path is
+hidden there.**
 
-This is not a bug and not a choice I made lightly. App Store Guideline 3.1.1 forbids an
-iOS app from unlocking features that were bought outside it. Apple rejects the
-*consumption* of an outside purchase, not just the sale, so hiding the upgrade button is
-not enough. The standard rejection reads:
+An earlier draft of this file (and `BRIEF.md` §5) read Guideline 3.1.3(b) as conditional
+on also selling the same thing via in-app purchase, and so shipped the native build with
+**free for everyone**. That reading has been reversed: 3.1.3(b) (multiplatform services)
+is the clause that lets users *access* content, subscriptions, or features they acquired
+on other platforms; what the iOS app must not do is offer or steer to a purchase outside
+IAP. So:
 
-> "Your app accesses digital content purchased outside the app, and that content is not
-> available through in-app purchase."
+- The native build resolves the user's **real plan** everywhere (`getSessionUser`,
+  `guardAi`, `getPlan`) — a web Pro subscriber gets Pro limits and Pro features on iOS.
+- Every price, every upgrade prompt, every "Pro" upsell, and every route to Stripe stays
+  **gone** from the native build, exactly as before.
+- The App Review notes (`APP_STORE.md`) state this 3.1.3(b) rationale explicitly.
 
-The only clause that would let a web purchase light up on iOS is 3.1.3(b), and it applies
-only if the same thing is *also* sold via in-app purchase. No StoreKit, no cover.
-
-So the native build resolves **free for everyone**, and every price, every "Pro", and every
-route to Stripe is gone from it. Your options:
-
-1. **Ship v1 this way** and add StoreKit in v1.1, which costs 15% under Apple's Small
-   Business Program plus reconciliation work between Stripe and StoreKit. Recommended.
-2. **Delay** and build StoreKit first.
-
-Either way you need a plan for telling a paying subscriber why the iPhone app shows less.
+StoreKit IAP remains an option for v1.1 if review pushes back, at 15% under Apple's Small
+Business Program plus Stripe/StoreKit reconciliation work.
 
 ---
 
@@ -60,9 +57,9 @@ Verified working against the dev server:
 /   normal UA -> 200 landing page    (unchanged)
 ```
 
-`native` is deliberately kept separate from `plan`. Several surfaces show an *upgrade*
-prompt precisely when `plan === "free"`, which natively is now always true, so collapsing
-the two would have switched those prompts on in exactly the build that must never show them.
+`native` is deliberately kept separate from `plan`. `plan` is the user's real plan on
+every platform (3.1.3(b): web purchases are honoured on iOS); `native` is what keeps the
+upgrade prompts, prices, and billing routes hidden in the build that must never show them.
 
 ### Guideline 3.1.1 surfaces closed
 
@@ -115,7 +112,8 @@ Nothing below was done, because all of it involves your Apple account or your mo
    **TestFlight build on a real device** because the simulator does not reproduce it:
    sign in, force-quit, relaunch, background, leave overnight, relaunch. **If Safari ever
    opens, stop.** That needs a native navigation-delegate rule, which is a decision, not a tweak.
-4. **Decide the payments question** at the top of this file.
+4. ~~Decide the payments question~~ — decided 20 July 2026, see the top of this file:
+   web entitlements are honoured on iOS; only the purchase path is hidden.
 5. **Fix the live pricing inconsistency**, unrelated to the app but a reviewer will see it:
    `lib/config.ts` says the monthly price is **10**, `app/terms/page.tsx` says **12**.
 

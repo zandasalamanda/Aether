@@ -4,8 +4,68 @@
     {
       "name": "kairo",
       "runtimeExecutable": "npm",
-      "runtimeArgs": ["run", "dev"],
-      "port": 3000
+      "runtimeArgs": [
+        "run",
+        "dev"
+      ],
+      "port": 3000,
+      "autoPort": true
+    },
+    {
+      "name": "kairo-preview",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev:preview"
+      ],
+      "port": 3000,
+      "autoPort": true
+    },
+    {
+      "name": "everdeck",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--prefix",
+        "everdeck"
+      ],
+      "port": 5199,
+      "autoPort": true
+    },
+    {
+      "name": "portfolio",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev",
+        "--prefix",
+        "portfolio"
+      ],
+      "port": 3000,
+      "autoPort": true
+    },
+    {
+      "name": "chronoiq",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev:preview",
+        "--prefix",
+        "/Users/zander/Documents/ChronoIQ-main"
+      ],
+      "port": 3200,
+      "autoPort": true
+    },
+    {
+      "name": "kairo-demo",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": [
+        "run",
+        "dev:demo"
+      ],
+      "port": 3100,
+      "autoPort": true
     }
   ]
 }

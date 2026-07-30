@@ -16,16 +16,15 @@ const sora = Sora({
   display: "swap",
 });
 
-const title = "Solaspace · Chart it. Focus. Arrive.";
+const title = "Solaspace — AI goal planner that maps every step";
 const description =
-  "Tell Solaspace what you want done. It turns your goals, ideas, and available time into a clear plan for today.";
+  "Tell Solaspace your goal. It maps every step with the exact videos and guides you need, then builds a focused plan for today from your time and energy.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title,
   description,
   applicationName: "Solaspace",
-  alternates: { canonical: "/" },
   appleWebApp: { capable: true, title: "Solaspace", statusBarStyle: "black-translucent" },
   openGraph: { title, description, url: SITE_URL, siteName: "Solaspace", type: "website" },
   twitter: { card: "summary_large_image", title, description },

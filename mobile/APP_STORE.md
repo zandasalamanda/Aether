@@ -117,9 +117,11 @@ NATIVE FUNCTIONALITY, AND WHERE TO FIND IT
 - Offline: enable Airplane Mode and reopen the app to see the offline state.
 
 IN-APP PURCHASES
-There are none. This app contains no purchases, no subscriptions, no prices, and no
-links to any external purchase flow. Every user of the iOS app receives the same
-feature set.
+There are none. This app sells nothing: no purchases, no subscription offers, no
+prices, and no links to any external purchase flow. Solaspace is a multiplatform
+service, and per Guideline 3.1.3(b) an account may arrive with a service level the
+user already acquired on another platform; the app honours that existing entitlement
+while providing no way to buy, upgrade, or view pricing from inside the app.
 
 PERMISSIONS
 Notifications are requested only after the user has built their first day plan and
@@ -181,5 +183,7 @@ Age rating: **4+**. Nothing in the content warrants higher.
 - [ ] No screenshot shows browser chrome
 - [ ] The auth acceptance test in HANDOVER.md passed on a real device via TestFlight
 - [ ] Submitting iPhone only for v1, so iPad layout is not reviewed
-- [ ] Signed in as a Pro web subscriber and confirmed the iOS app shows no price and no
-      Pro-only feature. A reviewer doing exactly this is the 3.1.1 risk.
+- [ ] Signed in as a Pro web subscriber and confirmed the iOS app shows no price, no
+      upgrade prompt, and no route to purchase — while the Pro entitlement itself works
+      (3.1.3(b) multiplatform services: honour what was bought elsewhere; hide only the
+      purchase path). A reviewer probing for a purchase route is the 3.1.1 risk.

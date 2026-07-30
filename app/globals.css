@@ -282,14 +282,24 @@ body::before {
 
 ::selection { background: var(--selection-bg); color: var(--selection-fg); }
 
-/* A soft gold focus ring. Must be an outline, not a box-shadow: the raised
-   surfaces (.raised-btn, .raised-gold) declare their own box-shadow at equal
-   specificity, so a shadow-based ring never shows on buttons. Outline follows
-   the element's border-radius in modern browsers. Fields that show focus on
-   their own border opt out with focus:outline-none. */
-*:focus-visible {
+/* The gold focus ring is KEYBOARD-ONLY. A bare `*:focus-visible` also fires
+   when you CLICK into a text field or tap certain controls, which put a gold
+   box around things mid-use ("yellow highlighter boxes"). Browsers set
+   :focus-visible on pointer focus for anything editable, so text fields and
+   contenteditable are excluded here: they already show focus on their own
+   border/well styling. Buttons and links only get :focus-visible from the
+   keyboard, so Tab users keep a visible ring and mouse/touch users never see
+   one. Must stay an outline, not a box-shadow: the raised surfaces declare
+   their own box-shadow at equal specificity. */
+*:focus-visible:not(input):not(textarea):not(select):not([contenteditable]) {
   outline: 3px solid rgba(230, 184, 119, 0.6);
   outline-offset: 2px;
+}
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible,
+[contenteditable]:focus-visible {
+  outline: none;
 }
 /* Kill the default grey tap-flash box on touch devices — it reads as a stray
    box on an otherwise premium surface. Interactive states are handled in-app. */

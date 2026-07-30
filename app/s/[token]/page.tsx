@@ -17,6 +17,7 @@ export async function generateMetadata({ params }: Params): Promise<Metadata> {
     // Opt-in shared maps are anonymous (token URL, no identity) and explicitly shared,
     // so they're indexable. A proud plan is the app's best word-of-mouth surface.
     robots: { index: true, follow: true },
+    alternates: { canonical: `/s/${token}` },
     openGraph: { title, description, type: "article" },
     twitter: { card: "summary_large_image", title, description },
   };

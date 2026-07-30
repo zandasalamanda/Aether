@@ -1,0 +1,12 @@
+{
+  "pages": {},
+  "app": {
+    "[project]/app/app/inbox/page": [
+      "static/media/6bd983bd58a87a3d-s.p.1hey5yyym6mz_.woff2",
+      "static/media/Geist_Variable-s.p.0mrjj4bg00-he.woff2",
+      "static/media/GeistMono_Variable.p.3ms9vq719j3f8.woff2"
+    ]
+  },
+  "appUsingSizeAdjust": true,
+  "pagesUsingSizeAdjust": false
+}

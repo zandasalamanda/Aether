@@ -25,7 +25,7 @@ Users create goals; Solaspace turns each into a **living goal map**; every morni
 ## Design & UI — read this before building any visual
 
 - **There is NO Figma. Never ask for a Figma link or file.**
-- **Invoke the `/frontend-design` skill for ALL visual building** — every time you create or refine UI, screens, components, layout, motion, or styling. It is the design source and direction. Combine it with the **Visual Direction** section below.
+- **Reach for the design toolkit whenever you build or refine a visual** (see **Design toolkit** below). Use as much or as little of it as the work calls for — it exists to raise the ceiling, not to gate you. The **Visual Direction** bullets below are the taste; the toolkit is how you get there.
 - The visual identity is **premium dark by default**: deep charcoal / black / dark navy, subtle gradient surfaces, floating glass panels, soft blurred glows, luminous nodes, animated-looking connection lines, 3D orb-like goal cores, depth shadows, glowing focus states, minimal typography, spacious layouts, high contrast, premium motion cues.
 - **Minimal layout, maximal focal points.** Feels like: futuristic AI command center · Apple Vision Pro depth · Arc Browser polish · premium 3D app-icon aesthetic · calm but visually exciting.
 - **Signature system = the living goal map:** glowing 3D nodes, floating orb goal cores, curved animated connection lines, soft pulse on the current next step, dimmed inactive branches, status halos, subtle parallax/depth — clarity, not messy spiderwebs.
@@ -34,6 +34,26 @@ Users create goals; Solaspace turns each into a **living goal map**; every morni
 - **Mobile-first.** Mobile = bottom nav (Today · Map · Inbox · Review). Desktop = sidebar layout.
 
 The bar: the app must feel premium from the first screen. No generic placeholder UI, no bland white screens.
+
+### Design toolkit
+
+Installed and available. Use them freely and in combination — explore, pull references, try several directions before settling. Nothing here needs permission.
+
+| Tool | Good for |
+|---|---|
+| `ui-ux-pro-max` | Searchable database of styles, palettes, font pairings, layout + chart patterns.<br>`python3 ~/.claude/skills/ui-ux-pro-max/scripts/search.py "<query>"` — auto-detects domain<br>Add `--domain style\|color\|typography\|ux\|charts` to target one; `--stack nextjs` is a *separate* framework-conventions lookup, not a filter |
+| `impeccable` | Design critique + 46 anti-pattern detectors. `node ~/.claude/skills/impeccable/scripts/detect.mjs <paths>` |
+| `anthropic-skills:frontend-design` | Aesthetic judgment — typography, restraint, avoiding templated defaults |
+| `design`, `ui-styling`, `design-system`, `brand` | Tokens, component specs, styling systems, identity work |
+| **Magic UI MCP** | Animated primitives — marquees, blur-fade, grid/dot backgrounds, shimmer, beams |
+| **React Bits MCP** (`@react-bits` via shadcn) | Shader and WebGL backgrounds, scroll/reveal animation, text effects |
+
+Prefer pulling a polished primitive from Magic UI or React Bits over hand-rolling one — then restyle it to the Visual Direction above. These are starting points, not finished components; adapt them.
+
+Worth knowing rather than obeying:
+- React Bits ships `-TS-TW` variants (TypeScript + Tailwind) — the right ones for this stack. Some need `three`, `gsap`, or `framer-motion`; install as needed.
+- **Don't `shadcn add` from the `@shadcn` registry.** This filesystem is case-insensitive, so it writes `components/ui/button.tsx` over the existing hand-written `Button.tsx`. `@react-bits` and Magic UI are PascalCase and safe.
+- Run `impeccable` before calling a screen done — it catches the generic-AI-design tells that are easy to miss from the inside.
 
 ---
 

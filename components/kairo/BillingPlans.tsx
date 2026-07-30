@@ -49,7 +49,7 @@ export function BillingPlans({ plan, monthly, yearly }: { plan: Plan; monthly: n
         <SegmentedControl
           options={[
             { value: "monthly", label: "Monthly" },
-            { value: "yearly", label: "Yearly", hint: "save 33%" },
+            { value: "yearly", label: "Yearly", hint: `save ${priceDisplay.savingsPct}%` },
           ]}
           value={interval}
           onChange={(v) => setInterval(v as "monthly" | "yearly")}

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ArrowUp, Check, Timer, X, ChevronDown, Locate, GitBranch, Plus, Minus, Crosshair, Palette, Trash2, Sparkles, MessageCircle, Loader2, PlayCircle, Dumbbell, BookOpen, ExternalLink, NotebookPen, Wand2, ArrowDownToLine, HelpCircle, LayoutGrid, LayoutTemplate, Focus, Boxes, Share2, Save, Search, Scissors, Repeat } from "lucide-react";
+import { ArrowUp, Check, Timer, X, ChevronDown, Locate, GitBranch, Plus, Minus, Crosshair, Palette, Trash2, Sparkles, MessageCircle, Loader2, PlayCircle, Dumbbell, BookOpen, ExternalLink, NotebookPen, Wand2, ArrowDownToLine, HelpCircle, LayoutGrid, Focus, Boxes, Share2, Save, Search, Scissors, Repeat } from "lucide-react";
 import type { GoalWithNodes, GoalNode, NodeStatus, NodeResource, ResourceKind, ResolvedResource } from "@/types";
 import { parseDeadline } from "@/lib/kairo/deadline";
 import { generateGoalMap } from "@/lib/ai/generate-goal-map";
@@ -21,7 +21,6 @@ import { viaRoute } from "@/lib/ai/provider";
 import { ExternalLink as OutLink } from "@/components/ui/ExternalLink";
 import { SITE_URL } from "@/lib/site";
 import type { Clarifier, ReplanProposal, ReplanKind, GoalMapResult } from "@/lib/ai/types";
-import { TEMPLATES, templateToMap, type GoalTemplate } from "@/lib/kairo/templates";
 import { clarifyGoal } from "@/lib/ai/clarify";
 import { GOAL_PALETTE, goalColorHex, goalColorIndex } from "@/lib/kairo/goal-color";
 import { goalIcon } from "@/lib/kairo/goal-icon";
@@ -380,7 +379,6 @@ export function GalaxyMap({
   const [focusNode, setFocusNode] = React.useState<GoalNode | null>(null);
   const [breakdownFor, setBreakdownFor] = React.useState<GoalNode | null>(null);
   const [breakdownText, setBreakdownText] = React.useState("");
-  const [browsingTemplates, setBrowsingTemplates] = React.useState(false);
   const [replanForId, setReplanForId] = React.useState<string | null>(null);
   const [replanLoading, setReplanLoading] = React.useState(false);
   const [proposals, setProposals] = React.useState<(ReplanProposal & { pid: string })[]>([]);
@@ -390,7 +388,7 @@ export function GalaxyMap({
   // reported, so the button covered the submit control of every other sheet.
   const anySheetOpen =
     !!selectedNodeId || !!expandedId || composing || !!pending || !!branchFor ||
-    !!breakdownFor || !!replanForId || browsingTemplates;
+    !!breakdownFor || !!replanForId;
   React.useEffect(() => { onSheetChange?.(anySheetOpen); }, [anySheetOpen, onSheetChange]);
 
   const speech = useSpeechInput(setPrompt);
@@ -1071,7 +1069,7 @@ export function GalaxyMap({
     return pos;
   };
 
-  // Persist a finished map (from generation OR a template) and drop it on the map.
+  // Persist a finished map and drop it on the map.
   const commitMap = async (res: GoalMapResult, pos: { x: number; y: number }) => {
     let goalId = newId();
     let nodeIds: string[] | undefined;
@@ -1102,15 +1100,6 @@ export function GalaxyMap({
       return;
     }
     await commitMap(res, pos);
-  };
-
-  // Adopt a starter template — a pre-built map, so NO AI call (instant + free).
-  const adoptTemplate = async (t: GoalTemplate) => {
-    if (mapping || atGoalCap()) return;
-    setComposing(false);
-    setBrowsingTemplates(false);
-    const pos = beginForming();
-    await commitMap(templateToMap(t, Date.now()), pos);
   };
 
   // Add several AI-generated sub-steps as branches under a node.
@@ -1395,7 +1384,6 @@ export function GalaxyMap({
             <Plus size={18} />
           </button>
           <div className="chrome pointer-events-auto flex flex-col items-center gap-1.5 rounded-full p-1">
-            <button onClick={() => setBrowsingTemplates(true)} className="grid h-11 w-11 place-items-center rounded-full text-muted transition-colors hover:text-ink" aria-label="Starter templates" title="Starter templates"><LayoutTemplate size={16} /></button>
             <button onClick={() => { setSearchOpen((s) => !s); setQuery(""); }} aria-pressed={searchOpen} className={cn("grid h-11 w-11 place-items-center rounded-full transition-colors", searchOpen ? "text-accent" : "text-muted hover:text-ink")} aria-label="Find on the map" title="Find on the map"><Search size={16} /></button>
             <button onClick={() => setFocusLens((f) => !f)} aria-pressed={focusLens} className={cn("grid h-11 w-11 place-items-center rounded-full transition-colors", focusLens ? "text-accent" : "text-muted hover:text-ink")} aria-label="Focus mode" title="Focus mode. Dims all but your next steps."><Focus size={16} /></button>
             {goals.length > 1 && (
@@ -1474,7 +1462,6 @@ export function GalaxyMap({
               onSubmit={() => void startCreate(prompt)}
               speech={speech}
               empty={empty}
-              onBrowse={() => setBrowsingTemplates(true)}
               onCancel={empty ? undefined : () => { setComposing(false); setPrompt(""); }}
             />
           ) : branchFor && expanded ? (
@@ -1566,13 +1553,6 @@ export function GalaxyMap({
           )}
         </div>
       </div>
-
-      {browsingTemplates && (
-        <TemplateGallery
-          onPick={(t) => void adoptTemplate(t)}
-          onClose={() => setBrowsingTemplates(false)}
-        />
-      )}
 
       {focusNode && expanded && (
         <FocusOverlay
@@ -2031,59 +2011,15 @@ function NodeOrb({
 
 type Speech = ReturnType<typeof useSpeechInput>;
 
-/** Full-screen gallery of proven starter goals — one tap adopts a whole plan. */
-function TemplateGallery({ onPick, onClose }: { onPick: (t: GoalTemplate) => void; onClose: () => void }) {
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto bg-canvas/95 backdrop-blur-xl">
-      <button
-        onClick={onClose}
-        className="fixed right-5 top-[calc(var(--sa-top)+16px)] z-10 grid h-10 w-10 place-items-center rounded-full text-faint transition-colors hover:text-ink"
-        aria-label="Close templates"
-      >
-        <X size={18} />
-      </button>
-      <div className="mx-auto w-full max-w-3xl px-5 py-16">
-        <div className="text-center">
-          <span className="font-mono text-[11px] uppercase tracking-[0.22em] text-faint">Starter goals</span>
-          <h2 className="mt-2 font-display text-2xl font-semibold text-ink">Pick a proven path</h2>
-          <p className="mt-1.5 text-[14px] text-muted">A full plan in one tap. Steps, resources, a finish line. Tweak anything after.</p>
-        </div>
-        <div className="mt-8 grid gap-3 sm:grid-cols-2">
-          {TEMPLATES.map((t) => {
-            const Icon = goalIcon(t.icon);
-            return (
-              <button key={t.id} onClick={() => onPick(t)} className="panel rounded-2xl p-4 text-left transition-transform hover:-translate-y-0.5">
-                <div className="flex items-center gap-3">
-                  <span className="grid h-10 w-10 shrink-0 place-items-center rounded-xl" style={{ background: "rgba(230,184,119,0.12)" }}>
-                    <Icon size={19} className="text-accent" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <span className="block truncate font-display text-[15px] font-semibold text-ink">{t.title}</span>
-                    <span className="font-mono text-[10px] uppercase tracking-wide text-faint">{t.category} · {t.milestones.length} milestones · ~{t.targetWeeks}w</span>
-                  </div>
-                </div>
-                <p className="mt-2.5 text-[13px] leading-relaxed text-muted">{t.blurb}</p>
-                <span className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-medium text-accent">
-                  <Plus size={13} /> Add to my map
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </div>
-    </div>
-  );
-}
 
 function NewGoalBar({
-  value, onChange, onSubmit, speech, empty, onBrowse, onCancel,
+  value, onChange, onSubmit, speech, empty, onCancel,
 }: {
   value: string;
   onChange: (v: string) => void;
   onSubmit: () => void;
   speech: Speech;
   empty: boolean;
-  onBrowse: () => void;
   onCancel?: () => void;
 }) {
   return (
@@ -2116,11 +2052,6 @@ function NewGoalBar({
           <Sparkles size={16} />
         </button>
       </form>
-      <div className="mt-2.5 text-center">
-        <button onClick={onBrowse} className="inline-flex items-center gap-1.5 text-[13px] text-faint transition-colors hover:text-ink">
-          <LayoutGrid size={13} /> or start from a template
-        </button>
-      </div>
     </div>
   );
 }

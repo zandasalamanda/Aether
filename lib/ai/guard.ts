@@ -92,13 +92,15 @@ export async function guardAi(opts: GuardOptions = {}): Promise<NextResponse | n
   }
 
   const weight = Math.max(1, Math.round(opts.weight ?? 1));
-  // App Store Guideline 3.1.1: the native build may not consume an entitlement
-  // bought on the web, so it resolves to free regardless of the real plan, and
-  // its error bodies must name no paid tier and carry no `upgrade` flag (the
-  // client renders an "Upgrade to Pro" button off that flag). Web responses
-  // below are unchanged.
+  // Native requests resolve the REAL plan, exactly like the web. App Store
+  // Guideline 3.1.3(b) (multiplatform services) permits users to access
+  // entitlements they acquired on other platforms; what the iOS build must not
+  // show is a PURCHASE path. So a web Pro subscriber keeps Pro limits in the
+  // app, while native error bodies still name no paid tier and carry no
+  // `upgrade` flag (the client renders an "Upgrade to Pro" button off that
+  // flag). Web responses below are unchanged.
   const native = await isNativeRequest();
-  const plan = native ? "free" : await planFor(userId, supabase);
+  const plan = await planFor(userId, supabase);
 
   if (opts.pro && plan !== "pro") {
     return native

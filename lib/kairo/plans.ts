@@ -9,6 +9,7 @@ export const PLAN_FREE_FEATURES = [
   "AI goal maps & a daily focus plan",
   "Hand-picked videos and guides for each step",
   "Progress tracked automatically",
+  "Reminders & a weekly digest",
   "Weekly progress review",
 ];
 
@@ -16,7 +17,7 @@ export const PLAN_PRO_FEATURES = [
   "Unlimited goals",
   "Ask Sola for coaching on any step",
   "Deep research with cited sources",
-  "Reminders & a weekly digest",
+  "“Do it for me” drafts on any step",
   "Accountability: share your progress",
   "Priority AI + much higher limits",
 ];
@@ -26,7 +27,7 @@ export const PLAN_PRO_FEATURES = [
 export const PRO_UPGRADE_LINES = [
   "Keep every goal you start",
   "Never lose momentum on a step",
-  "Your map, backed by research + reminders",
+  "Your map, backed by cited research",
   "Keep your weekly progress record",
 ];
 
@@ -36,14 +37,14 @@ const round2 = (n: number) => (Math.round(n * 100) / 100).toFixed(2);
 // is shown against the real monthly price, plus a concrete per-day figure. No
 // invented "value" decoy.
 export const priceDisplay = {
-  monthly: pricing.monthly.amount, // 12
-  yearly: pricing.yearly.amount, // 96
+  monthly: pricing.monthly.amount,
+  yearly: pricing.yearly.amount,
   /** Effective per-month cost when billed yearly, whole-dollar for the headline. */
-  yearlyPerMonth: Math.round(pricing.yearly.amount / 12), // 8
+  yearlyPerMonth: Math.round(pricing.yearly.amount / 12),
   /** How much cheaper yearly is than 12x monthly, as a whole percent. */
-  savingsPct: Math.round((1 - pricing.yearly.amount / (pricing.monthly.amount * 12)) * 100), // 33
+  savingsPct: Math.round((1 - pricing.yearly.amount / (pricing.monthly.amount * 12)) * 100),
   /** Concrete "cents a day" anchor from the yearly price. */
-  perDay: `$${round2(pricing.yearly.amount / 365)}`, // $0.26
+  perDay: `$${round2(pricing.yearly.amount / 365)}`,
 } as const;
 
 /** Shared, loss-framed copy for hitting the free goal cap (map modal + server mirror). */

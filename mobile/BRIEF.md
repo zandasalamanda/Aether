@@ -258,6 +258,11 @@ Needs real rasters from `public/kairo-mark.svg`: `assets/icon-only.png` (1024²,
 
 ## 5. THE 3.1.1 PAYMENTS DECISION
 
+> **Superseded 20 July 2026** — see `HANDOVER.md`. The shipped behaviour honours web-bought
+> entitlements on iOS under 3.1.3(b) (multiplatform services) and hides only the purchase
+> path. The "must NOT appear" list below still stands in full; the free-tier-for-everyone
+> paragraphs do not.
+
 **The iOS app grants the free tier to every user, regardless of what they pay on the web.**
 
 Not "hides the buy button." The earlier plan — hide the purchase UI, honour the web entitlement — is the specific thing Apple rejects, and the standard rejection text says so: *"Your app accesses digital content purchased outside the app, and that content is not available through in-app purchase."* Guideline 3.1.3(b) is the only clause that would let a web purchase light up on iOS, and it is conditional: content acquired elsewhere may be accessed *"provided those items are also available as in-app purchases within the app."* No IAP, no cover. 3.1.3(f) does not rescue us — Solaspace is freemium and is itself the product, not a free companion to a paid web tool, and an AI planner is nowhere in its enumerated list (VoIP, cloud storage, email, web hosting).

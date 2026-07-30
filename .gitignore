@@ -16,6 +16,7 @@
 # next.js
 /.next/
 /.next-preview/
+/.next-demo/
 /out/
 
 # production
@@ -46,3 +47,4 @@ everdeck/
 
 # Temp preview routes (local-only, per-session)
 app/devpreview/
+portfolio/

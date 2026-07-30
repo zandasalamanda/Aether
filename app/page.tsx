@@ -109,6 +109,11 @@ export default async function LandingPage() {
           you have heard of. No searching, no blank page, no wondering whether you are starting
           in the right place.
         </p>
+        <p className="mt-8 max-w-xl text-[17px] leading-relaxed text-muted">
+          And when a step deserves more than a link, ask for research. Sola reads the current
+          web and returns a briefing with sources you can check, scoped to exactly the step you
+          are on.
+        </p>
       </section>
 
 

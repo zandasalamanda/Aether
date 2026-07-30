@@ -1,0 +1,3 @@
+{
+  "/api/ai/extract-steps/route": "app/api/ai/extract-steps/route.js"
+}
