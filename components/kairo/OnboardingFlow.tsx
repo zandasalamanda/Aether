@@ -9,6 +9,7 @@ import { clarifyGoal } from "@/lib/ai/clarify";
 import { persistGoalFromMap, deleteGoal } from "@/lib/data/actions";
 import type { GoalMapResult, Clarifier } from "@/lib/ai/types";
 import { GoalCore } from "./GoalCore";
+import { GoalCoreCycle } from "./GoalCoreCycle";
 import { Logo } from "./Logo";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { Chip } from "@/components/ui/Chip";
@@ -169,7 +170,9 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
 
       {step === "input" && (
         <div className="my-auto w-full animate-fade-up text-center">
-          <GoalCore size={140} className="mx-auto mb-8" />
+          {/* Drifts through goal types in the palette's real colours: the question
+              is "what do you want", so the orb answers with the range. */}
+          <GoalCoreCycle size={140} className="mx-auto mb-8" />
           <h1 className="font-display text-3xl font-semibold tracking-tight text-ink md:text-4xl">What are we making happen?</h1>
           <p className="mx-auto mt-3 max-w-md text-[15px] text-muted">
             Tell Solaspace your goal. It will map the path and help build your day.
