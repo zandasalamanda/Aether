@@ -502,13 +502,23 @@ export function TodayPlanner({
 
           return (
             <li key={b.id} className="relative py-1.5 pl-11">
-              {/* bead on the spine: number, or a check when done */}
+              {/* bead on the spine: number, or a check when done. Raised like
+                  every other chip on the page, not a flat outline: the number
+                  is a station on today's path and it dresses like one. */}
               <span
                 className="absolute left-[3px] top-[18px] z-[1] grid h-6 w-6 place-items-center rounded-full font-mono text-[13px] font-semibold"
                 style={
                   completed
-                    ? { background: hex, color: "#0a0b0d" }
-                    : { background: "var(--color-canvas)", boxShadow: `inset 0 0 0 1.5px ${pushed ? "var(--color-line-strong)" : hex}`, color: pushed ? "var(--color-faint)" : hex }
+                    ? {
+                        background: `radial-gradient(circle at 34% 28%, color-mix(in srgb, ${hex} 45%, #fff) 0%, ${hex} 60%, color-mix(in srgb, ${hex} 60%, #000) 100%)`,
+                        boxShadow: "inset 0 1px 1px rgba(255,255,255,0.45), 0 2px 5px -1px rgba(0,0,0,0.5)",
+                        color: "#1b1206",
+                      }
+                    : {
+                        background: "linear-gradient(180deg, color-mix(in srgb, var(--color-ink) 7%, var(--color-canvas)), var(--color-canvas))",
+                        boxShadow: `inset 0 1px 0 rgba(255,255,255,0.09), inset 0 0 0 1.5px ${pushed ? "var(--color-line-strong)" : hex}, 0 2px 5px -1px rgba(0,0,0,0.45)`,
+                        color: pushed ? "var(--color-faint)" : hex,
+                      }
                 }
               >
                 {completed ? <Check size={13} strokeWidth={2.5} /> : stepNo}
