@@ -13,8 +13,14 @@ export const GOAL_PALETTE = [
   { name: "Rose", hex: "#cf9ba6" },
 ] as const;
 
-/** localStorage key for per-goal color overrides ({ goalId: paletteIndex }). */
+/**
+ * localStorage key for per-goal color overrides.
+ * A value is either a palette index (number) or, since the colour wheel, a
+ * custom hex string like "#7fb0ad". Old stores hold only numbers, which is why
+ * the union rather than a new key: existing choices keep working unmigrated.
+ */
 export const GOAL_COLORS_KEY = "kairo.colors.v1";
+export type GoalColorOverride = number | string;
 
 /** Stable default palette slot for a goal, from its id. */
 export function goalColorIndex(goalId: string): number {
@@ -23,8 +29,9 @@ export function goalColorIndex(goalId: string): number {
   return h % GOAL_PALETTE.length;
 }
 
-/** The hex for a goal: the user's chosen slot if set, else the stable default. */
-export function goalColorHex(goalId: string, override?: number): string {
+/** The hex for a goal: a custom hex, the chosen slot, or the stable default. */
+export function goalColorHex(goalId: string, override?: GoalColorOverride): string {
+  if (typeof override === "string") return override;
   const raw = override ?? goalColorIndex(goalId);
   const idx = ((raw % GOAL_PALETTE.length) + GOAL_PALETTE.length) % GOAL_PALETTE.length;
   return GOAL_PALETTE[idx].hex;

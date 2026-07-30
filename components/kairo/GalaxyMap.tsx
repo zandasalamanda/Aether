@@ -22,7 +22,7 @@ import { ExternalLink as OutLink } from "@/components/ui/ExternalLink";
 import { SITE_URL } from "@/lib/site";
 import type { Clarifier, ReplanProposal, ReplanKind, GoalMapResult } from "@/lib/ai/types";
 import { clarifyGoal } from "@/lib/ai/clarify";
-import { GOAL_PALETTE, goalColorHex, goalColorIndex } from "@/lib/kairo/goal-color";
+import { GOAL_PALETTE, goalColorHex, goalColorIndex, type GoalColorOverride } from "@/lib/kairo/goal-color";
 import { goalIcon } from "@/lib/kairo/goal-icon";
 import { pickCelebration, pickGoalCelebration, fireHaptic } from "@/lib/kairo/celebrate";
 import { upgradeReasonForGoalCap } from "@/lib/kairo/plans";
@@ -328,7 +328,7 @@ export function GalaxyMap({
   const light = useTheme() === "light";
   const [goals, setGoals] = usePersistentState<GoalWithNodes[]>("kairo.goals.v1", initialGoals, !remote);
   const [positions, setPositions] = usePersistentState<Record<string, { x: number; y: number }>>("kairo.galaxy.v1", {});
-  const [colorIdx, setColorIdx] = usePersistentState<Record<string, number>>("kairo.colors.v1", {});
+  const [colorIdx, setColorIdx] = usePersistentState<Record<string, GoalColorOverride>>("kairo.colors.v1", {});
   const [groups, setGroups] = usePersistentState<Constellation[]>("kairo.groups.v1", []);
   const [groupPickerFor, setGroupPickerFor] = React.useState<string | null>(null); // goalId being filed
   const [newGroupName, setNewGroupName] = React.useState("");
@@ -413,7 +413,7 @@ export function GalaxyMap({
   React.useEffect(() => {
     setColorIdx((prev) => {
       const used = new Set<number>();
-      for (const g of goals) if (prev[g.id] !== undefined) used.add(prev[g.id]);
+      for (const g of goals) { const v = prev[g.id]; if (typeof v === "number") used.add(v); }
       let next = prev;
       const N = GOAL_PALETTE.length;
       for (const g of goals) {
@@ -965,8 +965,13 @@ export function GalaxyMap({
     return true;
   };
 
-  const cycleColor = (id: string) => {
-    setColorIdx((c) => ({ ...c, [id]: ((c[id] ?? goalColorIndex(id)) + 1) % GOAL_PALETTE.length }));
+  // "Change colour" opens a picker: the eight palette slots plus a real colour
+  // wheel. The wheel is the platform's own (an <input type="color"> opens the
+  // OS spectrum/wheel picker), so it costs no dependency and behaves natively
+  // on iOS. A custom pick is stored as the hex itself; slots stay numbers.
+  const [colorPick, setColorPick] = React.useState<string | null>(null);
+  const setGoalColor = (id: string, v: GoalColorOverride) => {
+    setColorIdx((c) => ({ ...c, [id]: v }));
   };
 
   const removeGoal = (id: string) => {
@@ -1534,7 +1539,7 @@ export function GalaxyMap({
                 addBranch(expanded.id, null, t);
                 setStepText("");
               }}
-              onColor={() => cycleColor(expanded.id)}
+              onColor={() => setColorPick(expanded.id)}
               onDelete={() => removeGoal(expanded.id)}
               onAdapt={() => void runReplan(expanded.id)}
               onShare={() => void shareGoalLink(expanded.id)}
@@ -1553,6 +1558,69 @@ export function GalaxyMap({
           )}
         </div>
       </div>
+
+      {colorPick && (() => {
+        const g = goals.find((x) => x.id === colorPick);
+        if (!g) return null;
+        const current = colorIdx[colorPick];
+        const hex = hexOf(colorPick);
+        return (
+          <div className="fixed inset-0 z-[70] flex items-end justify-center bg-black/45 p-4 backdrop-blur-sm sm:items-center" onClick={() => setColorPick(null)}>
+            <div className="chrome animate-sheet-up w-full max-w-sm rounded-2xl p-5 pb-[calc(1.25rem+var(--sa-bottom))] sm:pb-5" onClick={(e) => e.stopPropagation()}>
+              <div className="flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-faint">Colour</div>
+                  <div className="mt-0.5 truncate text-[15px] font-medium text-ink">{g.title}</div>
+                </div>
+                <button onClick={() => setColorPick(null)} className="grid h-11 w-11 shrink-0 place-items-center rounded-lg text-faint transition-colors hover:text-ink" aria-label="Close"><X size={16} /></button>
+              </div>
+              <div className="mt-4 grid grid-cols-5 gap-2.5">
+                {GOAL_PALETTE.map((c, i) => (
+                  <button
+                    key={c.name}
+                    onClick={() => { setGoalColor(g.id, i); setColorPick(null); }}
+                    aria-label={c.name}
+                    title={c.name}
+                    className="grid h-12 w-12 place-items-center rounded-full transition-transform hover:scale-105"
+                    style={{
+                      background: `radial-gradient(circle at 34% 28%, color-mix(in srgb, ${c.hex} 45%, #fff) 0%, ${c.hex} 55%, color-mix(in srgb, ${c.hex} 55%, #000) 100%)`,
+                      boxShadow: current === i || (typeof current !== "number" && hex === c.hex)
+                        ? `0 0 0 2px var(--color-canvas), 0 0 0 4px ${c.hex}`
+                        : "inset 0 1px 2px rgba(255,255,255,0.35), 0 2px 6px rgba(0,0,0,0.35)",
+                    }}
+                  >
+                    {(current === i || (typeof current !== "number" && hex === c.hex)) && <Check size={15} style={{ color: "#1b1206" }} />}
+                  </button>
+                ))}
+                {/* The wheel. A label proxying to input[type=color] opens the OS
+                    spectrum picker (a genuine wheel on iOS/macOS), free of any
+                    dependency. A custom pick is stored as the hex itself. */}
+                <label
+                  className="relative grid h-12 w-12 cursor-pointer place-items-center rounded-full transition-transform hover:scale-105"
+                  title="Custom colour"
+                  style={{
+                    background: "conic-gradient(#e66a6a, #e6b877, #b9d17e, #7fb0ad, #9aa6d4, #c39bd0, #e66a6a)",
+                    boxShadow: typeof current === "string"
+                      ? `0 0 0 2px var(--color-canvas), 0 0 0 4px ${hex}`
+                      : "inset 0 1px 2px rgba(255,255,255,0.35), 0 2px 6px rgba(0,0,0,0.35)",
+                  }}
+                >
+                  <span className="grid h-6 w-6 place-items-center rounded-full" style={{ background: typeof current === "string" ? hex : "var(--color-canvas)" }}>
+                    {typeof current === "string" && <Check size={13} style={{ color: "#1b1206" }} />}
+                  </span>
+                  <input
+                    type="color"
+                    value={hex}
+                    onChange={(e) => setGoalColor(g.id, e.target.value)}
+                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                    aria-label="Custom colour wheel"
+                  />
+                </label>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {focusNode && expanded && (
         <FocusOverlay
@@ -1605,7 +1673,7 @@ export function GalaxyMap({
               ]
             : [
                 { label: groupOf(ctx.goalId) ? "Move to a group" : "Add to a group", onClick: () => { setGroupPickerFor(ctx.goalId); setNewGroupName(""); } },
-                { label: "Change colour", onClick: () => cycleColor(ctx.goalId) },
+                { label: "Change colour", onClick: () => setColorPick(ctx.goalId) },
                 { label: "Adapt with Sola", onClick: () => void runReplan(ctx.goalId) },
                 { label: "Share", onClick: () => void shareGoalLink(ctx.goalId) },
                 { label: "Delete goal", danger: true, onClick: () => removeGoal(ctx.goalId) },

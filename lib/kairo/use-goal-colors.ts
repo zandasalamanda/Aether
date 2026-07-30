@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { loadPersisted } from "@/lib/store/persist";
-import { goalColorHex, GOAL_COLORS_KEY } from "./goal-color";
+import { goalColorHex, GOAL_COLORS_KEY, type GoalColorOverride } from "./goal-color";
 
 /**
  * Resolves a goal's color anywhere in the app, honoring the user's per-goal
@@ -10,10 +10,10 @@ import { goalColorHex, GOAL_COLORS_KEY } from "./goal-color";
  * stable default. Stays in sync across tabs via the storage event.
  */
 export function useGoalColors(): (goalId: string) => string {
-  const [overrides, setOverrides] = React.useState<Record<string, number>>({});
+  const [overrides, setOverrides] = React.useState<Record<string, GoalColorOverride>>({});
 
   React.useEffect(() => {
-    const read = () => setOverrides(loadPersisted<Record<string, number>>(GOAL_COLORS_KEY) ?? {});
+    const read = () => setOverrides(loadPersisted<Record<string, GoalColorOverride>>(GOAL_COLORS_KEY) ?? {});
     read();
     const onStorage = (e: StorageEvent) => {
       if (e.key === GOAL_COLORS_KEY) read();
