@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useSvgId } from "@/lib/kairo/svg-id";
 import { cn } from "@/lib/utils";
 
 export function KairoMark({ size = 30, className }: { size?: number; className?: string }) {
@@ -13,7 +14,7 @@ export function KairoMark({ size = 30, className }: { size?: number; className?:
   // losing its glowing centre and rendering as a bare ring.
   // useId can contain characters that are not safe inside url(#...), so strip
   // it down to plain alphanumerics.
-  const coreId = `km-core-${React.useId().replace(/[^a-zA-Z0-9]/g, "")}`;
+  const coreId = useSvgId("km-core");
   return (
     <svg
       width={size}

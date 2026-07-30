@@ -4,6 +4,7 @@ import * as React from "react";
 import { Waypoints, Sparkles, Sunrise, MessageCircle, ArrowRight, X, MousePointer2 } from "lucide-react";
 import { loadPersisted, savePersisted } from "@/lib/store/persist";
 import { cn } from "@/lib/utils";
+import { useSvgId } from "@/lib/kairo/svg-id";
 
 // A calm, one-time welcome the first time someone opens the map. Big type, high
 // contrast, plain language, large buttons, written for a first-time (older) user
@@ -38,11 +39,12 @@ const CHILDREN = [
 ];
 
 function TourDemo() {
+  const orbId = useSvgId("td-orb");
   return (
     <div className="relative mx-auto h-28 w-56" aria-hidden>
       <svg viewBox="0 0 224 112" className="absolute inset-0 h-full w-full" fill="none">
         <defs>
-          <radialGradient id="td-orb" cx="38%" cy="32%" r="70%">
+          <radialGradient id={orbId} cx="38%" cy="32%" r="70%">
             <stop offset="0%" stopColor="#fdf3e0" />
             <stop offset="52%" stopColor="#e6b877" />
             <stop offset="100%" stopColor="#7c5c30" />
@@ -62,7 +64,7 @@ function TourDemo() {
           />
         ))}
         {/* the goal core */}
-        <circle cx="52" cy="58" r="18" fill="url(#td-orb)" style={{ filter: "drop-shadow(var(--mark-drop))" }} />
+        <circle cx="52" cy="58" r="18" fill={`url(#${orbId})`} style={{ filter: "drop-shadow(var(--mark-drop))" }} />
         {/* tap ripple, timed to the press */}
         <circle
           cx="52" cy="58" r="18" fill="none"
@@ -74,7 +76,7 @@ function TourDemo() {
         {CHILDREN.map((c, k) => (
           <circle
             key={k}
-            cx={c.x} cy={c.y} r="9" fill="url(#td-orb)"
+            cx={c.x} cy={c.y} r="9" fill={`url(#${orbId})`}
             className="demo-bloom"
             style={{ transformBox: "fill-box", transformOrigin: "center", animationDelay: `${k * 0.1}s` }}
           />

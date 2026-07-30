@@ -4,6 +4,7 @@ import * as React from "react";
 import type { GoalWithNodes, GoalNode } from "@/types";
 import { nodeStatusMeta } from "@/lib/kairo/status";
 import { cn } from "@/lib/utils";
+import { useSvgId } from "@/lib/kairo/svg-id";
 
 const W = 800;
 const H = 640;
@@ -39,16 +40,19 @@ export function LivingGoalMap({
 }) {
   const nodes = goal.nodes;
   const nextId = nextNodeId(nodes);
+  // Per-instance, so two maps on one page cannot fight over the same gradient.
+  const coreId = useSvgId("lm-core");
+  const glowId = useSvgId("lm-core-glow");
 
   return (
     <svg viewBox={`0 0 ${W} ${H}`} className={cn("w-full", className)} role="img" aria-label={`Living map for ${goal.title}`}>
       <defs>
-        <radialGradient id="lm-core" cx="50%" cy="40%" r="62%">
+        <radialGradient id={coreId} cx="50%" cy="40%" r="62%">
           <stop offset="0%" stopColor="#fdf3e0" />
           <stop offset="46%" stopColor={ACCENT} />
           <stop offset="100%" stopColor="#22190c" />
         </radialGradient>
-        <radialGradient id="lm-core-glow" cx="50%" cy="50%" r="50%">
+        <radialGradient id={glowId} cx="50%" cy="50%" r="50%">
           <stop offset="0%" stopColor="rgba(230,184,119,0.4)" />
           <stop offset="100%" stopColor="rgba(230,184,119,0)" />
         </radialGradient>
@@ -86,8 +90,8 @@ export function LivingGoalMap({
       })}
 
       {/* core */}
-      <circle cx={CX} cy={CY} r={116} fill="url(#lm-core-glow)" className="animate-pulse-soft" />
-      <circle cx={CX} cy={CY} r={52} fill="url(#lm-core)" stroke="rgba(255,255,255,0.2)" strokeWidth={1} />
+      <circle cx={CX} cy={CY} r={116} fill={`url(#${glowId})`} className="animate-pulse-soft" />
+      <circle cx={CX} cy={CY} r={52} fill={`url(#${coreId})`} stroke="rgba(255,255,255,0.2)" strokeWidth={1} />
       <text x={CX} y={CY - 3} textAnchor="middle" fontSize="25" fontWeight="700" fill="#1b1206">
         {Math.round(goal.progress)}%
       </text>

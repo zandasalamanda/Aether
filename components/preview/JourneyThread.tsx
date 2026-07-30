@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { useSvgId } from "@/lib/kairo/svg-id";
 
 // The page's spine: one continuous dotted thread, in the exact vocabulary the
 // goal map uses for "your next step" (gold, dasharray 3 8, the same marching
@@ -28,6 +29,14 @@ interface Stop {
   ringOnly?: boolean;
   /** the closing node: bigger, completes with a check */
   terminal?: boolean;
+  /**
+   * Overrides applied at phone width. On a wide screen the text column has a
+   * gutter either side and the thread can swing out to a centred stop without
+   * touching anything. At 375px there is no gutter, so the same swing cuts
+   * diagonally straight through the paragraph. Stops that leave the rail must
+   * declare how they behave when there is no room to leave it.
+   */
+  compact?: { at?: Stop["at"]; off?: number; bow?: number };
 }
 
 // Order matters: this is the walk. Every section stop rides a LEFT RAIL in the
@@ -39,7 +48,7 @@ const WALK: Stop[] = [
   // Two stops on the tree: the thread is born deep at the trunk and curves out
   // from under it, rather than starting abruptly in open space.
   { id: "tree", at: "bottom", off: -110 },
-  { id: "tree", at: "bottom", off: -8, bow: 36 },
+  { id: "tree", at: "bottom", off: -8, bow: 36, compact: { at: "left", off: 26, bow: 20 } },
   { id: "s-plan", at: "left", off: 30, bow: 26, dot: true },
   { id: "s-day", at: "left", off: 30, bow: -30, dot: true },
   { id: "s-look", at: "left", off: 30, bow: 28, dot: true },
@@ -47,7 +56,7 @@ const WALK: Stop[] = [
   // the right card. Every bow is positive because each leg turns the same way,
   // which is what closes the circle.
   { id: "shot-map", at: "bottom", off: 16, bow: -50, dot: true, ringOnly: true },
-  { id: "shot-sola", at: "top", off: 14, bow: 40, dot: true },
+  { id: "shot-sola", at: "top", off: 14, bow: 40, dot: true, compact: { at: "left", off: 26, bow: 16 } },
   { id: "shot-sola", at: "bottom", off: 30, bow: 120, ringOnly: true },
   { id: "shot-focus", at: "bottom", off: 30, bow: 60, ringOnly: true },
   { id: "shot-focus", at: "top", off: 14, bow: 120, dot: true, ringOnly: true },
@@ -61,7 +70,7 @@ interface Node { x: number; y: number; len: number; dot: boolean; terminal: bool
 const GOLD = "#e6b877";
 
 export function JourneyThread() {
-  const maskId = `journey-reveal-${React.useId().replace(/[^a-zA-Z0-9-]/g, "")}`;
+  const maskId = useSvgId("journey-reveal");
   const rootRef = React.useRef<HTMLDivElement>(null);
   const maskRef = React.useRef<SVGPathElement>(null);
   const tipRef = React.useRef<SVGGElement>(null);
@@ -72,8 +81,20 @@ export function JourneyThread() {
     compact: boolean;
     /** monotonic (y, length) checkpoints for the scroll mapping */
     marks: { y: number; len: number }[];
+    /** document-space top of the container, so the frame loop never reads layout */
+    rootTop: number;
   } | null>(null);
-  const [drawn, setDrawn] = React.useState(0);
+  // How far the thread is drawn lives in a ref, NOT in state. It changes every
+  // animation frame, and putting it in state re-rendered this whole component
+  // (including every node in the walk) 60 times a second while scrolling, which
+  // is what made the thread stutter on a phone. The frame loop writes the mask
+  // and the tip straight to the DOM instead.
+  const drawnRef = React.useRef(0);
+  // The only things a frame can change that actually need React: how many nodes
+  // have been reached, and whether the walk is over. Both change a handful of
+  // times over the whole page instead of once a frame.
+  const [lit, setLit] = React.useState(0);
+  const [finished, setFinished] = React.useState(false);
   const [reduced, setReduced] = React.useState(false);
 
   React.useEffect(() => {
@@ -91,6 +112,10 @@ export function JourneyThread() {
     const cr = root.getBoundingClientRect();
     const w = cr.width;
     const h = root.scrollHeight;
+    // Document-space top, captured once. The frame loop needs the container's
+    // offset, and reading it per frame would force a layout on every frame
+    // right after the loop has written styles. window.scrollY is free.
+    const rootTop = cr.top + window.scrollY;
 
     const rectOf = (id: string): DOMRect | null => {
       const el = root.querySelector<HTMLElement>(`[data-journey="${id}"]`);
@@ -100,11 +125,13 @@ export function JourneyThread() {
     };
     const ringLive = !!rectOf("shot-map");
 
+    const compact = w < 640;
     const pts: (Stop & { x: number; y: number })[] = [];
-    for (const s of WALK) {
-      if (s.ringOnly && !ringLive) continue;
-      const r = rectOf(s.id);
+    for (const raw of WALK) {
+      if (raw.ringOnly && !ringLive) continue;
+      const r = rectOf(raw.id);
       if (!r) continue;
+      const s = compact && raw.compact ? { ...raw, ...raw.compact } : raw;
       const off = s.off ?? 0;
       let x = r.left + r.width / 2 - cr.left;
       let y = r.top + r.height / 2 - cr.top;
@@ -112,7 +139,7 @@ export function JourneyThread() {
       if (s.at === "bottom") y = r.bottom - cr.top + off;
       if (s.at === "left") x = r.left - cr.left - off;
       if (s.at === "right") x = r.right - cr.left + off;
-      x = Math.max(w < 640 ? 12 : 14, Math.min(w - 14, x));
+      x = Math.max(compact ? 18 : 14, Math.min(w - 14, x));
       pts.push({ ...s, x, y });
     }
     if (pts.length < 3) return;
@@ -137,14 +164,18 @@ export function JourneyThread() {
       const a = pts[i - 1], b = pts[i];
       const dx = b.x - a.x, dy = b.y - a.y;
       const dist = Math.hypot(dx, dy) || 1;
-      const bow = b.bow ?? 0;
+      // Bows are tuned for a wide screen, where swinging 30-40px sideways happens
+      // in empty gutter. At phone width that same swing lands in the paragraph,
+      // so the whole family is scaled down and the walk stays a near-vertical
+      // rail. Measured: unscaled, the thread crossed 20 separate text blocks.
+      const bow = (b.bow ?? 0) * (compact ? 0.28 : 1);
       const cx = (a.x + b.x) / 2 + (-dy / dist) * bow;
       const cy = (a.y + b.y) / 2 + (dx / dist) * bow;
       d += ` Q ${cx.toFixed(1)} ${cy.toFixed(1)} ${b.x.toFixed(1)} ${b.y.toFixed(1)}`;
       record(b);
     }
     scratch.setAttribute("d", d);
-    setGeo({ d, w, h, total: scratch.getTotalLength(), nodes, marks, compact: w < 640, start: { x: pts[0].x, y: pts[0].y } });
+    setGeo({ d, w, h, total: scratch.getTotalLength(), nodes, marks, compact, start: { x: pts[0].x, y: pts[0].y }, rootTop });
   }, []);
 
   React.useEffect(() => {
@@ -158,79 +189,98 @@ export function JourneyThread() {
   }, [rebuild]);
 
   // ---- scroll drives the reveal ----
+  // ---- one frame loop drives the whole reveal ----
+  //
+  // Everything below writes to the DOM directly. The previous version pushed the
+  // drawn length through React state on every frame, so scrolling re-rendered
+  // this component (and re-created every node in the walk) sixty times a second.
+  // That is what made the thread stutter on a phone.
   React.useEffect(() => {
-    if (!geo || reduced) return; // reduced motion renders fully drawn, no listener
-    let raf = 0;
-    const tick = () => {
-      const root = rootRef.current?.parentElement;
-      if (!root) return;
-      const top = root.getBoundingClientRect().top; // negative once scrolled
-      // The reveal line sits at 78% of the viewport: the thread's tip stays
-      // just below what you are reading, always arriving as the section does.
-      const reveal = window.innerHeight * 0.78 - top;
-      const { marks, total } = geo;
-      let len = 0;
-      if (reveal <= marks[0].y) len = 0;
-      else if (reveal >= marks[marks.length - 1].y) len = total;
-      else {
-        for (let i = 1; i < marks.length; i++) {
-          if (reveal <= marks[i].y) {
-            const a = marks[i - 1], b = marks[i];
-            const f = (reveal - a.y) / Math.max(1, b.y - a.y);
-            len = a.len + (b.len - a.len) * Math.max(0, Math.min(1, f));
-            break;
-          }
+    const mask = maskRef.current;
+    if (!geo || !mask) return;
+    const tip = tipRef.current;
+    const { marks, total, nodes, rootTop, h } = geo;
+
+    if (reduced) {
+      // Complete and still: no loop, no timers, nothing to animate.
+      mask.style.strokeDashoffset = "0";
+      if (tip) tip.style.opacity = "0";
+      drawnRef.current = total;
+      setLit(nodes.length);
+      setFinished(true);
+      return;
+    }
+
+    // Where the scroll says the thread should have reached.
+    const targetFor = (scrollY: number) => {
+      // The reveal line sits at 78% of the viewport: the tip stays just below
+      // what you are reading, always arriving as the section does.
+      const reveal = window.innerHeight * 0.78 - (rootTop - scrollY);
+      if (reveal <= marks[0].y) return 0;
+      if (reveal >= marks[marks.length - 1].y) return total;
+      for (let i = 1; i < marks.length; i++) {
+        if (reveal <= marks[i].y) {
+          const a = marks[i - 1], b = marks[i];
+          const f = (reveal - a.y) / Math.max(1, b.y - a.y);
+          return a.len + (b.len - a.len) * Math.max(0, Math.min(1, f));
         }
       }
-      // Scrolled to the bottom means the walk is over, whatever the reveal-line
-      // arithmetic says: very tall viewports otherwise leave the last few px
-      // undrawn and the terminal check never fires.
-      if (window.scrollY + window.innerHeight >= document.documentElement.scrollHeight - 2) len = geo.total;
+      return total;
+    };
+
+    let live = true;
+    let raf = 0;
+    let litNow = -1;
+    let doneNow = false;
+
+    const frame = () => {
+      if (!live) return;
+      raf = requestAnimationFrame(frame);
+
+      const sy = window.scrollY;
+      let target = targetFor(sy);
+      // Reaching the bottom means the walk is over, whatever the reveal-line
+      // arithmetic says: tall viewports otherwise leave the last few px undrawn
+      // and the terminal node never completes.
+      if (sy + window.innerHeight >= h - 2) target = total;
+
       // Monotonic on purpose. Scrolling back up must not unwalk the path: two
       // sections earlier the page promises that falling behind loses nothing.
-      setDrawn((prev) => Math.max(prev, len));
+      if (target <= drawnRef.current) return;
+
+      // Ease toward the target rather than snapping to it. A per-frame
+      // exponential approach is what makes this read as smooth: it absorbs
+      // momentum-scroll jumps and the long ring leg, without the stutter a CSS
+      // transition produces when every frame restarts it.
+      const next = drawnRef.current + (target - drawnRef.current) * 0.16;
+      drawnRef.current = target - next < 0.5 ? target : next;
+      const eff = drawnRef.current;
+
+      mask.style.strokeDashoffset = String(Math.max(0, total - eff));
+
+      if (tip) {
+        if (eff > 4 && eff < total - 4) {
+          const pt = mask.getPointAtLength(eff);
+          tip.style.transform = `translate(${pt.x.toFixed(1)}px, ${pt.y.toFixed(1)}px)`;
+          tip.style.opacity = "1";
+        } else {
+          tip.style.opacity = "0";
+        }
+      }
+
+      // React only when the lighting actually changes: a handful of times over
+      // the whole page instead of once a frame.
+      let count = 0;
+      while (count < nodes.length && eff >= nodes[count].len - 2) count++;
+      if (count !== litNow) { litNow = count; setLit(count); }
+      const done = eff >= total - 4;
+      if (done !== doneNow) { doneNow = done; setFinished(done); }
     };
-    // A delta-poll instead of a scroll listener. One rAF loop comparing a single
-    // number per frame costs nothing measurable, and it works in every scrolling
-    // situation a listener can miss: nested scroll containers, iOS momentum
-    // frames after the finger lifts, and embedded webviews that swallow scroll
-    // events entirely (the in-app browser this page will live inside is one).
-    let live = true;
-    let lastTop = Number.NaN;
-    let lastH = 0;
-    const loop = () => {
-      if (!live) return;
-      const root = rootRef.current?.parentElement;
-      const top = root ? root.getBoundingClientRect().top : 0;
-      const vh = window.innerHeight;
-      if (top !== lastTop || vh !== lastH) { lastTop = top; lastH = vh; tick(); }
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
-    return () => { live = false; if (raf) cancelAnimationFrame(raf); };
+
+    raf = requestAnimationFrame(frame);
+    return () => { live = false; cancelAnimationFrame(raf); };
   }, [geo, reduced]);
 
-  // Tip follows the drawn end of the path. Imperative to keep scroll cheap.
-  React.useEffect(() => {
-    const mask = maskRef.current, tip = tipRef.current;
-    if (!mask || !tip || !geo) return;
-    const eff = reduced ? geo.total : drawn;
-    mask.style.strokeDashoffset = String(Math.max(0, geo.total - eff));
-    if (!reduced && eff > 4 && eff < geo.total - 4) {
-      const p = mask.getPointAtLength(eff);
-      // style.transform, not the transform attribute: only the style property
-      // honours the CSS transition, which keeps the tip glued to the animating
-      // mask edge when the ring's long up-leg draws in one scroll step.
-      tip.style.transform = `translate(${p.x.toFixed(1)}px, ${p.y.toFixed(1)}px)`;
-      tip.style.opacity = "1";
-    } else {
-      tip.style.opacity = "0";
-    }
-  }, [drawn, geo, reduced]);
-
-  // Reduced motion never runs the scroll listener; the thread is simply complete.
-  const shown = reduced && geo ? geo.total : drawn;
-  const finished = geo ? shown >= geo.total - 4 : false;
 
   return (
     <div ref={rootRef} aria-hidden className="pointer-events-none absolute inset-0">
@@ -247,9 +297,9 @@ export function JourneyThread() {
               <circle cx={geo.start.x} cy={geo.start.y} r={140} fill={`url(#${maskId}-birth)`} />
             </mask>
             <radialGradient id={`${maskId}-orb`} cx="38%" cy="32%" r="75%">
-              <stop offset="0%" stopColor="#1d1f26" />
-              <stop offset="60%" stopColor="#0e0f13" />
-              <stop offset="100%" stopColor="#0a0b0d" />
+              <stop offset="0%" stopColor="#4a3820" />
+              <stop offset="60%" stopColor="#261b0d" />
+              <stop offset="100%" stopColor="#161006" />
             </radialGradient>
             <mask id={maskId} maskUnits="userSpaceOnUse" x="0" y="0" width={geo.w} height={geo.h}>
               <path
@@ -261,7 +311,6 @@ export function JourneyThread() {
                 strokeLinecap="round"
                 strokeDasharray={geo.total}
                 strokeDashoffset={reduced ? 0 : geo.total}
-                style={{ transition: "stroke-dashoffset 0.25s linear" }}
               />
             </mask>
           </defs>
@@ -280,19 +329,20 @@ export function JourneyThread() {
                 strokeLinecap="round"
                 strokeDasharray="3 8"
                 opacity={0.75}
-                style={reduced ? undefined : { animation: "dash 2.6s linear infinite", filter: `drop-shadow(0 0 4px ${GOLD}66)` }}
+                style={reduced ? undefined : { animation: "dash 2.6s linear infinite", ...(geo.compact ? null : { filter: `drop-shadow(0 0 4px ${GOLD}66)` }) }}
               />
             </g>
           </g>
 
           {/* step nodes: lit once the thread reaches them */}
           {geo.nodes.map((n, i) => {
-            const lit = shown >= n.len - 2;
+            const reached = i < lit;
             const R = geo.compact ? { outer: 4.6, inner: 1.8, term: 8.5, check: 0.72 } : { outer: 6.5, inner: 2.4, term: 11, check: 1 };
             if (n.terminal) {
               return (
-                <g key={i} transform={`translate(${n.x} ${n.y})`} style={{ opacity: lit ? 1 : 0.3, transition: "opacity .5s ease" }}>
-                  <circle r={R.term} fill="#0a0b0d" stroke={GOLD} strokeWidth={1.5} />
+                <g key={i} transform={`translate(${n.x} ${n.y})`} style={{ opacity: reached ? 1 : 0.3, transition: "opacity .5s ease" }}>
+                  <circle r={R.term} fill={GOLD} opacity={0.14} />
+                  <circle r={R.term} fill="none" stroke={GOLD} strokeWidth={1.5} />
                   <circle r={R.term} fill={GOLD} opacity={finished ? 1 : 0} style={{ transition: "opacity .45s ease" }} />
                   {finished ? (
                     <path d={`M ${-4.5 * R.check} ${0.5 * R.check} L ${-1.5 * R.check} ${3.5 * R.check} L ${4.5 * R.check} ${-3.5 * R.check}`} fill="none" stroke="#0d1a14" strokeWidth={2.4 * R.check} strokeLinecap="round" strokeLinejoin="round" />
@@ -303,15 +353,16 @@ export function JourneyThread() {
               );
             }
             return (
-              <g key={i} transform={`translate(${n.x} ${n.y})`} style={{ opacity: lit ? 1 : 0.28, transition: "opacity .5s ease" }}>
-                <circle r={R.outer} fill="#0a0b0d" stroke={GOLD} strokeWidth={1.4} />
-                <circle r={R.inner} fill={GOLD} style={lit && !reduced ? { filter: `drop-shadow(0 0 5px ${GOLD})` } : undefined} />
+              <g key={i} transform={`translate(${n.x} ${n.y})`} style={{ opacity: reached ? 1 : 0.28, transition: "opacity .5s ease" }}>
+                <circle r={R.outer} fill={GOLD} opacity={0.16} />
+                <circle r={R.outer} fill="none" stroke={GOLD} strokeWidth={1.4} />
+                <circle r={R.inner} fill={GOLD} style={reached && !reduced && !geo.compact ? { filter: `drop-shadow(0 0 5px ${GOLD})` } : undefined} />
               </g>
             );
           })}
 
           {/* the tip: an empty goal orb, you, walking the path right now */}
-          <g ref={tipRef} style={{ opacity: 0, transition: "opacity .3s ease, transform .25s linear" }}>
+          <g ref={tipRef} style={{ opacity: 0, transition: "opacity .3s ease" }}>
             <circle r={13} fill={GOLD} opacity={0.16} className={reduced ? undefined : "animate-pulse-soft"} />
             <circle r={7} fill={`url(#${maskId}-orb)`} stroke={GOLD} strokeWidth={1.4} style={{ filter: `drop-shadow(0 0 6px ${GOLD}55)` }} />
             <ellipse cx={-2.2} cy={-2.6} rx={2.2} ry={1.5} fill="#ffffff" opacity={0.3} />
