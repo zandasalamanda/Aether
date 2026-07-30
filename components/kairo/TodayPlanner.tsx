@@ -13,7 +13,8 @@ import { goalIcon } from "@/lib/kairo/goal-icon";
 import { pickCelebration, fireHaptic } from "@/lib/kairo/celebrate";
 import { usePersistentState } from "@/lib/store/persist";
 import { track } from "@/lib/analytics";
-import { TIME_OPTIONS, ENERGY_OPTIONS, DEFAULT_BUDGET_MINUTES, DEFAULT_ENERGY } from "@/lib/kairo/day-budget";
+import { ENERGY_OPTIONS, DEFAULT_BUDGET_MINUTES, DEFAULT_ENERGY, budgetLabel } from "@/lib/kairo/day-budget";
+import { TimeSlider } from "./TimeSlider";
 import { GoalCore } from "./GoalCore";
 import { SolaMark } from "./SolaMark";
 import { FocusOverlay } from "./FocusOverlay";
@@ -130,6 +131,7 @@ function StepSlider({ ariaLabel, labels, index, onIndex }: { ariaLabel: string; 
     </div>
   );
 }
+
 
 const round5 = (n: number) => Math.round(n / 5) * 5;
 
@@ -341,14 +343,12 @@ export function TodayPlanner({
         </>
       );
     }
-    const timeIdx = Math.max(0, TIME_OPTIONS.findIndex((t) => t.minutes === minutes));
     const energyIdx = Math.max(0, ENERGY_OPTIONS.findIndex((e) => e.value === energy));
     const spokenTime = (() => {
-      const m = TIME_OPTIONS[timeIdx].minutes;
-      if (m < 60) return `${m} minutes`;
-      if (m >= 360) return "6-plus hours";
-      const h = m / 60;
-      return h === 1 ? "1 hour" : `${h} hours`;
+      if (minutes < 60) return `${minutes} minutes`;
+      const h = Math.floor(minutes / 60), m = minutes % 60;
+      const hours = h === 1 ? "1 hour" : `${h} hours`;
+      return m ? `${hours} ${m} minutes` : hours;
     })();
     const shapeByEnergy: Record<EnergyLevel, string> = {
       low: "short, gentle steps with plenty of breaks",
@@ -375,10 +375,10 @@ export function TodayPlanner({
           <div className="mt-10 w-full text-left">
             <div className="flex items-baseline justify-between">
               <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-faint">Time today</span>
-              <span className="font-display text-[26px] font-semibold tabular-nums leading-none text-ink">{TIME_OPTIONS[timeIdx].label}</span>
+              <span className="font-display text-[26px] font-semibold tabular-nums leading-none text-ink">{budgetLabel(minutes)}</span>
             </div>
             <div className="mt-3.5">
-              <StepSlider ariaLabel="How much time do you have today" labels={TIME_OPTIONS.map((t) => t.label)} index={timeIdx} onIndex={(i) => setMinutes(TIME_OPTIONS[i].minutes)} />
+              <TimeSlider minutes={minutes} onMinutes={setMinutes} />
             </div>
           </div>
 
