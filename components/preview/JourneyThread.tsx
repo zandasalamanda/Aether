@@ -5,7 +5,7 @@ import { useSvgId } from "@/lib/kairo/svg-id";
 
 // The page's spine: one continuous dotted thread, in the exact vocabulary the
 // goal map uses for "your next step" (gold, dasharray 3 8, the same marching
-// `dash` keyframe), rooted in the hero's tree and growing down the page as you
+// `dash` keyframe), entering above the page's first pixel and growing down as you
 // scroll. It weaves left and right between sections, loops the screenshots in a
 // ring, and ends at the final CTA as a node that completes. The landing page is
 // itself a goal map, and scrolling it is walking the path.
@@ -21,6 +21,14 @@ interface Stop {
   at: "top" | "bottom" | "left" | "right";
   /** px outward from the box edge */
   off?: number;
+  /**
+   * Anchor the y to an edge too, instead of the box's middle. Without this a
+   * stop can only ever be an edge MIDPOINT, so a loop meant to go around a card
+   * is forced through its centre. With it, `at` picks the x and `atY` picks the
+   * y, which addresses a corner.
+   */
+  atY?: "top" | "bottom";
+  offY?: number;
   /** curve bow ARRIVING here: + bows right of the direction of travel */
   bow?: number;
   /** render a step node here */
@@ -45,22 +53,60 @@ interface Stop {
 // travels horizontally inside the wide screenshots section (the ring) and in
 // the whitespace between sections, and it finishes beside the closing button.
 const WALK: Stop[] = [
-  // Two stops on the tree: the thread is born deep at the trunk and curves out
-  // from under it, rather than starting abruptly in open space.
-  { id: "tree", at: "bottom", off: -110 },
-  { id: "tree", at: "bottom", off: -8, bow: 36, compact: { at: "left", off: 26, bow: 20 } },
-  { id: "s-plan", at: "left", off: 30, bow: 26, dot: true },
+  // The hero is the first section of the map, not a poster above it. The thread
+  // enters ABOVE the page's first pixel (h-rail sits at page y 0, and off:40
+  // puts the first point at y -40, outside the viewBox), so it is already
+  // mid-stroke at the top edge with no visible cap. The birth mask fades it up
+  // out of black over the first ~140px, which lands it behind the header and
+  // fully lit by the tagline.
+  //
+  // h-mark, h-title, h-start and h-picks are all block children of the same
+  // padded column, so their rect.left is identical and every one of them
+  // resolves to the SAME rail x as every section below. That is the whole idea:
+  // the hero rail and the page rail are one line.
+  { id: "h-rail", at: "top", off: 40 },
+  { id: "h-mark", at: "left", off: 30, bow: 14 },
+  { id: "h-title", at: "left", off: 30, bow: -26, dot: true },
+  { id: "h-start", at: "left", off: 30, bow: 16, dot: true },
+  { id: "h-picks", at: "left", off: 30, bow: -22 },
+  { id: "tree", at: "left", off: 30, bow: 16, dot: true },
+  // Bows corrected from 26 / 28 / 40. Travelling down, the belly sits at
+  // rail_x - bow/2, so on a phone (rail clamped to 18) the old values put the
+  // belly at or past the canvas edge and the rail visibly flattened against it.
+  { id: "s-plan", at: "left", off: 30, bow: 16, dot: true },
   { id: "s-day", at: "left", off: 30, bow: -30, dot: true },
-  { id: "s-look", at: "left", off: 30, bow: 28, dot: true },
-  // The ring: down the outside of the left card, under both, up the outside of
-  // the right card. Every bow is positive because each leg turns the same way,
-  // which is what closes the circle.
-  { id: "shot-map", at: "bottom", off: 16, bow: -50, dot: true, ringOnly: true },
-  { id: "shot-sola", at: "top", off: 14, bow: 40, dot: true, compact: { at: "left", off: 26, bow: 16 } },
-  { id: "shot-sola", at: "bottom", off: 30, bow: 120, ringOnly: true },
-  { id: "shot-focus", at: "bottom", off: 30, bow: 60, ringOnly: true },
-  { id: "shot-focus", at: "top", off: 14, bow: 120, dot: true, ringOnly: true },
-  { id: "keeps", at: "left", off: 30, bow: 40, dot: true },
+  { id: "s-look", at: "left", off: 30, bow: 16, dot: true },
+  // Stay on the rail all the way down to the shots section. Without this the
+  // thread left the rail at s-look and dived diagonally into the ring, straight
+  // through the paragraph it was leaving.
+  // Anchored to the section's TOP, not its middle. The shots section is 1000px
+  // tall, so a centre anchor put this stop below the ring's entry corner and the
+  // thread walked down past the paragraph and then back up through it.
+  { id: "shots", at: "left", off: 30, atY: "top", offY: 20, bow: 12 },
+  // The ring: a sweep around the whole screenshots group, entering at its top
+  // left and leaving at its bottom left, so the walk continues downward without
+  // doubling back on itself.
+  //
+  // Every stop anchors to the SECTION box, not to an individual card. The cards'
+  // annotation labels overflow their own edges by up to 100px, so an offset
+  // measured from a card is not actually clear of that card's ink; chasing them
+  // one at a time just moved the collision around. The section box contains all
+  // of them by construction.
+  //
+  // atY is what makes the corners possible: anchoring a vertical leg with plain
+  // "top"/"bottom" resolves it to the box's CENTRE x, which is what used to send
+  // the thread straight down the middle of a screenshot.
+  //
+  // Bows are NEGATIVE because the circuit runs clockwise, so a positive bow puts
+  // the belly of each leg on the inside, which is to say on top of the content.
+  { id: "shots", at: "left", off: 30, atY: "top", offY: 20, bow: 12, dot: true, ringOnly: true },
+  { id: "shots", at: "right", off: 20, atY: "top", offY: 20, bow: -18, ringOnly: true },
+  { id: "shots", at: "right", off: 20, bow: -30, dot: true, ringOnly: true },
+  { id: "shots", at: "right", off: 20, atY: "bottom", offY: 20, bow: -30, ringOnly: true },
+  // Not ringOnly: on a phone the ring is skipped entirely and this is the single
+  // rail stop the thread uses to get past the screenshots.
+  { id: "shots", at: "left", off: 30, atY: "bottom", offY: 20, bow: -24, dot: true },
+  { id: "keeps", at: "left", off: 30, bow: 20, dot: true },
   { id: "price", at: "left", off: 30, bow: -30, dot: true },
   { id: "close", at: "left", off: 24, bow: 0, terminal: true },
 ];
@@ -139,6 +185,8 @@ export function JourneyThread() {
       if (s.at === "bottom") y = r.bottom - cr.top + off;
       if (s.at === "left") x = r.left - cr.left - off;
       if (s.at === "right") x = r.right - cr.left + off;
+      if (s.atY === "top") y = r.top - cr.top - (s.offY ?? 0);
+      if (s.atY === "bottom") y = r.bottom - cr.top + (s.offY ?? 0);
       x = Math.max(compact ? 18 : 14, Math.min(w - 14, x));
       pts.push({ ...s, x, y });
     }

@@ -121,7 +121,7 @@ export default async function LandingPage() {
         <p className="mt-5 max-w-xl text-[17px] leading-relaxed text-muted">
           The screens you will actually use, walking themselves.
         </p>
-        <div className="mt-10">
+        <div className="mt-16" data-journey="shots">
           <AppShots />
         </div>
       </section>
@@ -168,7 +168,7 @@ export default async function LandingPage() {
 
       {/* The close: the thread's terminal node sits on this button and
           completes with a check once the path has been walked. */}
-      <section className="mx-auto max-w-3xl px-5 py-28 max-lg:pl-12 max-lg:text-left lg:text-center">
+      <section className="mx-auto max-w-3xl px-5 py-28 max-lg:pl-12">
         <p className="font-display text-3xl font-semibold leading-tight tracking-tight text-ink sm:text-4xl">
           You already know what you want.
           <br />

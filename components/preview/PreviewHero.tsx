@@ -6,11 +6,22 @@ import { ArrowRight } from "lucide-react";
 import { SHOWCASE_MAPS } from "@/lib/kairo/showcase-maps";
 import { ShowcaseTree } from "@/components/kairo/ShowcaseTree";
 import { PENDING_KEY } from "@/components/kairo/OnboardingFlow";
-import { GoalOrb } from "@/components/kairo/GoalOrb";
 
-// The first screen. Stacked, not split: the previous attempt used a sticky
-// two-column layout that mutated while the other half scrolled, which reads as
-// broken on a phone before it reads as clever. This is the same on every width.
+// The first screen, and the first section of the map.
+//
+// The hero used to be a centred stack under a decorative orb, which made it the
+// only block on the page not attached to the thread: the page's spine was born
+// 900px down, inside the tree, so the whole first screen read as a different
+// document from everything below it.
+//
+// Now the thread enters ABOVE the page's first pixel, fades up out of black
+// behind the header, and settles onto the same left rail every section below
+// already rides. The tagline, the headline, the goal input and the switcher are
+// stops on that walk. The hero is not a poster with a line beside it; it is the
+// first four beads of the map the page is about.
+//
+// That is also why everything here is left aligned. A centred hero cannot hang
+// off a rail, and the rail is the point.
 //
 // The map below the words is the real component the app renders, running on real
 // canned goals with real cited sources, and it is tappable from the first second.
@@ -39,30 +50,40 @@ export function PreviewHero() {
   };
 
   return (
-    <section className="relative px-5 max-lg:pl-12 pb-10 pt-24 md:pt-28">
-      <div className="mx-auto max-w-3xl text-center">
-        {/* A quiet gold aurora behind the words, so the first screen carries the
-            same lit warmth as the orbs instead of flat text on flat black. */}
-        <div aria-hidden className="pointer-events-none absolute left-1/2 top-24 -z-10 h-[420px] w-[720px] max-w-[92vw] -translate-x-1/2 rounded-full" style={{ background: "radial-gradient(ellipse at center, rgba(230,184,119,0.13), rgba(230,184,119,0.04) 45%, transparent 70%)" }} />
-        {/* The signature orb: a lit goal core with its moon in orbit, cycling
-            through goal icons. The page's whole story in one object, and the
-            warm counterpart to the empty orb that walks the thread below. */}
-        <div className="flex justify-center">
-          <GoalOrb className="animate-fade-up -mb-2 -mt-6" />
-        </div>
-        <h1 className="animate-fade-up font-display text-[2.6rem] font-semibold leading-[1.04] tracking-tight text-ink sm:text-6xl md:text-[4.2rem]">
+    <section className="relative pb-12">
+      {/* An off-centre bloom, aimed at the headline's first lines rather than at
+          the middle of the screen. A symmetrical glow behind a left-aligned
+          column is a leftover from the centred layout and reads as one. */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 -z-10 h-[620px]"
+        style={{ background: "radial-gradient(ellipse 46% 55% at 26% 30%, rgba(230,184,119,0.15), rgba(230,184,119,0.045) 45%, transparent 72%)" }}
+      />
+
+      <div className="relative mx-auto max-w-3xl pl-12 pr-5 pt-28 md:pt-32 lg:px-5">
+        {/* The thread's first anchor, pinned to the very top of the page. It is
+            invisible, but it must stay at least 2px on both axes: JourneyThread
+            treats anything smaller as a display:none element and skips it. */}
+        <span data-journey="h-rail" aria-hidden className="pointer-events-none absolute left-0 top-0 h-2 w-2" />
+
+        <p data-journey="h-mark" className="animate-fade-up text-[14px] tracking-[0.06em] text-accent-dim">
+          Map the way. Build the day.
+        </p>
+
+        <h1 data-journey="h-title" className="animate-fade-up mt-4 font-display text-[2.7rem] font-semibold leading-[1.02] tracking-tight text-ink sm:text-6xl md:text-[4.4rem]">
           Become who you keep
           <br className="hidden sm:block" /> <span className="text-gold-lit">meaning to be.</span>
         </h1>
 
-        <p className="animate-fade-up mx-auto mt-7 max-w-xl text-balance text-[17px] leading-relaxed text-muted sm:text-[19px]" style={{ animationDelay: "0.08s" }}>
+        <p className="animate-fade-up mt-6 max-w-xl text-pretty text-[17px] leading-relaxed text-muted sm:text-[19px]" style={{ animationDelay: "0.08s" }}>
           Tell Solaspace what you want. It maps every step, finds the video or guide for each
           one, and builds your day around the time you actually have.
         </p>
 
         <form
+          data-journey="h-start"
           onSubmit={(e) => { e.preventDefault(); start(); }}
-          className="chrome animate-fade-up mx-auto mt-9 flex w-full max-w-xl flex-col gap-2 rounded-2xl p-2 sm:flex-row sm:items-center sm:py-2 sm:pl-4 sm:pr-2"
+          className="chrome animate-fade-up mt-8 flex w-full max-w-xl flex-col gap-2 rounded-2xl p-2 sm:flex-row sm:items-center sm:py-2 sm:pl-4 sm:pr-2"
           style={{ animationDelay: "0.16s" }}
         >
           <input
@@ -82,44 +103,47 @@ export function PreviewHero() {
         </form>
 
         <p className="mt-4 text-[15px] text-faint">Free to start. No card needed.</p>
+
+        {/* The switcher, and the line explaining the map, above the map it
+            explains. Left aligned, so the row simply wraps at any width and the
+            old flex-col centring hack is unnecessary. */}
+        <div data-journey="h-picks" className="mt-12">
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+            <span className="text-[15px] text-faint">See a real one:</span>
+            <div className="flex items-center gap-1">
+              {GOALS.map((id, i) => {
+                const m = SHOWCASE_MAPS.find((x) => x.id === id);
+                return (
+                  <button
+                    key={id}
+                    onClick={() => setPick(i)}
+                    aria-pressed={i === pick}
+                    className={
+                      i === pick
+                        ? "raised-btn inline-flex min-h-11 items-center rounded-full px-4 text-[15px] text-ink"
+                        : "inline-flex min-h-11 items-center rounded-full px-4 text-[15px] text-muted transition-colors hover:text-ink"
+                    }
+                  >
+                    {m?.short}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          <p className="mt-3 max-w-md text-[15px] text-faint">
+            Tap any step. Every one carries a real source you can open and check.
+          </p>
+        </div>
       </div>
 
-      {/* The product, running, before a single feature is described. */}
-      <div className="mx-auto mt-14 max-w-5xl">
-        {/* The label sits on its own line below sm so the three chips stay on one
-            row together instead of orphaning the last one. */}
-        <div className="mb-5 flex flex-col items-center gap-2 sm:flex-row sm:justify-center">
-          <span className="text-[15px] text-faint sm:mr-1">See a real one:</span>
-          <div className="flex items-center gap-1">
-          {GOALS.map((id, i) => {
-            const m = SHOWCASE_MAPS.find((x) => x.id === id);
-            return (
-              <button
-                key={id}
-                onClick={() => setPick(i)}
-                aria-pressed={i === pick}
-                className={
-                  i === pick
-                    ? "raised-btn inline-flex min-h-11 items-center rounded-full px-4 text-[15px] text-ink"
-                    : "inline-flex min-h-11 items-center rounded-full px-4 text-[15px] text-muted transition-colors hover:text-ink"
-                }
-              >
-                {m?.short}
-              </button>
-            );
-          })}
-          </div>
-        </div>
-
+      {/* The product, running, before a single feature is described. It sits
+          outside the text column so it keeps its own width. */}
+      <div className="mx-auto mt-7 max-w-5xl px-5">
+        {/* maxScale 1 forbids upscaling, so every map draws at the same size under
+            the switcher instead of the compact ones rendering visibly larger. */}
         <div className="relative" data-journey="tree">
-          {/* maxScale 1 forbids upscaling, so every map draws at the same size under
-              the switcher instead of the compact ones rendering visibly larger. */}
           <ShowcaseTree map={map} interactive maxScale={1} />
         </div>
-
-        <p className="mt-4 text-center text-[15px] text-faint">
-          Tap any step. Every one carries a real source you can open and check.
-        </p>
       </div>
     </section>
   );

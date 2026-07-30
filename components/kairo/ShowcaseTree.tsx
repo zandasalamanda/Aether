@@ -266,7 +266,12 @@ export function ShowcaseTree({ map, interactive = false, maxScale, onOpenChange,
             return (
               <div
                 key={p.node.id}
-                className={cn("group absolute -translate-x-1/2 -translate-y-1/2", interactive && "cursor-pointer")}
+                // select-none and a round focus shape on purpose. This wrapper is
+                // a 26-33px box around a CIRCULAR node, so anything the browser
+                // draws on the box itself reads as a little square: a tap on a
+                // phone otherwise starts a text selection over the label, and any
+                // focus ring would be square around a round thing.
+                className={cn("group absolute -translate-x-1/2 -translate-y-1/2 select-none rounded-full", interactive && "cursor-pointer")}
                 style={{ left: p.x, top: p.y, opacity: on ? 1 : 0, transition: `opacity .45s ease ${delay.toFixed(2)}s` }}
                 onClick={interactive ? (e) => { e.stopPropagation(); open(p.node.id); } : undefined}
                 role={interactive ? "button" : undefined}
