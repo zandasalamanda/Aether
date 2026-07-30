@@ -19,6 +19,28 @@ const STATE_TONE: Record<PaceState, string> = {
   none: "text-faint",
 };
 
+
+// Review must not grow with the goal count. Each section shows a fixed number
+// of rows and the rest scroll INSIDE the section, so ten goals cost the same
+// screen space as four. The fade at the bottom edge is the scroll affordance;
+// the row count in the label says how much is really there.
+function CappedList({ count, maxHeight, children }: { count: number; maxHeight: number; children: React.ReactNode }) {
+  const capped = count > 4;
+  if (!capped) return <>{children}</>;
+  return (
+    <div
+      className="overflow-y-auto overscroll-contain pr-1"
+      style={{
+        maxHeight,
+        maskImage: "linear-gradient(to bottom, #000 calc(100% - 28px), transparent)",
+        WebkitMaskImage: "linear-gradient(to bottom, #000 calc(100% - 28px), transparent)",
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
 /** The Mirror: pace toward each deadline, plus what's stalled or drifting. */
 export function ReviewMirror({ insights, goals }: { insights: ReviewInsights; goals: GoalWithNodes[] }) {
   const color = useGoalColors();
@@ -32,8 +54,9 @@ export function ReviewMirror({ insights, goals }: { insights: ReviewInsights; go
 
       {timed.length > 0 && (
         <div>
-          <SectionLabel>On pace</SectionLabel>
-          <div className="mt-3 space-y-3.5">
+          <SectionLabel>On pace{timed.length > 4 ? ` · ${timed.length}` : ""}</SectionLabel>
+          <CappedList count={timed.length} maxHeight={430}>
+          <div className="mt-3 space-y-3.5 pb-6">
             {timed.map((p, i) => {
               const g = byId.get(p.goalId);
               const hex = g ? color(g.id) : "#e6b877";
@@ -64,13 +87,15 @@ export function ReviewMirror({ insights, goals }: { insights: ReviewInsights; go
               );
             })}
           </div>
+          </CappedList>
         </div>
       )}
 
       {(insights.stalled.length > 0 || insights.neglected.length > 0) && (
         <div>
-          <SectionLabel>Losing steam</SectionLabel>
-          <div className="mt-3 space-y-2">
+          <SectionLabel>Losing steam{insights.stalled.length + insights.neglected.length > 4 ? ` · ${insights.stalled.length + insights.neglected.length}` : ""}</SectionLabel>
+          <CappedList count={insights.stalled.length + insights.neglected.length} maxHeight={250}>
+          <div className="mt-3 space-y-2 pb-6">
             {insights.stalled.map((s, i) => (
               <Callout key={`s${i}`} goalId={s.goalId} icon={<PauseCircle size={15} className="text-warn" />}>
                 <span className="text-ink">{s.nodeTitle}</span>, stuck {s.days} days in {s.goalTitle}
@@ -82,19 +107,22 @@ export function ReviewMirror({ insights, goals }: { insights: ReviewInsights; go
               </Callout>
             ))}
           </div>
+          </CappedList>
         </div>
       )}
 
       {noDeadline.length > 0 && (
         <div>
-          <SectionLabel>No deadline yet</SectionLabel>
-          <div className="mt-3 space-y-2">
+          <SectionLabel>No deadline yet{noDeadline.length > 4 ? ` · ${noDeadline.length}` : ""}</SectionLabel>
+          <CappedList count={noDeadline.length} maxHeight={250}>
+          <div className="mt-3 space-y-2 pb-6">
             {noDeadline.map((p) => (
               <Callout key={p.goalId} goalId={p.goalId} icon={<AlarmClock size={15} className="text-faint" />}>
                 <span className="text-ink">{p.title}</span>. Set a deadline to track your pace
               </Callout>
             ))}
           </div>
+          </CappedList>
         </div>
       )}
     </div>
