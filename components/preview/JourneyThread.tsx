@@ -129,6 +129,8 @@ export function JourneyThread() {
     marks: { y: number; len: number }[];
     /** document-space top of the container, so the frame loop never reads layout */
     rootTop: number;
+    /** evenly spaced points along the path, so the tip never calls getPointAtLength */
+    sample: { x: number; y: number }[];
   } | null>(null);
   // How far the thread is drawn lives in a ref, NOT in state. It changes every
   // animation frame, and putting it in state re-rendered this whole component
@@ -136,6 +138,10 @@ export function JourneyThread() {
   // is what made the thread stutter on a phone. The frame loop writes the mask
   // and the tip straight to the DOM instead.
   const drawnRef = React.useRef(0);
+  // Progress in SCROLL units. Path lengths are invalidated by every rebuild;
+  // how far down the page you have been is not.
+  const maxScrollRef = React.useRef(0);
+  const bottomRef = React.useRef(false);
   // The only things a frame can change that actually need React: how many nodes
   // have been reached, and whether the walk is over. Both change a handful of
   // times over the whole page instead of once a frame.
@@ -223,7 +229,26 @@ export function JourneyThread() {
       record(b);
     }
     scratch.setAttribute("d", d);
-    setGeo({ d, w, h, total: scratch.getTotalLength(), nodes, marks, compact, start: { x: pts[0].x, y: pts[0].y }, rootTop });
+    const total = scratch.getTotalLength();
+
+    // Sample the path once, here, so the frame loop can interpolate instead of
+    // walking the geometry every frame.
+    const SAMPLES = 400;
+    const sample: { x: number; y: number }[] = [];
+    for (let i = 0; i <= SAMPLES; i++) {
+      const pt = scratch.getPointAtLength((total * i) / SAMPLES);
+      sample.push({ x: pt.x, y: pt.y });
+    }
+
+    // Identical geometry means nothing to do. ResizeObserver fires on a phone
+    // every time the URL bar collapses or a caption rewraps, and each rebuild
+    // otherwise allocated a new geo, tore down the frame loop and re-rendered
+    // every node in the walk.
+    setGeo((prev) =>
+      prev && prev.d === d && prev.w === w && prev.h === h
+        ? prev
+        : { d, w, h, total, nodes, marks, compact, start: { x: pts[0].x, y: pts[0].y }, rootTop, sample },
+    );
   }, []);
 
   React.useEffect(() => {
@@ -236,28 +261,17 @@ export function JourneyThread() {
     return () => { window.clearTimeout(t); ro?.disconnect(); };
   }, [rebuild]);
 
-  // ---- scroll drives the reveal ----
   // ---- one frame loop drives the whole reveal ----
   //
-  // Everything below writes to the DOM directly. The previous version pushed the
-  // drawn length through React state on every frame, so scrolling re-rendered
-  // this component (and re-created every node in the walk) sixty times a second.
-  // That is what made the thread stutter on a phone.
+  // Everything below writes to the DOM directly. Pushing the drawn length
+  // through React state re-rendered this component (and re-created every node
+  // in the walk) sixty times a second while scrolling, which is what made the
+  // thread stutter on a phone.
   React.useEffect(() => {
     const mask = maskRef.current;
     if (!geo || !mask) return;
     const tip = tipRef.current;
-    const { marks, total, nodes, rootTop, h } = geo;
-
-    if (reduced) {
-      // Complete and still: no loop, no timers, nothing to animate.
-      mask.style.strokeDashoffset = "0";
-      if (tip) tip.style.opacity = "0";
-      drawnRef.current = total;
-      setLit(nodes.length);
-      setFinished(true);
-      return;
-    }
+    const { marks, total, nodes, rootTop, h, sample } = geo;
 
     // Where the scroll says the thread should have reached.
     const targetFor = (scrollY: number) => {
@@ -276,39 +290,82 @@ export function JourneyThread() {
       return total;
     };
 
+    // The high-water mark is kept in SCROLL units, not path units. Path units
+    // are invalidated by every rebuild: crossing 640px drops the whole
+    // screenshot ring (thousands of px of path), so a stale drawn length could
+    // exceed the new total, the monotonic guard could never be satisfied again,
+    // and the thread froze for the rest of the session. Scroll position means
+    // the same thing before and after a re-measure.
+    const currentTarget = () => {
+      const sy = window.scrollY;
+      if (sy > maxScrollRef.current) maxScrollRef.current = sy;
+      // Reaching the bottom means the walk is over, whatever the reveal-line
+      // arithmetic says: tall viewports otherwise leave the last few px undrawn
+      // and the terminal node never completes.
+      if (sy + window.innerHeight >= h - 2) bottomRef.current = true;
+      return bottomRef.current ? total : targetFor(maxScrollRef.current);
+    };
+
+    if (reduced) {
+      // Complete and still: no loop, no timers, nothing to animate. bottomRef
+      // rather than drawnRef, so turning Reduce Motion back off re-anchors to
+      // the real scroll position instead of staying pinned at the end.
+      bottomRef.current = true;
+      mask.style.strokeDashoffset = "0";
+      if (tip) tip.style.opacity = "0";
+      setLit(nodes.length);
+      setFinished(true);
+      return;
+    }
+
+    // Re-anchor to the new geometry immediately, so a rebuild mid-scroll picks
+    // up exactly where the eye already is rather than replaying the walk.
+    drawnRef.current = currentTarget();
+    mask.style.strokeDashoffset = String(Math.max(0, total - drawnRef.current));
+
+    // Position along the path, from a table sampled once at build time.
+    // getPointAtLength walks the path from zero on every call, and this path is
+    // thousands of px across ~20 quadratic legs, so calling it per frame was a
+    // full synchronous geometry walk per frame on the main thread.
+    const pointAt = (len: number) => {
+      const f = Math.max(0, Math.min(1, len / total)) * (sample.length - 1);
+      const i = Math.min(sample.length - 2, Math.floor(f));
+      const t = f - i;
+      const a = sample[i], b = sample[i + 1];
+      return { x: a.x + (b.x - a.x) * t, y: a.y + (b.y - a.y) * t };
+    };
+
     let live = true;
     let raf = 0;
     let litNow = -1;
     let doneNow = false;
+    let last = performance.now();
 
-    const frame = () => {
+    const frame = (now: number) => {
       if (!live) return;
       raf = requestAnimationFrame(frame);
 
-      const sy = window.scrollY;
-      let target = targetFor(sy);
-      // Reaching the bottom means the walk is over, whatever the reveal-line
-      // arithmetic says: tall viewports otherwise leave the last few px undrawn
-      // and the terminal node never completes.
-      if (sy + window.innerHeight >= h - 2) target = total;
+      // Elapsed time, not frames. The 0.16 coefficient was tuned at 60Hz; applied
+      // per frame it smooths twice as fast on a 120Hz ProMotion iPhone and half as
+      // fast on a throttled one, a 4x spread on the same gesture. Clamped so
+      // returning to a backgrounded tab cannot produce one huge dt and snap.
+      const dt = Math.min(64, now - last);
+      last = now;
 
-      // Monotonic on purpose. Scrolling back up must not unwalk the path: two
-      // sections earlier the page promises that falling behind loses nothing.
-      if (target <= drawnRef.current) return;
-
-      // Ease toward the target rather than snapping to it. A per-frame
-      // exponential approach is what makes this read as smooth: it absorbs
-      // momentum-scroll jumps and the long ring leg, without the stutter a CSS
-      // transition produces when every frame restarts it.
-      const next = drawnRef.current + (target - drawnRef.current) * 0.16;
-      drawnRef.current = target - next < 0.5 ? target : next;
+      const target = currentTarget();
+      const gap = target - drawnRef.current;
+      if (Math.abs(gap) < 0.5) {
+        drawnRef.current = target;
+      } else {
+        drawnRef.current += gap * (1 - Math.pow(1 - 0.16, dt / 16.667));
+      }
       const eff = drawnRef.current;
 
       mask.style.strokeDashoffset = String(Math.max(0, total - eff));
 
       if (tip) {
         if (eff > 4 && eff < total - 4) {
-          const pt = mask.getPointAtLength(eff);
+          const pt = pointAt(eff);
           tip.style.transform = `translate(${pt.x.toFixed(1)}px, ${pt.y.toFixed(1)}px)`;
           tip.style.opacity = "1";
         } else {
