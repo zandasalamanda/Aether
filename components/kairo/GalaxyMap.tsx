@@ -57,6 +57,17 @@ import { cn, formatDuration, newId, relativeDays, truncate } from "@/lib/utils";
 import { isNativeUserAgent } from "@/lib/native-ua";
 import { adherence, dayKey, goalProgress, isRecurring, toggleCheckin } from "@/lib/kairo/practice";
 
+/** "today" / "3d ago" / "2w ago": freshness, not deadlines (relativeDays is deadline-shaped). */
+function agoLabel(iso: string): string {
+  const t = Date.parse(iso);
+  if (Number.isNaN(t)) return "";
+  const days = Math.max(0, Math.round((Date.now() - t) / 86_400_000));
+  if (days === 0) return "today";
+  if (days < 14) return `${days}d ago`;
+  if (days < 60) return `${Math.round(days / 7)}w ago`;
+  return `${Math.round(days / 30)}mo ago`;
+}
+
 const GOLDEN = 2.399963229;
 // NaN-safe. The plain Math.max(lo, Math.min(hi, v)) form propagates NaN straight
 // through, and a NaN here reaches the canvas transform as scale(NaN), which kills
@@ -1061,6 +1072,15 @@ export function GalaxyMap({
       void enrichStep({ goalId, nodeId: first.id, goalTitle: goal.title, nodeTitle: first.title, nodeDescription: first.description })
         .then((b) => cacheBriefing(first.id, b))
         .catch(() => { /* lazy path picks it up on open */ });
+    }
+    // Pro also gets the first step RESEARCHED, with sources, before it is ever
+    // opened: the flagship "arrives researched" moment. Fire-and-forget, inside
+    // Pro's own daily budget; free keeps its metered taste on demand.
+    if (remote && isPro && goal.nodes[0]) {
+      const first = goal.nodes[0];
+      void research({ goalTitle: goal.title, nodeTitle: first.title, goalId, nodeId: first.id })
+        .then((r) => cacheResearch(first.id, { answer: r.answer, sources: r.sources, fetchedAt: nowISO() }))
+        .catch(() => { /* the on-demand button still works */ });
     }
     setMapping(false);
     setFormingPos(null);
@@ -2750,7 +2770,14 @@ function NodeSheet({
               <div className="mt-2 max-h-[42vh] overflow-y-auto overscroll-contain rounded-xl bg-white/[0.03] p-3 text-[13px] leading-relaxed text-ink"><Markdown>{researchResult.answer}</Markdown></div>
               {researchResult.sources.length > 0 && (
                 <div className="mt-2.5">
-                  <div className="mb-1.5 font-mono text-[10px] uppercase tracking-[0.14em] text-faint">Sources</div>
+                  <div className="mb-1.5 flex items-baseline justify-between gap-2">
+                    <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-faint">Sources</span>
+                    {node.research?.fetchedAt && (
+                      <span className="font-mono text-[10px] text-faint" title={node.research.fetchedAt}>
+                        Researched {agoLabel(node.research.fetchedAt)}
+                      </span>
+                    )}
+                  </div>
                   <div className="flex max-h-[22vh] flex-col gap-1 overflow-y-auto overscroll-contain">
                     {researchResult.sources.map((s, i) => (
                       <OutLink key={i} href={s.url} className="truncate text-[12px] text-accent underline decoration-accent/30 underline-offset-2 transition-colors hover:decoration-accent">

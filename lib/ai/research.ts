@@ -14,9 +14,14 @@ const SYSTEM = `You are Sola, doing focused research for the user. The user is w
 async function runResearch(input: ResearchInput): Promise<ResearchResult> {
   const key = apiKey();
   if (!key) return { answer: "Research is unavailable right now.", sources: [] };
+  // The one behavioral instruction a region carries: prefer real local options
+  // and say so, instead of generic advice that ignores where they live.
+  const regionLine = input.region?.trim()
+    ? `\nThe user is in ${input.region.trim()}. When options, classes, services, banks, or prices differ by place, use real ones available there and say so.`
+    : "";
   const prompt = `${input.contextBlock ?? ""}Goal: ${input.goalTitle}\nStep: ${input.nodeTitle}${input.context ? `\nContext: ${input.context}` : ""}${
     input.question ? `\nSpecifically: ${input.question}` : "\nResearch exactly what they need to know to do this step well, with current specifics."
-  }`;
+  }${regionLine}`;
   try {
     const res = await fetch(`${NATIVE}/models/${MODEL}:generateContent`, {
       method: "POST",

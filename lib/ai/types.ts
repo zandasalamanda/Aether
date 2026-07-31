@@ -88,6 +88,8 @@ export interface ResearchInput {
   nodeId?: string;
   /** ABOUT THE USER block, built SERVER-SIDE by the route. Never client-supplied. */
   contextBlock?: string;
+  /** Stored region, SERVER-injected via the research gate. Never client-supplied. */
+  region?: string;
 }
 export interface ResearchResult {
   answer: string;

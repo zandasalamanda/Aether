@@ -13,13 +13,15 @@ export async function POST(req: Request) {
   const body = (await req.json().catch(() => ({}))) as { goalTitle?: unknown; nodeTitle?: unknown; context?: unknown; question?: unknown; nodeId?: unknown };
   // Server-built; region reaches research ONLY through this gate, never from
   // the request body.
-  const contextBlock = buildContextBlock(await loadUserContext(), null, "research");
+  const ctx = await loadUserContext();
+  const contextBlock = buildContextBlock(ctx, null, "research");
   const result = await research({
     goalTitle: clampText(body.goalTitle, 200),
     nodeTitle: clampText(body.nodeTitle, 200),
     context: body.context ? clampText(body.context, 2000) : undefined,
     question: body.question ? clampText(body.question, 500) : undefined,
     contextBlock,
+    region: ctx?.region ?? undefined,
   });
 
   // Research used to die when the sheet closed. With a nodeId it persists on
