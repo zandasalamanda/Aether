@@ -14,6 +14,10 @@ export interface SharedNode {
   sortOrder: number;
   resourceKind: ResourceKind | null;
   resourceLabel: string | null;
+  /** the real resolved link, when the owner's app has found one (never a search) */
+  resourceUrl: string | null;
+  resourceSource: string | null;
+  firstAction: string | null;
 }
 export interface SharedGoal {
   goal: { title: string; description: string; progress: number; icon: string | null; targetDate: string | null };

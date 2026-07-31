@@ -52,34 +52,40 @@ export function GoalCoreCycle({ size = 140, className }: { size?: number; classN
   //
   // Crucially the two layers do NOT cross-fade. Fading one out while the other
   // fades in puts both near 50% mid-transition, which lets the page show
-  // through the orb and ghosts two icons over each other. Instead the outgoing
-  // stop sits underneath at full opacity and the incoming one fades in ON TOP
-  // of it, so total coverage is constant and only one icon is ever legible.
+  // through the orb and ghosts two icons over each other.
+  //
+  // But cross-fading two WHOLE cores ghosts the icons too: while the top layer
+  // is half transparent you read the bottom layer's icon straight through it. So
+  // the layers carry only the coloured spheres, and exactly ONE icon is
+  // rendered above them, remounted on each change. At any instant there is one
+  // sphere colour blending into another and one legible icon.
   const at = (n: number) => STOPS[((n % STOPS.length) + STOPS.length) % STOPS.length];
   const iconSize = Math.round(size * 0.24);
-
-  const layer = (stop: { hex: string; icon: string }) => {
-    const Icon = goalIcon(stop.icon);
-    return (
-      <GoalCore size={size} hex={stop.hex} pulse={!reduce}>
-        {/* White, with a shadow rather than a darker ink: the sphere runs from a
-            near-white highlight to a deep shade, so a flat white icon needs the
-            shadow to stay legible across all eight hues. */}
-        <Icon size={iconSize} strokeWidth={1.7} style={{ color: "#ffffff", filter: "drop-shadow(0 1px 3px rgba(40,26,6,0.7))" }} />
-      </GoalCore>
-    );
-  };
+  const Icon = goalIcon(at(reduce ? 0 : i).icon);
 
   return (
     <div className={className} style={{ width: size, height: size, position: "relative" }} aria-hidden>
-      {/* the stop being left, held at full opacity underneath */}
-      <div className="absolute inset-0">{layer(at(reduce ? 0 : i - 1))}</div>
-      {/* the stop being arrived at, keyed so it remounts and fades in each time */}
+      {/* the colour being left, held underneath at full opacity */}
+      <div className="absolute inset-0">
+        <GoalCore size={size} hex={at(reduce ? 0 : i - 1).hex} pulse={!reduce} />
+      </div>
+      {/* the colour being arrived at, fading in on top */}
       {!reduce && (
-        <div key={i} className="animate-fade-in absolute inset-0" style={{ animationDuration: `${FADE}ms` }}>
-          {layer(at(i))}
+        <div key={`c${i}`} className="animate-fade-in absolute inset-0" style={{ animationDuration: `${FADE}ms` }}>
+          <GoalCore size={size} hex={at(i).hex} pulse />
         </div>
       )}
+      {/* the single icon, above both spheres */}
+      <div
+        key={`i${reduce ? 0 : i}`}
+        className={reduce ? "absolute inset-0 grid place-items-center" : "animate-fade-in absolute inset-0 grid place-items-center"}
+        style={reduce ? undefined : { animationDuration: `${Math.round(FADE * 0.7)}ms` }}
+      >
+        {/* White with a shadow rather than a darker ink: the sphere runs from a
+            near-white highlight to a deep shade, so a flat white icon needs the
+            shadow to stay legible across all eight hues. */}
+        <Icon size={iconSize} strokeWidth={1.7} style={{ color: "#ffffff", filter: "drop-shadow(0 1px 3px rgba(40,26,6,0.7))" }} />
+      </div>
     </div>
   );
 }

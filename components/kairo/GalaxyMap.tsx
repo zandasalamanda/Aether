@@ -87,13 +87,6 @@ const RESOURCE_META: Record<ResourceKind, { verb: string; Icon: typeof PlayCircl
   practice: { verb: "Practice", Icon: Dumbbell },
   read: { verb: "Read", Icon: BookOpen },
 };
-function resourceUrl(r: NodeResource): string {
-  const q = encodeURIComponent(r.query);
-  return r.kind === "read"
-    ? `https://www.google.com/search?q=${q}`
-    : `https://www.youtube.com/results?search_query=${q}`;
-}
-
 // "Organise" buckets a goal by the kind of icon it carries — a light-touch
 // auto-sort into life areas. Icons not listed fall into "Other".
 const CATEGORY_OF: Record<string, string> = {
@@ -2445,15 +2438,28 @@ export function NodeResourceBlock({ node, onResolve }: { node: GoalNode; onResol
     );
   }
 
+  // Never a search results page. Sending someone to Google is the job we said
+  // we would do for them, handed back. While resolving we say so; if resolution
+  // genuinely fails, the row offers a retry rather than a consolation search.
+  const retry = () => {
+    setResolving(true);
+    viaRoute<{ resolved: ResolvedResource | null }>("/api/resource/resolve", { kind: resource.kind, query: resource.query })
+      .then((j) => { if (j?.resolved) { setResolved(j.resolved); onResolve(j.resolved); } })
+      .finally(() => setResolving(false));
+  };
   return (
-    <OutLink href={resourceUrl(resource)} className="raised-btn mt-3 flex items-center gap-3 rounded-xl px-3.5 py-2.5">
+    <div className="raised-btn mt-3 flex items-center gap-3 rounded-xl px-3.5 py-2.5">
       {resolving ? <Loader2 size={18} className="shrink-0 animate-spin text-accent" /> : <resMeta.Icon size={18} className="shrink-0 text-accent" />}
       <span className="min-w-0 flex-1">
         <span className="block truncate text-[13px] font-medium text-ink">{resMeta.verb}: {resource.label}</span>
-        <span className="block text-[11px] text-faint">{resolving ? "Finding the best link…" : "Opens a search."}</span>
+        <span className="block text-[11px] text-faint">{resolving ? "Finding the link…" : "No link found yet."}</span>
       </span>
-      <ExternalLink size={14} className="shrink-0 text-faint" />
-    </OutLink>
+      {!resolving && (
+        <button onClick={retry} className="raised-btn shrink-0 rounded-lg px-2.5 py-1 text-[12px] text-muted transition-colors hover:text-ink">
+          Retry
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -2651,58 +2657,81 @@ function NodeSheet({
           <Chip tone="warn" icon={<Trash2 size={13} />} onClick={onDelete}>Delete</Chip>
         </div>
       )}
-      {/* The depth floor: the exact opening move and the observable done-test,
-          above everything else. A step opens as a briefing, not a label. Legacy
-          rows carry "" and render nothing. */}
-      {node.firstAction ? (
-        <div className="mt-2.5 rounded-xl border border-accent/20 px-3.5 py-2.5" style={{ background: "color-mix(in srgb, var(--color-accent) 6%, transparent)" }}>
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-accent/80">First move</div>
-          <p className="mt-0.5 text-[13.5px] leading-relaxed text-ink">{node.firstAction}</p>
-        </div>
-      ) : null}
-      {node.successCriterion ? (
-        <div className="mt-2 rounded-xl border border-line px-3.5 py-2.5" style={{ background: "color-mix(in srgb, var(--color-ink) 2.5%, transparent)" }}>
-          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">Done when</div>
-          <p className="mt-0.5 text-[13.5px] leading-relaxed text-muted">{node.successCriterion}</p>
-        </div>
-      ) : null}
-      {node.description && <div className="mt-2 text-[13px] leading-relaxed text-muted"><Markdown>{node.description}</Markdown></div>}
+      {/* THE BRIEFING, organised rather than stacked.
+          One hierarchy, not five container styles:
+            1. the description, as a subtitle under the title
+            2. FIRST MOVE, the hero, on a raised surface (the app's lifted
+               language, never a flat translucent accent wash)
+            3. the facts, as one aligned label/value list with hairline rules
+            4. what goes wrong, as problem then fix
+            5. the bad-day version, quiet, last
+          Every section is optional; legacy rows just render fewer rows. */}
+      {node.description && (
+        <div className="mt-1.5 text-[13px] leading-relaxed text-muted"><Markdown>{node.description}</Markdown></div>
+      )}
 
-      {/* the rest of the briefing: what goes wrong, what you need, the bad-day
-          version. Loaded once, cached on the step. */}
-      {brief ? (
-        <div className="mt-2 space-y-2">
-          {brief.whenWhereCue && (
-            <p className="text-[13px] text-muted"><span className="text-faint">A good moment:</span> {brief.whenWhereCue}</p>
-          )}
-          {brief.commonMistakes.length > 0 && (
-            <div className="rounded-xl border border-line px-3.5 py-2.5">
-              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">Watch out for</div>
-              <ul className="mt-1 space-y-1.5">
-                {brief.commonMistakes.map((m, i) => (
-                  <li key={i} className="text-[13px] leading-relaxed text-muted">
-                    {m.mistake}. <span className="text-ink">{m.fix}.</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {brief.whatYoullNeed.length > 0 && (
-            <div className="flex flex-wrap items-center gap-1.5 text-[13px] text-muted">
-              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">You&apos;ll need</span>
-              {brief.whatYoullNeed.map((w) => (
-                <span key={w} className="rounded-full border border-line px-2.5 py-0.5">{w}</span>
-              ))}
-            </div>
-          )}
-          {brief.ifStuck && (
-            <p className="text-[13px] leading-relaxed text-muted"><span className="text-faint">If it stalls:</span> {brief.ifStuck}</p>
-          )}
+      {node.firstAction ? (
+        <div className="raised-btn mt-3 rounded-xl px-3.5 py-3">
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-accent">First move</div>
+          <p className="mt-1 text-[14px] leading-relaxed text-ink">{node.firstAction}</p>
         </div>
-      ) : briefLoading ? (
-        <div className="mt-2 space-y-2" aria-hidden>
-          <div className="h-14 animate-pulse rounded-xl bg-white/[0.04]" />
-          <div className="h-8 w-2/3 animate-pulse rounded-xl bg-white/[0.04]" />
+      ) : null}
+
+      {(node.successCriterion || brief?.whenWhereCue || (brief?.whatYoullNeed?.length ?? 0) > 0) && (
+        <dl className="mt-3 overflow-hidden rounded-xl border border-line">
+          {node.successCriterion ? (
+            <div className="flex gap-3 px-3.5 py-2.5">
+              <dt className="w-[74px] shrink-0 pt-px font-mono text-[10px] uppercase tracking-[0.14em] text-faint">Done when</dt>
+              <dd className="min-w-0 flex-1 text-[13px] leading-relaxed text-ink">{node.successCriterion}</dd>
+            </div>
+          ) : null}
+          {brief?.whenWhereCue ? (
+            <div className="flex gap-3 border-t border-line px-3.5 py-2.5">
+              <dt className="w-[74px] shrink-0 pt-px font-mono text-[10px] uppercase tracking-[0.14em] text-faint">Good time</dt>
+              <dd className="min-w-0 flex-1 text-[13px] leading-relaxed text-muted">{brief.whenWhereCue}</dd>
+            </div>
+          ) : null}
+          {(brief?.whatYoullNeed?.length ?? 0) > 0 ? (
+            <div className="flex gap-3 border-t border-line px-3.5 py-2.5">
+              <dt className="w-[74px] shrink-0 pt-1 font-mono text-[10px] uppercase tracking-[0.14em] text-faint">You need</dt>
+              <dd className="flex min-w-0 flex-1 flex-wrap gap-1.5">
+                {brief!.whatYoullNeed.map((w) => (
+                  <span key={w} className="raised-btn rounded-full px-2.5 py-0.5 text-[12.5px] text-muted">{w}</span>
+                ))}
+              </dd>
+            </div>
+          ) : null}
+        </dl>
+      )}
+
+      {brief && brief.commonMistakes.length > 0 && (
+        <div className="mt-3">
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">Watch out for</div>
+          <ul className="mt-1.5 space-y-2">
+            {brief.commonMistakes.map((m, i) => (
+              <li key={i} className="text-[13px] leading-relaxed">
+                <span className="text-muted">{m.mistake}</span>
+                <span className="mt-0.5 flex gap-1.5 text-ink">
+                  <span aria-hidden className="text-accent">&rarr;</span>
+                  <span className="min-w-0 flex-1">{m.fix}</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {brief?.ifStuck ? (
+        <p className="mt-3 flex gap-3 text-[13px] leading-relaxed">
+          <span className="w-[74px] shrink-0 pt-px font-mono text-[10px] uppercase tracking-[0.14em] text-faint">If stuck</span>
+          <span className="min-w-0 flex-1 text-muted">{brief.ifStuck}</span>
+        </p>
+      ) : null}
+
+      {!brief && briefLoading ? (
+        <div className="mt-3 space-y-2" aria-hidden>
+          <div className="h-16 animate-pulse rounded-xl bg-white/[0.04]" />
+          <div className="h-10 animate-pulse rounded-xl bg-white/[0.04]" />
         </div>
       ) : null}
 

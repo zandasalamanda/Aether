@@ -12,11 +12,6 @@ const RES: Record<ResourceKind, { verb: string; Icon: typeof PlayCircle }> = {
   read: { verb: "Read", Icon: BookOpen },
 };
 
-function searchUrl(kind: ResourceKind, label: string): string {
-  const q = encodeURIComponent(label);
-  return kind === "read" ? `https://www.google.com/search?q=${q}` : `https://www.youtube.com/results?search_query=${q}`;
-}
-
 function fmtDate(iso: string): string {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? "" : d.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
@@ -96,9 +91,20 @@ function StepRow({ node, sub }: { node: SharedNode; sub?: boolean }) {
         </span>
         <span className={`${sub ? "text-[14px]" : "text-[15px] font-medium"} leading-snug ${done ? "text-faint line-through" : "text-ink"}`}>{node.title}</span>
       </div>
-      {res && node.resourceLabel && (
-        <OutLink href={searchUrl(node.resourceKind!, node.resourceLabel)} className="mt-1.5 ml-6 inline-flex items-center gap-1.5 text-[12px] text-muted transition-colors hover:text-ink">
-          <res.Icon size={13} className="text-accent" /> {res.verb}: {node.resourceLabel} <ExternalLink size={11} className="text-faint" />
+      {/* The exact opening move travels with a shared map: the point of sharing
+          is that someone else can actually follow it. */}
+      {node.firstAction && (
+        <p className="mt-1 ml-6 text-[12.5px] leading-snug text-muted">
+          <span className="mr-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.14em] text-accent">First move</span>
+          {node.firstAction}
+        </p>
+      )}
+      {/* A real link or nothing. A search results page is not a resource. */}
+      {res && node.resourceLabel && node.resourceUrl && (
+        <OutLink href={node.resourceUrl} className="mt-1.5 ml-6 inline-flex items-center gap-1.5 text-[12px] text-muted transition-colors hover:text-ink">
+          <res.Icon size={13} className="text-accent" /> {res.verb}: {node.resourceLabel}
+          {node.resourceSource ? <span className="text-faint">· {node.resourceSource}</span> : null}
+          <ExternalLink size={11} className="text-faint" />
         </OutLink>
       )}
     </div>

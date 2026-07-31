@@ -83,29 +83,31 @@ const WALK: Stop[] = [
   // tall, so a centre anchor put this stop below the ring's entry corner and the
   // thread walked down past the paragraph and then back up through it.
   { id: "shots", at: "left", off: 30, atY: "top", offY: 20, bow: 12 },
-  // The ring: a sweep around the whole screenshots group, entering at its top
-  // left and leaving at its bottom left, so the walk continues downward without
-  // doubling back on itself.
-  //
-  // Every stop anchors to the SECTION box, not to an individual card. The cards'
-  // annotation labels overflow their own edges by up to 100px, so an offset
-  // measured from a card is not actually clear of that card's ink; chasing them
-  // one at a time just moved the collision around. The section box contains all
-  // of them by construction.
-  //
-  // atY is what makes the corners possible: anchoring a vertical leg with plain
-  // "top"/"bottom" resolves it to the box's CENTRE x, which is what used to send
-  // the thread straight down the middle of a screenshot.
-  //
-  // Bows are NEGATIVE because the circuit runs clockwise, so a positive bow puts
-  // the belly of each leg on the inside, which is to say on top of the content.
+  // The ZIGZAG through the screenshots. It weaves rather than sweeping a
+  // rectangle, which is what made this section feel alive, but every leg is
+  // routed through a measured corridor so it never draws over a card or a
+  // caption:
+  //   - above the wide map card (its top edge minus 20)
+  //   - down the right of the map (x past its right edge, still inside the
+  //     section box)
+  //   - LEFT along the 20px band between the map's bottom and the lower row
+  //     (offY on a "top" anchor moves UP, on a "bottom" anchor moves DOWN, so
+  //     both ends of that band leg use a positive offY). The map's own
+  //     caption overflows its bottom edge by 8px, so the usable band is 12px
+  //     and the leg is centred in what is actually free, not in the gap.
+  //   - down the gap between the two lower cards (x 536-736 at desktop)
+  //   - out along the bottom, below both lower cards
+  // atY is what makes the corners expressible: "top"/"bottom" alone resolve to
+  // a box's CENTRE x, which is how an earlier version ended up drawing down the
+  // middle of a screenshot.
   { id: "shots", at: "left", off: 30, atY: "top", offY: 20, bow: 12, dot: true, ringOnly: true },
-  { id: "shots", at: "right", off: 20, atY: "top", offY: 20, bow: -18, ringOnly: true },
-  { id: "shots", at: "right", off: 20, bow: -30, dot: true, ringOnly: true },
-  { id: "shots", at: "right", off: 20, atY: "bottom", offY: 20, bow: -30, ringOnly: true },
-  // Not ringOnly: on a phone the ring is skipped entirely and this is the single
+  { id: "shot-map", at: "right", off: 30, atY: "top", offY: 20, bow: -14, ringOnly: true },
+  { id: "shot-map", at: "right", off: 30, atY: "bottom", offY: 14, bow: -14, dot: true, ringOnly: true },
+  { id: "shot-sola", at: "right", off: 100, atY: "top", offY: 6, bow: 0, ringOnly: true },
+  { id: "shot-sola", at: "right", off: 100, atY: "bottom", offY: 30, bow: 10, dot: true, ringOnly: true },
+  // Not ringOnly: on a phone the zigzag is skipped entirely and this is the one
   // rail stop the thread uses to get past the screenshots.
-  { id: "shots", at: "left", off: 30, atY: "bottom", offY: 20, bow: -24, dot: true },
+  { id: "shots", at: "left", off: 30, atY: "bottom", offY: 30, bow: -18, dot: true },
   { id: "keeps", at: "left", off: 30, bow: 20, dot: true },
   { id: "price", at: "left", off: 30, bow: -30, dot: true },
   { id: "close", at: "left", off: 24, bow: 0, terminal: true },
@@ -392,19 +394,25 @@ export function JourneyThread() {
       {geo && (
         <svg width={geo.w} height={geo.h} viewBox={`0 0 ${geo.w} ${geo.h}`} className="absolute left-0 top-0">
           <defs>
-            <radialGradient id={`${maskId}-birth`}>
-              <stop offset="0%" stopColor="#000" stopOpacity="1" />
-              <stop offset="55%" stopColor="#000" stopOpacity="0.75" />
-              <stop offset="100%" stopColor="#000" stopOpacity="0" />
-            </radialGradient>
-            <mask id={`${maskId}-start`} maskUnits="userSpaceOnUse" x="0" y="0" width={geo.w} height={geo.h}>
-              <rect x="0" y="0" width={geo.w} height={geo.h} fill="#fff" />
-              <circle cx={geo.start.x} cy={geo.start.y} r={140} fill={`url(#${maskId}-birth)`} />
-            </mask>
-            <radialGradient id={`${maskId}-orb`} cx="38%" cy="32%" r="75%">
-              <stop offset="0%" stopColor="#4a3820" />
-              <stop offset="60%" stopColor="#261b0d" />
-              <stop offset="100%" stopColor="#161006" />
+            {/* The birth fade, as a PAINT SERVER rather than a mask.
+                It used to be a page-sized <mask> holding a full-page white rect,
+                which forced the browser to allocate an offscreen buffer the
+                height of the whole landing page and composite every pixel of
+                the thread through it, on a phone, forever. A gradient stroke
+                costs nothing and fades the same 160px. */}
+            <linearGradient
+              id={`${maskId}-birth`}
+              gradientUnits="userSpaceOnUse"
+              x1="0" y1={geo.start.y} x2="0" y2={geo.start.y + 160}
+            >
+              <stop offset="0%" stopColor={GOLD} stopOpacity="0" />
+              <stop offset="55%" stopColor={GOLD} stopOpacity="0.55" />
+              <stop offset="100%" stopColor={GOLD} stopOpacity="1" />
+            </linearGradient>
+            <radialGradient id={`${maskId}-orb`} cx="36%" cy="30%" r="72%">
+              <stop offset="0%" stopColor="#fff6e6" />
+              <stop offset="45%" stopColor="#f0d49a" />
+              <stop offset="100%" stopColor="#c79246" />
             </radialGradient>
             <mask id={maskId} maskUnits="userSpaceOnUse" x="0" y="0" width={geo.w} height={geo.h}>
               <path
@@ -420,16 +428,16 @@ export function JourneyThread() {
             </mask>
           </defs>
 
-          <g mask={`url(#${maskId}-start)`}>
+          <g>
             {/* the faint full route, so the path ahead reads as "still to come" */}
-            <path d={geo.d} fill="none" stroke={GOLD} strokeWidth={1.5} strokeLinecap="round" strokeDasharray="3 8" opacity={0.28} />
+            <path d={geo.d} fill="none" stroke={`url(#${maskId}-birth)`} strokeWidth={1.5} strokeLinecap="round" strokeDasharray="3 8" opacity={0.28} />
 
             {/* the walked thread: the tree's own next-step line, revealed by scroll */}
             <g mask={`url(#${maskId})`}>
               <path
                 d={geo.d}
                 fill="none"
-                stroke={GOLD}
+                stroke={`url(#${maskId}-birth)`}
                 strokeWidth={2}
                 strokeLinecap="round"
                 strokeDasharray="3 8"
@@ -469,8 +477,8 @@ export function JourneyThread() {
           {/* the tip: an empty goal orb, you, walking the path right now */}
           <g ref={tipRef} style={{ opacity: 0, transition: "opacity .3s ease" }}>
             <circle r={13} fill={GOLD} opacity={0.16} className={reduced ? undefined : "animate-pulse-soft"} />
-            <circle r={7} fill={`url(#${maskId}-orb)`} stroke={GOLD} strokeWidth={1.4} style={{ filter: `drop-shadow(0 0 6px ${GOLD}55)` }} />
-            <ellipse cx={-2.2} cy={-2.6} rx={2.2} ry={1.5} fill="#ffffff" opacity={0.3} />
+            <circle r={7} fill={`url(#${maskId}-orb)`} style={{ filter: `drop-shadow(0 0 7px ${GOLD}aa)` }} />
+            <ellipse cx={-2.2} cy={-2.6} rx={2.2} ry={1.5} fill="#ffffff" opacity={0.55} />
           </g>
         </svg>
       )}
