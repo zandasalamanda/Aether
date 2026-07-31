@@ -51,7 +51,7 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
 
   // The actual mapping: generate → (when signed in) persist → show the path.
   // Only ever runs for a signed-in user, so every AI call is metered to an account.
-  const runMap = React.useCallback(async (raw: string) => {
+  const runMap = React.useCallback(async (raw: string, structured?: { answers: { question: string; answer: string }[]; freeText: string }) => {
     const p = raw.trim();
     if (!p) return;
     setError(null);
@@ -59,7 +59,7 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
     track("goal_mapping_started");
     try {
       await new Promise((r) => setTimeout(r, 1200));
-      const res = await generateGoalMap({ prompt: p });
+      const res = await generateGoalMap({ prompt: p, answers: structured?.answers, freeText: structured?.freeText || undefined });
       // If the AI fell back to a generic placeholder for a real account, don't
       // save it as their goal. Surface the failure and let them retry.
       if (remote && res.isMock) {
@@ -71,7 +71,10 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
       }
       setResult(res);
       if (remote) {
-        const saved = await persistGoalFromMap({ result: res });
+        const intake: Record<string, string> = {};
+        for (const a of structured?.answers ?? []) if (a.answer) intake[a.question] = a.answer;
+        if (structured?.freeText?.trim()) intake["Also"] = structured.freeText.trim();
+        const saved = await persistGoalFromMap({ result: res, intake });
         if (!saved.ok) {
           // Hit the Free goal cap → the highest-intent upgrade moment; send them
           // to billing rather than a dead error.
@@ -115,9 +118,13 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
 
   // Step 2 → fold the answers into the prompt and generate, exactly like the map.
   const finishQuestions = () => {
-    const parts = Object.entries(answers).filter(([, a]) => a).map(([q, a]) => `${q.replace(/\?$/, "")}: ${a}`);
-    if (extra.trim()) parts.push(extra.trim());
-    void runMap(parts.length ? `${prompt} (${parts.join("; ")})` : prompt);
+    // Structured, not folded into the prompt string: the answers persist to
+    // goals.intake so later per-step calls can use them without re-asking.
+    const structured = {
+      answers: Object.entries(answers).filter(([, a]) => a).map(([question, answer]) => ({ question, answer })),
+      freeText: extra.trim(),
+    };
+    void runMap(prompt, structured);
   };
   const pick = (q: string, o: string) => setAnswers((a) => ({ ...a, [q]: a[q] === o ? "" : o }));
 

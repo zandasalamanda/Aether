@@ -393,9 +393,15 @@ export function mockGoalMap(input: GoalMapInput): GoalMapResult {
       successCriterion: p.done,
     });
   });
-  // Honor a deadline written in plain English ("by September", "in 6 weeks");
-  // otherwise fall back to the template's suggested horizon.
-  const deadline = parseDeadline(input.prompt);
+  // Honor a deadline written in plain English ("by September", "in 6 weeks"),
+  // wherever it was said: the prompt, a clarifier answer, or the free text.
+  // Otherwise fall back to the template's suggested horizon.
+  const deadlineText = [
+    input.prompt,
+    ...(input.answers ?? []).map((a) => `${a.question} ${a.answer}`),
+    input.freeText ?? "",
+  ].join(" ");
+  const deadline = parseDeadline(deadlineText);
   return {
     title,
     description: tpl.description(title),

@@ -1020,9 +1020,12 @@ export function GalaxyMap({
     const pend = pending;
     if (!pend) return;
     setPending(null);
-    const parts = Object.entries(answers).filter(([, a]) => a).map(([q, a]) => `${q.replace(/\?$/, "")}: ${a}`);
-    if (extra.trim()) parts.push(extra.trim());
-    void createGoal(parts.length ? `${pend.prompt}. ${parts.join("; ")}` : pend.prompt);
+    // Structured, not folded into the prompt: the pairs persist to goals.intake
+    // so later per-step calls can use them without asking again.
+    void createGoal(pend.prompt, {
+      answers: Object.entries(answers).filter(([, a]) => a).map(([question, answer]) => ({ question, answer })),
+      freeText: extra.trim(),
+    });
   };
 
   // Fly to the spot the new planet will occupy and coalesce it there. If the goal
@@ -1039,27 +1042,36 @@ export function GalaxyMap({
   };
 
   // Persist a finished map and drop it on the map.
-  const commitMap = async (res: GoalMapResult, pos: { x: number; y: number }) => {
+  const commitMap = async (res: GoalMapResult, pos: { x: number; y: number }, intake?: Record<string, string>) => {
     let goalId = newId();
     let nodeIds: string[] | undefined;
     if (remote) {
-      const saved = await persistGoalFromMap({ result: res });
+      const saved = await persistGoalFromMap({ result: res, intake });
       if (saved.ok && saved.id) { goalId = saved.id; nodeIds = saved.nodeIds; }
     }
     const goal = toLocalGoal(goalId, res, nodeIds);
     setPositions((pp) => ({ ...pp, [goalId]: pos }));
     setGoals((prev) => [...prev, goal]);
+    // Eager briefing for the first step, fire-and-forget: the first sheet the
+    // user opens is already full instead of shimmer. One credit, remote only
+    // (the demo mock is instant anyway).
+    if (remote && goal.nodes[0]) {
+      const first = goal.nodes[0];
+      void enrichStep({ goalId, nodeId: first.id, goalTitle: goal.title, nodeTitle: first.title, nodeDescription: first.description })
+        .then((b) => cacheBriefing(first.id, b))
+        .catch(() => { /* lazy path picks it up on open */ });
+    }
     setMapping(false);
     setFormingPos(null);
     setExpandedId(goalId);
     setSelectedNodeId(null);
   };
 
-  const createGoal = async (text: string) => {
+  const createGoal = async (text: string, structured?: { answers: { question: string; answer: string }[]; freeText: string }) => {
     const p = text.trim();
     if (!p || mapping) return;
     const pos = beginForming();
-    const res = await generateGoalMap({ prompt: p });
+    const res = await generateGoalMap({ prompt: p, answers: structured?.answers, freeText: structured?.freeText || undefined });
     // Only a REAL account refuses a mock map (there it means the AI failed and
     // a placeholder would burn a goal slot). In demo mode the mock IS the
     // product; rejecting it made goal creation silently impossible without a key.
@@ -1071,7 +1083,10 @@ export function GalaxyMap({
         : "Couldn't map that. You may have hit today's AI limit. Try later, or upgrade for more.");
       return;
     }
-    await commitMap(res, pos);
+    const intake: Record<string, string> = {};
+    for (const a of structured?.answers ?? []) if (a.answer) intake[a.question] = a.answer;
+    if (structured?.freeText?.trim()) intake["Also"] = structured.freeText.trim();
+    await commitMap(res, pos, intake);
   };
 
   // Add several AI-generated sub-steps as branches under a node.
@@ -1212,6 +1227,21 @@ export function GalaxyMap({
       }))
     );
     if (remote) void setNodeResolvedResource({ nodeId, resolved });
+  };
+
+  // Research survives sheet close: cached on the node locally, persisted on
+  // the row by the research route itself.
+  const cacheResearch = (nodeId: string, research: NonNullable<GoalNode["research"]>) => {
+    setGoals((prev) =>
+      prev.map((g) => ({
+        ...g,
+        nodes: g.nodes.map((n) =>
+          n.id === nodeId
+            ? { ...n, research, briefing: n.briefing ? { ...n.briefing, sources: research.sources.slice(0, 8), level: "researched" as const } : n.briefing }
+            : n
+        ),
+      }))
+    );
   };
 
   // A fresh briefing lands on the node locally; remote rows were already
@@ -1516,6 +1546,7 @@ export function GalaxyMap({
               onMakeSmaller={() => void runMakeSmaller(selectedNode)}
               onResolveResource={resolveNodeResource}
               onBriefing={cacheBriefing}
+              onResearch={cacheResearch}
               onSaveArtifact={(label, body) => appendGoalNote(expanded.id, `${label} · ${selectedNode.title}`, body)}
             />
           ) : expanded ? (
@@ -2398,7 +2429,7 @@ export function NodeResourceBlock({ node, onResolve }: { node: GoalNode; onResol
 }
 
 function NodeSheet({
-  node, hex, goalTitle, goalNotes, breaking, isPro, nowMs, onToast, onClose, onDone, onLogPractice, onFocus, onDelete, onBranch, onBreakDown, onMakeSmaller, onResolveResource, onBriefing, onSaveArtifact,
+  node, hex, goalTitle, goalNotes, breaking, isPro, nowMs, onToast, onClose, onDone, onLogPractice, onFocus, onDelete, onBranch, onBreakDown, onMakeSmaller, onResolveResource, onBriefing, onResearch, onSaveArtifact,
 }: {
   node: GoalNode;
   hex: string;
@@ -2418,6 +2449,7 @@ function NodeSheet({
   onMakeSmaller: () => void;
   onResolveResource: (nodeId: string, resolved: ResolvedResource) => void;
   onBriefing: (nodeId: string, briefing: StepBriefing) => void;
+  onResearch: (nodeId: string, research: NonNullable<GoalNode["research"]>) => void;
   onSaveArtifact: (label: string, body: string) => void;
 }) {
   const [asking, setAsking] = React.useState(false);
@@ -2433,7 +2465,8 @@ function NodeSheet({
   const [saved, setSaved] = React.useState(false);
   const [editingDraft, setEditingDraft] = React.useState(false);
   const [researching, setResearching] = React.useState(false);
-  const [researchResult, setResearchResult] = React.useState<ResearchResult | null>(null);
+  // Seeded from the row: research no longer dies when the sheet closes.
+  const [researchResult, setResearchResult] = React.useState<ResearchResult | null>(node.research ? { answer: node.research.answer, sources: node.research.sources } : null);
   const [researchLoading, setResearchLoading] = React.useState(false);
   const [helpOpen, setHelpOpen] = React.useState(false);
   // The briefing loads once per step and is cached forever (on the row for real
@@ -2489,8 +2522,9 @@ function NodeSheet({
     if (researchResult || researchLoading) return;
     setResearchLoading(true);
     try {
-      const r = await research({ goalTitle, nodeTitle: node.title, context: goalNotes.trim() || undefined });
+      const r = await research({ goalTitle, nodeTitle: node.title, context: goalNotes.trim() || undefined, goalId: node.goalId, nodeId: node.id });
       setResearchResult(r);
+      onResearch(node.id, { answer: r.answer, sources: r.sources, fetchedAt: nowISO() });
     } catch (e) {
       if (!handleAiError(e)) onToast("Couldn't complete research. Try again.");
       setResearching(false);

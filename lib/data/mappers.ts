@@ -44,6 +44,7 @@ export interface GoalRow {
   target_date: string | null;
   icon: string | null;
   notes: string | null;
+  intake?: Record<string, string> | null;
   created_at: string;
   updated_at: string;
   archived_at: string | null;
@@ -122,6 +123,7 @@ export function rowToGoal(r: GoalRow): Goal {
     targetDate: r.target_date,
     icon: r.icon,
     notes: r.notes ?? "",
+    intake: r.intake ?? null,
     createdAt: r.created_at,
     updatedAt: r.updated_at,
     archivedAt: r.archived_at,

@@ -11,6 +11,10 @@ import type {
 // ---------- Goal map generation ----------
 export interface GoalMapInput {
   prompt: string;
+  /** Structured clarifier answers; persisted to goals.intake, injected into later per-step calls. */
+  answers?: { question: string; answer: string }[];
+  /** The optional free-text "tell me more". */
+  freeText?: string;
 }
 
 export interface GeneratedNode {
@@ -77,6 +81,9 @@ export interface ResearchInput {
   nodeTitle: string;
   context?: string;
   question?: string;
+  /** When present (and owned), the server persists the result on the node. */
+  goalId?: string;
+  nodeId?: string;
 }
 export interface ResearchResult {
   answer: string;

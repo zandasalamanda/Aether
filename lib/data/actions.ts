@@ -22,7 +22,7 @@ const NO_OP: Result = { ok: false };
  * Returns the new goal id and the node ids (in order) so the client can keep
  * its optimistic state in sync with the real rows.
  */
-export async function persistGoalFromMap(input: { result: GoalMapResult }): Promise<GoalResult> {
+export async function persistGoalFromMap(input: { result: GoalMapResult; intake?: Record<string, string> }): Promise<GoalResult> {
   if (!isRemote) return NO_OP;
   const scoped = await getScopedClient();
   const profile = await ensureProfile();
@@ -61,6 +61,9 @@ export async function persistGoalFromMap(input: { result: GoalMapResult }): Prom
       progress: 0,
       target_date: result.suggestedTargetDate ?? null,
       icon: result.icon ?? null,
+      // What the user answered at creation. Later per-step calls (briefings,
+      // research, replans) read it back instead of asking again.
+      intake: input.intake ?? {},
     })
     .select("id")
     .single();

@@ -251,6 +251,20 @@ export function TodayPlanner({
   };
   const undoPush = (id: string) => patchBlocks((b) => (b.id === id ? { ...b, status: "planned" } : b));
 
+  // The miss path: swap a pushed block for its briefed 5-minute fallback and
+  // bring it back to today. The full step stays open on the map; today just
+  // asks for the version a bad day can actually absorb.
+  const shrinkToFallback = (id: string) => {
+    patchBlocks((b) => {
+      if (b.id !== id) return b;
+      const n = b.goalId && b.nodeId ? nodeFor(b.goalId, b.nodeId) : null;
+      const fallback = n?.briefing?.ifStuck;
+      if (!fallback) return b;
+      return { ...b, status: "planned", title: fallback, durationMinutes: Math.min(10, b.durationMinutes), difficulty: "light" };
+    });
+    flash("The small version counts. Momentum kept.");
+  };
+
   const shrinkBlock = (id: string) => {
     // Compute from the live block up front: a state updater runs later, so reading
     // the new value after setStored would always see the stale (pre-update) number.
@@ -590,10 +604,28 @@ export function TodayPlanner({
                 )}
 
                 {pushed && (
-                  <div className="mt-1 flex items-center gap-2">
-                    <button onClick={() => undoPush(b.id)} className="raised-btn inline-flex h-11 items-center gap-1.5 rounded-lg px-3.5 text-[15px] text-muted transition-colors hover:text-ink">
-                      <Undo2 size={15} /> Bring back to today
-                    </button>
+                  <div className="mt-1">
+                    {/* The miss path, no AI cost: the briefing already wrote the
+                        bad-day version of this step, so a push offers it instead
+                        of guilt. Never zero anything, never scold. */}
+                    {node?.briefing?.ifStuck && (
+                      <p className="mb-2 text-[14px] leading-relaxed text-muted">
+                        Recoverable. One push changes nothing.
+                      </p>
+                    )}
+                    <div className="flex flex-wrap items-center gap-2">
+                      {node?.briefing?.ifStuck && (
+                        <button
+                          onClick={() => shrinkToFallback(b.id)}
+                          className="raised-gold inline-flex h-11 items-center gap-1.5 rounded-lg px-3.5 text-[15px] font-medium"
+                        >
+                          <Scissors size={15} /> Do the 5-minute version
+                        </button>
+                      )}
+                      <button onClick={() => undoPush(b.id)} className="raised-btn inline-flex h-11 items-center gap-1.5 rounded-lg px-3.5 text-[15px] text-muted transition-colors hover:text-ink">
+                        <Undo2 size={15} /> Bring back to today
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>

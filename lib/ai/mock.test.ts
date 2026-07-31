@@ -191,3 +191,13 @@ describe("mock step depth", () => {
     expect(practice?.firstAction).toContain("lesson");
   });
 });
+
+describe("mock intake answers", () => {
+  it("honors a deadline given as a clarifier answer, not just in the prompt", () => {
+    const plain = mockGoalMap({ prompt: "save money" });
+    const answered = mockGoalMap({ prompt: "save money", answers: [{ question: "Deadline?", answer: "in 2 weeks" }] });
+    const days = (iso: string) => Math.round((Date.parse(iso) - Date.now()) / 86_400_000);
+    expect(days(answered.suggestedTargetDate)).toBeLessThan(20);
+    expect(days(plain.suggestedTargetDate)).toBeGreaterThan(60); // template default
+  });
+});

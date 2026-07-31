@@ -135,9 +135,19 @@ export async function generateGoalMap(input: GoalMapInput): Promise<GoalMapResul
     return valid(j) ? sanitizeGoalMap(j, input.prompt) : { ...mockGoalMap(input), isMock: true };
   }
   const today = new Date().toISOString().slice(0, 10);
+  // Answers arrive structured and render as labeled lines rather than being
+  // folded into the prompt string: the model reads them more reliably, and the
+  // same pairs persist to goals.intake for every later per-step call.
+  const answerLines = (input.answers ?? [])
+    .filter((a) => a.answer.trim())
+    .map((a) => `- ${a.question.replace(/\?$/, "")}: ${a.answer}`);
+  if (input.freeText?.trim()) answerLines.push(`- Also: ${input.freeText.trim()}`);
+  const user = [`Today's date: ${today}`, `Goal: ${input.prompt}`, answerLines.length ? `Answers:\n${answerLines.join("\n")}` : ""]
+    .filter(Boolean)
+    .join("\n");
   // 14-18 nodes each with a grounded description PLUS a first move and a done
   // test need real headroom: 4096 already ran tight before the two new strings,
   // and a truncated JSON dead-ends onboarding.
-  const r = await generateJson<GoalMapResult>(SYSTEM, `Today's date: ${today}\nGoal: ${input.prompt}`, { maxTokens: 6144 });
+  const r = await generateJson<GoalMapResult>(SYSTEM, user, { maxTokens: 6144 });
   return valid(r) ? sanitizeGoalMap(r, input.prompt) : { ...mockGoalMap(input), isMock: true };
 }

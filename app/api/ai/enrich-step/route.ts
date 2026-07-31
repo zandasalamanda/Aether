@@ -35,17 +35,23 @@ export async function POST(req: Request) {
 
   const goalRes = await scoped.supabase
     .from("goals")
-    .select("id,title,notes")
+    .select("id,title,notes,intake")
     .eq("id", node.goal_id)
     .eq("user_id", profile.id)
     .maybeSingle();
-  const goal = goalRes.data as { id: string; title: string; notes: string | null } | null;
+  const goal = goalRes.data as { id: string; title: string; notes: string | null; intake: Record<string, string> | null } | null;
   if (!goal) return NextResponse.json({ error: "Goal not found" }, { status: 404 });
 
+  // What the user answered at creation, rendered as labeled pairs: the whole
+  // point of persisting intake is that a briefing months later still knows it.
+  const intakeLines = Object.entries(goal.intake ?? {})
+    .map(([q, a]) => `${q.replace(/\?$/, "")}: ${a}`)
+    .join("; ");
   const briefing = await generateBriefing({
     goalTitle: goal.title,
     nodeTitle: node.title,
     nodeDescription: node.description ?? "",
+    intakeLines,
     notes: goal.notes ?? "",
   });
   if (!briefing) return NextResponse.json({ error: "Sola couldn't brief this step. Try again." }, { status: 502 });

@@ -90,6 +90,8 @@ export interface Goal {
   icon: string | null;
   /** freeform notebook context the user writes on this goal. */
   notes: string;
+  /** clarifier question -> answer pairs captured at creation (plus freeText) */
+  intake?: Record<string, string> | null;
   createdAt: string;
   updatedAt: string;
   archivedAt: string | null;
