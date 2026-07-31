@@ -120,10 +120,20 @@ const TEMPLATES: Template[] = [
     weeks: 12,
     icon: "money",
     nodes: [
-      { title: "Map current spending", est: 45, reason: "You can't change what you can't see", first: "Open your banking app and write down last month's total spending", done: "One number on paper: what last month actually cost" },
-      { title: "Set a clear target", est: 30, reason: "A number gives the plan direction", first: "Write the amount and the date: how much, by when", done: "A target amount and month are written where you will see them" },
-      { title: "Cut three leaks", est: 45, reason: "Quick wins fund the goal", first: "Open the subscriptions tab in your banking app and cancel the first unused one", done: "Three cancellations confirmed by email" },
-      { title: "Automate saving", est: 30, reason: "Make progress happen without willpower", first: "Open your bank's transfers tab and start a new recurring transfer", done: "An automatic monthly transfer exists and the first date is set" },
+      { title: "Map current spending", est: 45, reason: "You can't change what you can't see", first: "Open your banking app and write down last month's total spending", done: "One number on paper: what last month actually cost", sub: [
+        { title: "List every recurring charge", est: 20, reason: "Subscriptions hide in plain sight", first: "Open the subscriptions tab in your banking app and screenshot it", done: "Every repeating charge is on one list with its amount" },
+        { title: "Total one month of variable spending", est: 25, reason: "The unplanned spending is where the money goes", first: "Add up last month's food and going-out lines", done: "One number for the spending you did not plan" },
+      ] },
+      { title: "Set a clear target", est: 30, reason: "A number gives the plan direction", first: "Write the amount and the date: how much, by when", done: "A target amount and month are written where you will see them", sub: [
+        { title: "Work out what one month of essentials costs", est: 20, reason: "The target should mean something, not be a round guess", first: "Add rent, food, transport and bills for one month", done: "One month of essentials is a known number" },
+      ] },
+      { title: "Cut three leaks", est: 45, reason: "Quick wins fund the goal", first: "Open the subscriptions tab in your banking app and cancel the first unused one", done: "Three cancellations confirmed by email", sub: [
+        { title: "Cancel the biggest unused subscription", est: 15, reason: "Start with the one that costs most and is used least", first: "Pick the priciest thing you have not opened in a month and cancel it", done: "One cancellation email is in your inbox" },
+        { title: "Move one bill to a cheaper plan", est: 30, reason: "A bill renegotiated once keeps paying you", first: "Call or open the account for your phone or internet and ask for the current best plan", done: "One bill is confirmed lower than it was" },
+      ] },
+      { title: "Automate saving", est: 30, reason: "Make progress happen without willpower", first: "Open your bank's transfers tab and start a new recurring transfer", done: "An automatic monthly transfer exists and the first date is set", sub: [
+        { title: "Open a separate savings space", est: 15, reason: "Money you can see in your spending account gets spent", first: "Create a second account or savings pot and name it for the goal", done: "A named savings space exists, separate from daily spending" },
+      ] },
       { title: "Build a buffer", est: 60, reason: "Safety keeps the plan alive", first: "Open a separate savings space and name it Buffer", done: "One month of essentials sits in an account you do not touch" },
       { title: "Review monthly", est: 30, reason: "Small corrections keep you on track", first: "Put a 30-minute money check-in on the first Sunday of next month", done: "The check-in recurs monthly and the first one happened" },
     ],
@@ -136,9 +146,15 @@ const TEMPLATES: Template[] = [
     weeks: 8,
     icon: "habit",
     nodes: [
-      { title: "Define the routine", est: 30, reason: "Decide once, not every day", first: "Write one sentence: I will do X, at time Y, in place Z", done: "The sentence exists with a real time and place in it" },
-      { title: "Prep the environment", est: 30, reason: "Make the right move the easy move", first: "Put the thing you need where you will trip over it tonight", done: "Starting takes under a minute from where you usually are" },
-      { title: "Start small, daily", est: 20, reason: "Tiny and repeated beats big and rare", first: "Do the two-minute version right now, today counts", done: "Seven days in a row of any size at all" },
+      { title: "Define the routine", est: 30, reason: "Decide once, not every day", first: "Write one sentence: I will do X, at time Y, in place Z", done: "The sentence exists with a real time and place in it", sub: [
+        { title: "Pick the trigger you already do daily", est: 15, reason: "A new habit rides an old one", first: "Name the thing you already do every day right before this would fit", done: "The routine is attached to something you never skip" },
+      ] },
+      { title: "Prep the environment", est: 30, reason: "Make the right move the easy move", first: "Put the thing you need where you will trip over it tonight", done: "Starting takes under a minute from where you usually are", sub: [
+        { title: "Remove the one thing that stops you", est: 20, reason: "Friction beats motivation every time", first: "Name what usually gets in the way, then move it out of reach tonight", done: "The usual obstacle is gone or out of the room" },
+      ] },
+      { title: "Start small, daily", est: 20, reason: "Tiny and repeated beats big and rare", first: "Do the two-minute version right now, today counts", done: "Seven days in a row of any size at all", sub: [
+        { title: "Decide the smallest version that still counts", est: 10, reason: "A floor you cannot miss protects the streak", first: "Write down the two-minute version you will do on your worst day", done: "The minimum version is written down and is genuinely tiny" },
+      ] },
       { title: "Track for two weeks", est: 20, reason: "Data shows what's working", first: "Put a tick on a calendar for today", done: "Fourteen days of ticks and misses, honestly recorded" },
       { title: "Adjust the plan", est: 30, reason: "Tune it to your real life", first: "Look at your misses and move the routine to when they were not", done: "One concrete change made to time, place, or size" },
       { title: "Lock it in", est: 20, reason: "Make it automatic", first: "Attach the routine to something you already do every day", done: "Four weeks running without needing the reminder" },
