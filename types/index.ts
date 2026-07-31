@@ -131,6 +131,10 @@ export interface GoalNode {
   firstAction?: string;
   /** observable done-test ("" on legacy rows) */
   successCriterion?: string;
+  /** cached per-step briefing (StepBriefing in lib/ai/types); null = not enriched yet */
+  briefing?: import("@/lib/ai/types").StepBriefing | null;
+  /** persisted research for this step; null = never researched */
+  research?: { answer: string; sources: { title: string; url: string }[]; fetchedAt: string } | null;
   createdAt: string;
   updatedAt: string;
 }

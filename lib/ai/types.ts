@@ -83,6 +83,40 @@ export interface ResearchResult {
   sources: { title: string; url: string }[];
 }
 
+
+// ---------- Step briefing (per-step enrichment, cached on the node) ----------
+export interface StepMistake { mistake: string; fix: string } // each <= 120 chars
+
+export interface StepBriefing {
+  /** may refine the skeleton value; <= 160 */
+  firstAction: string;
+  /** <= 120 */
+  successCriterion: string;
+  /** Suggested trigger tied to an existing routine ("after dinner, at the kitchen table"). Null if none fits. */
+  whenWhereCue: string | null; // <= 100
+  /** 1-3 real failure modes for THIS step, each with the concrete fix. */
+  commonMistakes: StepMistake[];
+  /** The 5-minute fallback version for a bad day. */
+  ifStuck: string; // <= 160
+  /** 0-4 real prerequisites ("a library card", "about $30"). */
+  whatYoullNeed: string[]; // each <= 60
+  /** One sentence naming which stored facts shaped this, or null when none did. */
+  personalNote: string | null; // <= 140
+  /** filled only by a research merge */
+  sources: { title: string; url: string }[];
+  level: "enriched" | "researched" | "mock";
+  briefedAt: string; // ISO
+}
+
+export interface EnrichStepInput {
+  goalId: string;
+  nodeId: string;
+  // Demo-mode fallbacks (the server ignores these and loads canonical rows):
+  goalTitle?: string;
+  nodeTitle?: string;
+  nodeDescription?: string;
+}
+
 // ---------- Daily plan ----------
 export interface DailyPlanInput {
   availableMinutes: number;

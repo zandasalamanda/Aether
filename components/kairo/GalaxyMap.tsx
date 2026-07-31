@@ -23,6 +23,8 @@ import { SITE_URL } from "@/lib/site";
 import type { Clarifier, ReplanProposal, ReplanKind, GoalMapResult } from "@/lib/ai/types";
 import { clarifyGoal } from "@/lib/ai/clarify";
 import { GOAL_PALETTE, goalColorHex, goalColorIndex, type GoalColorOverride } from "@/lib/kairo/goal-color";
+import { enrichStep } from "@/lib/ai/enrich-step";
+import type { StepBriefing } from "@/lib/ai/types";
 import { goalIcon } from "@/lib/kairo/goal-icon";
 import { pickCelebration, pickGoalCelebration, fireHaptic } from "@/lib/kairo/celebrate";
 import { upgradeReasonForGoalCap } from "@/lib/kairo/plans";
@@ -1253,6 +1255,30 @@ export function GalaxyMap({
     if (remote) void setNodeResolvedResource({ nodeId, resolved });
   };
 
+  // A fresh briefing lands on the node locally; remote rows were already
+  // cached by the enrich route, so this is the only write the client makes.
+  const cacheBriefing = (nodeId: string, briefing: StepBriefing) => {
+    setGoals((prev) =>
+      prev.map((g) => ({
+        ...g,
+        nodes: g.nodes.map((n) => {
+          if (n.id !== nodeId) return n;
+          // A REAL enrichment refines the skeleton fields; the deterministic
+          // mock must never overwrite a specific first move with its generic
+          // one, so at level "mock" the skeleton stands and only the extra
+          // sections (mistakes, cue, fallback) are taken.
+          const refine = briefing.level !== "mock";
+          return {
+            ...n,
+            briefing,
+            firstAction: refine ? briefing.firstAction : n.firstAction,
+            successCriterion: refine ? briefing.successCriterion : n.successCriterion,
+          };
+        }),
+      }))
+    );
+  };
+
   const transform = `translate(${view.tx}px, ${view.ty}px) scale(${view.scale})`;
   const empty = goals.length === 0;
 
@@ -1530,6 +1556,7 @@ export function GalaxyMap({
               onBreakDown={() => setBreakdownFor(selectedNode)}
               onMakeSmaller={() => void runMakeSmaller(selectedNode)}
               onResolveResource={resolveNodeResource}
+              onBriefing={cacheBriefing}
               onSaveArtifact={(label, body) => appendGoalNote(expanded.id, `${label} · ${selectedNode.title}`, body)}
             />
           ) : expanded ? (
@@ -2386,7 +2413,7 @@ export function NodeResourceBlock({ node, onResolve }: { node: GoalNode; onResol
 }
 
 function NodeSheet({
-  node, hex, goalTitle, goalNotes, breaking, isPro, nowMs, onToast, onClose, onDone, onLogPractice, onFocus, onDelete, onBranch, onBreakDown, onMakeSmaller, onResolveResource, onSaveArtifact,
+  node, hex, goalTitle, goalNotes, breaking, isPro, nowMs, onToast, onClose, onDone, onLogPractice, onFocus, onDelete, onBranch, onBreakDown, onMakeSmaller, onResolveResource, onBriefing, onSaveArtifact,
 }: {
   node: GoalNode;
   hex: string;
@@ -2405,6 +2432,7 @@ function NodeSheet({
   onBreakDown: () => void;
   onMakeSmaller: () => void;
   onResolveResource: (nodeId: string, resolved: ResolvedResource) => void;
+  onBriefing: (nodeId: string, briefing: StepBriefing) => void;
   onSaveArtifact: (label: string, body: string) => void;
 }) {
   const [asking, setAsking] = React.useState(false);
@@ -2423,6 +2451,22 @@ function NodeSheet({
   const [researchResult, setResearchResult] = React.useState<ResearchResult | null>(null);
   const [researchLoading, setResearchLoading] = React.useState(false);
   const [helpOpen, setHelpOpen] = React.useState(false);
+  // The briefing loads once per step and is cached forever (on the row for real
+  // accounts, in local state for the demo). The skeleton fields render
+  // immediately; these sections shimmer in behind them.
+  const [briefLoading, setBriefLoading] = React.useState(false);
+  const brief = node.briefing ?? null;
+  React.useEffect(() => {
+    if (brief || briefLoading) return;
+    let live = true;
+    setBriefLoading(true);
+    enrichStep({ goalId: node.goalId, nodeId: node.id, goalTitle, nodeTitle: node.title, nodeDescription: node.description })
+      .then((b) => { if (live) onBriefing(node.id, b); })
+      .catch(() => { /* rate-limited or offline: the skeleton fields still stand */ })
+      .finally(() => { if (live) setBriefLoading(false); });
+    return () => { live = false; };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [node.id]);
   const [congrats, setCongrats] = React.useState<{ title: string; sub: string } | null>(null);
 
   const router = useRouter();
@@ -2575,6 +2619,44 @@ function NodeSheet({
         </div>
       ) : null}
       {node.description && <div className="mt-2 text-[13px] leading-relaxed text-muted"><Markdown>{node.description}</Markdown></div>}
+
+      {/* the rest of the briefing: what goes wrong, what you need, the bad-day
+          version. Loaded once, cached on the step. */}
+      {brief ? (
+        <div className="mt-2 space-y-2">
+          {brief.whenWhereCue && (
+            <p className="text-[13px] text-muted"><span className="text-faint">A good moment:</span> {brief.whenWhereCue}</p>
+          )}
+          {brief.commonMistakes.length > 0 && (
+            <div className="rounded-xl border border-line px-3.5 py-2.5">
+              <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">Watch out for</div>
+              <ul className="mt-1 space-y-1.5">
+                {brief.commonMistakes.map((m, i) => (
+                  <li key={i} className="text-[13px] leading-relaxed text-muted">
+                    {m.mistake}. <span className="text-ink">{m.fix}.</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {brief.whatYoullNeed.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5 text-[13px] text-muted">
+              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">You&apos;ll need</span>
+              {brief.whatYoullNeed.map((w) => (
+                <span key={w} className="rounded-full border border-line px-2.5 py-0.5">{w}</span>
+              ))}
+            </div>
+          )}
+          {brief.ifStuck && (
+            <p className="text-[13px] leading-relaxed text-muted"><span className="text-faint">If it stalls:</span> {brief.ifStuck}</p>
+          )}
+        </div>
+      ) : briefLoading ? (
+        <div className="mt-2 space-y-2" aria-hidden>
+          <div className="h-14 animate-pulse rounded-xl bg-white/[0.04]" />
+          <div className="h-8 w-2/3 animate-pulse rounded-xl bg-white/[0.04]" />
+        </div>
+      ) : null}
 
       {node.resource && (
         <NodeResourceBlock node={node} onResolve={(r) => onResolveResource(node.id, r)} />

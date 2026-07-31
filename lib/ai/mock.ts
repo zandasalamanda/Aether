@@ -14,6 +14,7 @@ import type {
   SortedItem,
   ReviewInput,
   ReviewResult,
+  StepBriefing,
 } from "./types";
 import type { Difficulty, GoalNode, InboxCategory } from "@/types";
 import { parseDeadline } from "@/lib/kairo/deadline";
@@ -168,6 +169,93 @@ const DEFAULT_TEMPLATE: Template = {
 
 function pickTemplate(prompt: string): Template {
   return TEMPLATES.find((t) => t.match.test(prompt)) ?? DEFAULT_TEMPLATE;
+}
+
+
+// ---------- step briefing ----------
+
+// Deterministic briefings keyed on the same keyword classes the clarifiers use.
+// Every field is filled and specific, so the keyless demo shows the exact shape
+// the real enrichment produces. level "mock", no sources, no personal note
+// (a mock must never claim to know the user).
+interface BriefTemplate {
+  match: RegExp;
+  cue: string;
+  mistakes: { mistake: string; fix: string }[];
+  ifStuck: string;
+  need: string[];
+}
+
+const BRIEFS: BriefTemplate[] = [
+  {
+    match: /\b(save|saving|savings|money|budget|afford|debt|invest|cash|fund|\$)\b/i,
+    cue: "right after payday, before the money can wander",
+    mistakes: [
+      { mistake: "Guessing your spending instead of reading the statement", fix: "Use last month's real numbers, not the ones you hope for" },
+      { mistake: "Setting a target so strict the first slip kills it", fix: "Start at 10% of income and raise it after one clean month" },
+    ],
+    ifStuck: "Open your banking app and write down just ONE category's total for last month",
+    need: ["your banking app login", "10 quiet minutes"],
+  },
+  {
+    match: /\b(fit|fitness|gym|run|running|workout|muscle|weight|lift|marathon|sport|train)\b/i,
+    cue: "right after work, before you sit down at home",
+    mistakes: [
+      { mistake: "Going hard the first week and quitting the second", fix: "Cap week one at three short sessions you finish feeling fresh" },
+      { mistake: "Picking a gym 20 minutes away", fix: "Choose the one under 10 minutes from home, even if it is worse" },
+    ],
+    ifStuck: "Do 10 minutes of the session at home instead, shoes on and all",
+    need: ["workout clothes packed the night before"],
+  },
+  {
+    match: /\b(learn|study|exam|language|spanish|french|instrument|music|piano|guitar|skill|draw|paint|cook|write|writing)\b/i,
+    cue: "with your morning coffee, phone in another room",
+    mistakes: [
+      { mistake: "Collecting courses instead of practising", fix: "One resource, finished, beats five started" },
+      { mistake: "Sessions so long you dread the next one", fix: "Stop while it is still easy; twenty minutes is a win" },
+    ],
+    ifStuck: "Review yesterday's material for five minutes instead of learning anything new",
+    need: ["one chosen course or book"],
+  },
+  {
+    match: /\b(launch|build|ship|startup|business|product|side project|freelance|sell|brand)\b/i,
+    cue: "first thing on your most protected morning",
+    mistakes: [
+      { mistake: "Polishing before anyone has seen it", fix: "Show a rough version to one real person this week" },
+      { mistake: "Building features nobody asked for", fix: "Every addition needs a name attached: who asked for this?" },
+    ],
+    ifStuck: "Write three sentences describing what you would ship if you had to ship today",
+    need: ["a 90-minute uninterrupted block"],
+  },
+];
+
+const DEFAULT_BRIEF: BriefTemplate = {
+  match: /.*/,
+  cue: "at the same time as something you already do daily",
+  mistakes: [
+    { mistake: "Waiting to feel ready", fix: "Do the first ten minutes badly; momentum fixes the rest" },
+    { mistake: "Keeping the plan in your head", fix: "Write the next move down where you will see it tomorrow" },
+  ],
+  ifStuck: "Spend five minutes writing down exactly what makes this step hard",
+  need: [],
+};
+
+export function mockEnrichStep(nodeTitle: string, goalTitle: string): StepBriefing {
+  const key = `${goalTitle} ${nodeTitle}`;
+  const t = BRIEFS.find((b) => b.match.test(key)) ?? DEFAULT_BRIEF;
+  const title = nodeTitle.trim() || "this step";
+  return {
+    firstAction: `Open what "${title}" needs and do the first 10 minutes`,
+    successCriterion: `"${title}" has a visible result you could show someone`,
+    whenWhereCue: t.cue,
+    commonMistakes: t.mistakes,
+    ifStuck: t.ifStuck,
+    whatYoullNeed: t.need,
+    personalNote: null,
+    sources: [],
+    level: "mock",
+    briefedAt: new Date().toISOString(),
+  };
 }
 
 // ---------- practice detection ----------
