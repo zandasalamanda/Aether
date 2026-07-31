@@ -43,7 +43,7 @@ export function Chip({ tone = "neutral", active = false, icon, pro = false, clas
       {icon}
       {children}
       {pro && (
-        <span className="ml-0.5 rounded bg-accent/15 px-1 py-px font-mono text-[9px] font-semibold uppercase tracking-wide text-accent">Pro</span>
+        <span className="raised-btn pointer-events-none ml-0.5 rounded px-1.5 py-px font-mono text-[9px] font-semibold uppercase tracking-wide text-accent">Pro</span>
       )}
     </button>
   );
@@ -59,9 +59,10 @@ export function Chip({ tone = "neutral", active = false, icon, pro = false, clas
  * with soft outlined pills, so the two steps of one flow disagreed about what an
  * option looks like.
  *
- * Outlined pill, flat, 44px. The selected state changes the border and the fill,
- * not just the text colour: Chip only recoloured the label, which left the
- * answer you had chosen almost invisible.
+ * Outlined pill, 44px. Unselected is a quiet outline; selected is the raised
+ * gold surface, so the whole control changes, not just the text colour. Chip
+ * only recoloured the label, which left the answer you had chosen almost
+ * invisible.
  */
 export function OptionChip({ active = false, className, children, ...props }: Omit<ChipProps, "tone" | "pro">) {
   return (
@@ -71,7 +72,7 @@ export function OptionChip({ active = false, className, children, ...props }: Om
       className={cn(
         "inline-flex min-h-11 items-center gap-1.5 rounded-full border px-3.5 text-[14px] transition-colors",
         active
-          ? "border-accent/50 bg-accent/10 text-accent"
+          ? "raised-gold"
           : "border-line bg-transparent text-muted hover:border-accent/40 hover:text-ink",
         className,
       )}

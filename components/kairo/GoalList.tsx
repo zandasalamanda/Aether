@@ -105,7 +105,7 @@ function NodeRow({ node, hex, isNext, onOpen, sub }: { node: GoalNode; hex: stri
       {/* the next step names its exact opening move, the same spotlight the map
           shows. Legacy rows with an empty firstAction render nothing. */}
       {isNext && !done && node.firstAction ? (
-        <div className={cn("mb-1.5 rounded-lg border border-accent/20 px-2.5 py-1.5 text-[12.5px] leading-snug text-muted", sub ? "ml-9" : "ml-6")} style={{ background: "color-mix(in srgb, var(--color-accent) 6%, transparent)" }}>
+        <div className={cn("raised-btn mb-1.5 rounded-lg px-2.5 py-1.5 text-[12.5px] leading-snug text-muted", sub ? "ml-9" : "ml-6")}>
           <span className="mr-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.14em] text-accent">First move</span>
           {node.firstAction}
         </div>

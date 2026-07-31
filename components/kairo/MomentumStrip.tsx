@@ -52,7 +52,7 @@ export function MomentumStrip({ stats, goals }: { stats: FocusStats; goals: Goal
       </div>
 
       {milestone && (
-        <div className="mt-3 flex items-center gap-2 rounded-xl border border-accent/20 bg-accent/[0.06] px-3.5 py-2.5 animate-fade-up">
+        <div className="panel-2 focus-accent mt-3 flex items-center gap-2 rounded-xl px-3.5 py-2.5 animate-fade-up">
           <Flame size={14} className="shrink-0 text-accent" />
           <span className="text-[15px] leading-relaxed text-ink/90">{milestone}</span>
         </div>

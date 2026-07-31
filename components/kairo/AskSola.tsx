@@ -116,7 +116,7 @@ export function AskSola({ goals, remote, isPro, onClose }: { goals: GoalWithNode
       <div className="flex items-center gap-2 border-b border-line px-4 py-3.5">
         <SolaMark size={16} />
         <span className="flex-1 font-display text-[15px] font-semibold text-ink">Ask Sola</span>
-        <span className="rounded-full bg-accent/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-accent">{isPro ? "Pro" : "2 free / day"}</span>
+        <span className="raised-btn rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-accent">{isPro ? "Pro" : "2 free / day"}</span>
         <button onClick={onClose} className="raised-btn grid h-8 w-8 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Close"><X size={17} /></button>
       </div>
 
@@ -141,7 +141,7 @@ export function AskSola({ goals, remote, isPro, onClose }: { goals: GoalWithNode
                   {m.changes.map((c, i) => {
                     const mm = META[c.kind];
                     return (
-                      <button key={i} disabled={m.applied} onClick={() => toggle(m.id, i)} className={cn("flex w-full items-start gap-2 rounded-lg border px-2.5 py-2 text-left transition-colors", c.on ? "border-accent/50 bg-accent/10" : "border-line opacity-40", m.applied && "pointer-events-none")}>
+                      <button key={i} disabled={m.applied} onClick={() => toggle(m.id, i)} className={cn("flex w-full items-start gap-2 rounded-lg px-2.5 py-2 text-left transition-colors", c.on ? "raised-btn" : "border border-line opacity-40", m.applied && "pointer-events-none")}>
                         <span className={cn("mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded border", c.on ? "border-transparent bg-accent" : "border-line")}>{c.on && <Check size={11} className="text-canvas" />}</span>
                         <span className="min-w-0 flex-1">
                           <span className={cn("inline-flex items-center gap-1 font-mono text-[10px] uppercase tracking-wide", mm.tone)}><mm.Icon size={11} /> {mm.label}</span>

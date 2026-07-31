@@ -121,8 +121,8 @@ function StepSlider({ ariaLabel, labels, index, onIndex }: { ariaLabel: string; 
             onClick={() => onIndex(k)}
             aria-pressed={k === index}
             className={cn(
-              "inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border px-3 font-mono text-[14px] tabular-nums transition-colors",
-              k === index ? "border-accent/50 bg-accent/10 text-accent" : "border-line text-muted hover:border-accent/40 hover:text-ink",
+              "inline-flex min-h-11 min-w-11 items-center justify-center rounded-full px-3 font-mono text-[14px] tabular-nums transition-colors",
+              k === index ? "raised-btn text-accent" : "border border-line text-muted hover:border-accent/40 hover:text-ink",
             )}
           >
             {l}
@@ -381,7 +381,7 @@ export function TodayPlanner({
           </p>
 
           {!hasWork && (
-            <p className="mt-5 rounded-xl border border-line px-4 py-3 text-[15px] leading-relaxed text-muted" style={{ background: "color-mix(in srgb, var(--color-ink) 2.5%, transparent)" }}>
+            <p className="panel mt-5 rounded-xl px-4 py-3 text-[15px] leading-relaxed text-muted">
               Every step is done or blocked right now. Add a step on the map, then build your day.
             </p>
           )}
@@ -409,7 +409,7 @@ export function TodayPlanner({
           </div>
 
           {/* Says plainly what the button will do, and updates as you slide. */}
-          <p className="mt-9 w-full rounded-2xl border border-accent/15 px-4 py-3.5 text-left text-[15px] leading-relaxed text-muted" style={{ background: "color-mix(in srgb, var(--color-accent) 6%, transparent)" }}>
+          <p className="panel mt-9 w-full rounded-2xl px-4 py-3.5 text-left text-[15px] leading-relaxed text-muted">
             Sola will map the next <span className="font-semibold text-ink">{spokenTime}</span> into {shapeByEnergy[energy]}.
           </p>
 
@@ -448,7 +448,7 @@ export function TodayPlanner({
           <span>{active.summary}</span>
         </div>
         {active.recoveryNote && (
-          <div className="mt-3 flex items-start gap-2 rounded-xl border border-warn/25 bg-warn/[0.06] px-3.5 py-2.5 text-[15px] leading-relaxed text-warn/90">
+          <div className="panel mt-3 flex items-start gap-2 rounded-xl px-3.5 py-2.5 text-[15px] leading-relaxed text-warn/90" style={{ borderColor: "color-mix(in srgb, var(--color-warn) 30%, transparent)" }}>
             <Clock3 size={16} className="mt-0.5 shrink-0" /> {active.recoveryNote}
           </div>
         )}
@@ -544,7 +544,7 @@ export function TodayPlanner({
                 style={isNext ? { boxShadow: `inset 0 0 0 1px ${hex}55` } : undefined}
               >
                 {isNext && (
-                  <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-accent/25 bg-accent/12 px-2.5 py-0.5 font-mono text-[13px] uppercase tracking-[0.14em] text-accent">
+                  <div className="raised-btn mb-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 font-mono text-[13px] uppercase tracking-[0.14em] text-accent">
                     Up next
                   </div>
                 )}
@@ -554,7 +554,7 @@ export function TodayPlanner({
                     <span className="truncate">{g?.title ?? "Step"}</span>
                   </span>
                   {pushed ? (
-                    <span className="shrink-0 rounded-full border border-line bg-white/[0.04] px-2.5 py-0.5 text-[13px] font-medium text-faint">Pushed</span>
+                    <span className="raised-btn shrink-0 rounded-full px-2.5 py-0.5 text-[13px] font-medium text-faint">Pushed</span>
                   ) : !completed ? (
                     <span className="inline-flex shrink-0 items-center gap-1.5" style={{ color: diff.hex }}>
                       <DiffMeter difficulty={b.difficulty} />

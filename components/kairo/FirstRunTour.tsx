@@ -122,7 +122,7 @@ export function FirstRunTour() {
         {step.demo ? (
           <TourDemo />
         ) : (
-          <span className="grid h-20 w-20 place-items-center rounded-3xl border border-accent/25 bg-accent/[0.07]">
+          <span className="raised-btn grid h-20 w-20 place-items-center rounded-3xl">
             <Icon size={34} className="text-accent" />
           </span>
         )}

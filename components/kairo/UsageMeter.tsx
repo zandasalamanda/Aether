@@ -48,7 +48,7 @@ export function UsageMeter({ plan, dayUsed, dayLimit, monthUsed, monthLimit, pro
 
       {plan === "free" && !native && (
         <div className="mt-2 flex flex-wrap items-center gap-2 text-[15px]">
-          <span className="rounded-full bg-accent/15 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wide text-accent">With Pro</span>
+          <span className="raised-btn rounded-full px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wide text-accent">With Pro</span>
           <span className="text-muted">
             {proDay} / day · {proMonth} / mo ·{" "}
             <Link

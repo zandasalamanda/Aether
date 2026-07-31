@@ -312,7 +312,7 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
             <LifeQuestions remote={remote} />
           </div>
 
-          <div className="mt-4 rounded-2xl border border-accent/20 bg-accent/5 px-4 py-3">
+          <div className="panel-2 focus-accent mt-4 rounded-2xl px-4 py-3">
             <span className="font-mono text-[10px] uppercase tracking-wide text-accent/80">First next action</span>
             <p className="mt-0.5 text-[14px] text-ink">{result.firstNextAction}</p>
           </div>
