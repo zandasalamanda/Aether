@@ -114,7 +114,7 @@ export function FirstRunTour() {
     // right of the 248px sidebar (mirrors app/app/map/page.tsx), so the card
     // centers on the map rather than drifting left under the sidebar.
     <div className="fixed inset-y-0 left-0 right-0 z-[300] grid place-items-center bg-canvas/95 px-6 backdrop-blur-md md:left-[248px]" role="dialog" aria-modal="true" aria-label="Welcome tour">
-      <button onClick={dismiss} className="absolute right-5 top-[calc(var(--sa-top)+16px)] grid h-11 w-11 place-items-center rounded-full text-faint transition-colors hover:text-ink" aria-label="Skip the tour">
+      <button onClick={dismiss} className="raised-btn absolute right-5 top-[calc(var(--sa-top)+16px)] grid h-11 w-11 place-items-center rounded-full text-faint hover:text-ink" aria-label="Skip the tour">
         <X size={20} />
       </button>
 
@@ -129,7 +129,7 @@ export function FirstRunTour() {
         <h2 className="mt-6 font-display text-[26px] font-semibold tracking-tight text-ink">{step.title}</h2>
         <p className="mt-3 text-[16px] leading-relaxed text-muted">{step.body}</p>
 
-        <div className="mt-7 flex items-center gap-2" aria-hidden>
+        <div className="inset-well mt-7 flex items-center gap-2 rounded-full px-2.5 py-2" aria-hidden>
           {STEPS.map((_, k) => (
             <span
               key={k}
@@ -147,7 +147,7 @@ export function FirstRunTour() {
             {last ? "Get started" : "Next"} <ArrowRight size={18} />
           </button>
           {!last && (
-            <button onClick={dismiss} className="py-1 text-[14px] text-faint transition-colors hover:text-muted">
+            <button onClick={dismiss} className="raised-btn min-h-11 rounded-xl px-5 py-2.5 text-[14px] font-medium text-muted hover:text-ink">
               Skip
             </button>
           )}

@@ -6,6 +6,7 @@ import { ArrowRight } from "lucide-react";
 import { SHOWCASE_MAPS } from "@/lib/kairo/showcase-maps";
 import { ShowcaseTree } from "@/components/kairo/ShowcaseTree";
 import { PENDING_KEY } from "@/components/kairo/OnboardingFlow";
+import { OptionChip } from "@/components/ui/Chip";
 
 // The first screen, and the first section of the map.
 //
@@ -114,18 +115,14 @@ export function PreviewHero() {
               {GOALS.map((id, i) => {
                 const m = SHOWCASE_MAPS.find((x) => x.id === id);
                 return (
-                  <button
+                  <OptionChip
                     key={id}
+                    active={i === pick}
                     onClick={() => setPick(i)}
-                    aria-pressed={i === pick}
-                    className={
-                      i === pick
-                        ? "raised-btn inline-flex min-h-11 items-center rounded-full px-4 text-[15px] text-ink"
-                        : "inline-flex min-h-11 items-center rounded-full px-4 text-[15px] text-muted transition-colors hover:text-ink"
-                    }
+                    className="px-4 text-[15px]"
                   >
                     {m?.short}
-                  </button>
+                  </OptionChip>
                 );
               })}
             </div>

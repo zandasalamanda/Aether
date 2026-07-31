@@ -9,7 +9,7 @@ export function LegalPage({ title, updated, children }: { title: string; updated
     <div className="mx-auto min-h-[100dvh] w-full max-w-2xl px-5 py-10">
       <div className="mb-10 flex items-center justify-between">
         <Link href="/"><Logo /></Link>
-        <Link href="/" className="inline-flex items-center gap-1.5 text-sm text-muted transition-colors hover:text-ink">
+        <Link href="/" className="raised-btn inline-flex min-h-11 items-center gap-1.5 rounded-full px-4 text-sm text-muted transition-colors hover:text-ink">
           <ArrowLeft size={15} /> Back
         </Link>
       </div>

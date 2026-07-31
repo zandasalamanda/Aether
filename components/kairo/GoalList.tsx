@@ -10,6 +10,7 @@ import { cn, formatDuration } from "@/lib/utils";
 import { Markdown } from "./Markdown";
 import { NodeResourceBlock } from "./GalaxyMap";
 import { ExternalLink } from "@/components/ui/ExternalLink";
+import { Chip } from "@/components/ui/Chip";
 
 // The linear alternate to the galaxy: a fast, scannable outline of every goal
 // and its steps (research's "one spatial view for delight, one list for scale").
@@ -57,9 +58,9 @@ function GoalRow({ goal, hex, onOpen }: { goal: GoalWithNodes; hex: string; onOp
               {kids(m.id).map((c) => <NodeRow key={c.id} node={c} hex={hex} isNext={next?.id === c.id} onOpen={onOpen} sub />)}
             </div>
           ))}
-          <button onClick={onOpen} className="mt-1.5 ml-1 inline-flex items-center gap-1.5 rounded-lg px-2 py-1 text-[12px] text-muted transition-colors hover:text-ink">
-            <Waypoints size={13} /> Open in map
-          </button>
+          <Chip icon={<Waypoints size={13} />} onClick={onOpen} className="mt-1.5 ml-1 text-[12px]">
+            Open in map
+          </Chip>
         </div>
       )}
     </div>
@@ -86,7 +87,7 @@ function NodeRow({ node, hex, isNext, onOpen, sub }: { node: GoalNode; hex: stri
           {done && <Check size={11} className="text-canvas" />}
         </span>
         <span className={cn("min-w-0 flex-1 truncate text-[14px]", done ? "text-faint line-through" : isNext ? "font-medium text-ink" : "text-muted")}>{node.title}</span>
-        {isNext && <span className="shrink-0 rounded-full bg-accent/10 px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-accent">next</span>}
+        {isNext && <span className="raised-btn shrink-0 rounded-full px-2 py-0.5 font-mono text-[10px] uppercase tracking-wide text-accent">next</span>}
         <span className="shrink-0 font-mono text-[11px] text-faint">{formatDuration(node.estimatedMinutes)}</span>
         {hasDetail && <ChevronDown size={14} className={cn("shrink-0 text-faint transition-transform", open && "rotate-180")} />}
       </button>
@@ -109,7 +110,7 @@ function NodeRow({ node, hex, isNext, onOpen, sub }: { node: GoalNode; hex: stri
               )}
             </div>
           )}
-          <button onClick={onOpen} className="mt-2.5 inline-flex items-center gap-1.5 text-[12px] text-faint transition-colors hover:text-ink"><Waypoints size={12} /> Open in map</button>
+          <Chip icon={<Waypoints size={12} />} onClick={onOpen} className="mt-2.5 text-[12px]">Open in map</Chip>
         </div>
       )}
     </div>

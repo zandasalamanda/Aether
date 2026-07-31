@@ -154,7 +154,7 @@ function ShotTour({
   const show = active && !reduced;
   const n = shot.beats.length;
   const idx = active ? i : 0; // an idle shot rests on its first note
-  const counter = (unit: string) => <span className={cn("ml-1.5 font-mono font-semibold text-accent/70", unit)}>{idx + 1}/{n}</span>;
+  const counter = (unit: string) => <span className={cn("raised-btn ml-1.5 inline-flex items-center rounded-full px-1.5 py-0.5 font-mono font-semibold text-accent/70", unit)}>{idx + 1}/{n}</span>;
 
   return (
     <figure ref={ref} data-journey={`shot-${shot.id}`} className={cn("panel-2 mx-auto w-full rounded-3xl p-2 md:p-3", compact ? "max-w-[320px]" : "max-w-[720px]")}>
@@ -209,7 +209,11 @@ function ShotTour({
 
         <button
           onClick={() => onZoom(shot)}
-          className="absolute right-2 top-2 z-20 grid h-9 w-9 place-items-center rounded-full bg-black/50 text-white/70 opacity-0 backdrop-blur transition-opacity hover:text-white group-hover:opacity-100"
+          className="raised-btn absolute right-2 top-2 z-20 grid h-9 w-9 place-items-center rounded-full text-muted opacity-0 hover:text-ink group-hover:opacity-100"
+          // raised-btn's own transition list omits opacity and, being unlayered
+          // CSS, beats the transition-opacity utility. Inline keeps the fade
+          // reveal plus every raised-btn hover/press transition.
+          style={{ transition: "opacity 0.2s ease, background 0.15s ease, box-shadow 0.15s ease, transform 0.06s ease, color 0.15s ease" }}
           aria-label="Enlarge screenshot"
         >
           <Maximize2 size={15} />
@@ -306,7 +310,7 @@ export function AppShots() {
 
       {zoom && (
         <div className="fixed inset-0 z-[200] grid place-items-center bg-black/90 p-4 backdrop-blur-md" onClick={() => setZoom(null)} role="dialog" aria-modal="true" aria-label={zoom.alt}>
-          <button onClick={() => setZoom(null)} className="absolute right-5 top-5 grid h-10 w-10 place-items-center rounded-full text-white/70 transition-colors hover:text-white" aria-label="Close">
+          <button onClick={() => setZoom(null)} className="raised-btn absolute right-5 top-5 grid h-10 w-10 place-items-center rounded-full text-muted hover:text-ink" aria-label="Close">
             <X size={22} />
           </button>
           {/* Full-res raw asset scaled to fit: most reliable for a lightbox. */}

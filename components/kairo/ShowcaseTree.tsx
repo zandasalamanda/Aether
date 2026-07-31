@@ -344,7 +344,7 @@ export function ShowcaseTree({ map, interactive = false, maxScale, onOpenChange,
                 <div className="font-mono text-[10px] uppercase tracking-[0.16em] text-faint">{selected.sub ? "Step" : "Milestone"} · research</div>
                 <h4 className="mt-0.5 font-display text-[15px] font-semibold leading-snug text-ink">{selected.title}</h4>
               </div>
-              <button onClick={() => setSelectedId(null)} className="grid h-7 w-7 shrink-0 place-items-center rounded-lg text-faint transition-colors hover:text-ink" aria-label="Close"><X size={15} /></button>
+              <button onClick={() => setSelectedId(null)} className="raised-btn grid h-8 w-8 shrink-0 place-items-center rounded-lg text-faint transition-colors hover:text-ink" aria-label="Close"><X size={15} /></button>
             </div>
 
             {selected.res ? (

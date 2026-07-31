@@ -12,7 +12,7 @@ import { GoalCore } from "./GoalCore";
 import { GoalCoreCycle } from "./GoalCoreCycle";
 import { Logo } from "./Logo";
 import { Button, buttonVariants } from "@/components/ui/Button";
-import { OptionChip } from "@/components/ui/Chip";
+import { Chip, OptionChip } from "@/components/ui/Chip";
 import { MicButton } from "@/components/ui/MicButton";
 import { useSpeechInput } from "@/lib/hooks/use-speech-input";
 import { nodeStatusMeta } from "@/lib/kairo/status";
@@ -243,9 +243,7 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
                     className="inset-well min-h-[64px] w-full resize-none rounded-xl px-3.5 py-2.5 text-[16px] text-ink placeholder:text-faint focus-visible:outline-none"
                   />
                 ) : (
-                  <button onClick={() => setShowMore(true)} className="inline-flex min-h-11 items-center gap-1.5 text-[14px] text-muted transition-colors hover:text-ink">
-                    <Plus size={13} /> Tell me more
-                  </button>
+                  <Chip icon={<Plus size={13} />} onClick={() => setShowMore(true)}>Tell me more</Chip>
                 )}
               </div>
             )}
@@ -289,7 +287,7 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
                 const meta = nodeStatusMeta[n.status];
                 return (
                   <li key={i} className="flex items-center gap-3 rounded-xl px-2 py-2.5">
-                    <span className="font-mono text-[12px] text-faint">{String(i + 1).padStart(2, "0")}</span>
+                    <span className="raised-btn grid h-7 w-7 shrink-0 place-items-center rounded-lg font-mono text-[11px] text-faint">{String(i + 1).padStart(2, "0")}</span>
                     <span className={cn("h-2 w-2 shrink-0 rounded-full", meta.dot)} />
                     <span className="min-w-0 flex-1 truncate text-[14px] text-ink/90">{n.title}</span>
                     <span className="font-mono text-[11px] text-faint">{formatDuration(n.estimatedMinutes)}</span>

@@ -71,8 +71,8 @@ export function TimeSlider({ minutes, onMinutes }: { minutes: number; onMinutes:
             key={m}
             onClick={() => onMinutes(m)}
             className={cn(
-              "inline-flex min-h-11 min-w-11 items-center justify-center rounded px-1 font-mono text-[15px] tabular-nums transition-colors",
-              Math.abs(minutes - m) < 8 ? "font-semibold text-accent" : "text-faint hover:text-muted",
+              "inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border px-2.5 font-mono text-[14px] tabular-nums transition-colors",
+              Math.abs(minutes - m) < 8 ? "border-accent/50 bg-accent/10 text-accent" : "border-line text-muted hover:border-accent/40 hover:text-ink",
             )}
           >
             {budgetLabel(m)}

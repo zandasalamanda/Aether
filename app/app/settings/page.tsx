@@ -53,7 +53,7 @@ export default async function SettingsPage() {
               <Link
                 key={href}
                 href={href}
-                className="flex min-h-[44px] items-center justify-between gap-3 rounded-xl px-4 py-3 text-muted transition-colors hover:text-ink"
+                className="raised-btn flex min-h-[44px] items-center justify-between gap-3 rounded-xl px-4 py-3 text-muted hover:text-ink"
               >
                 <span className="min-w-0">
                   <span className="block text-[15px] font-semibold text-ink">{label}</span>
@@ -65,7 +65,7 @@ export default async function SettingsPage() {
           </div>
         </div>
         {admin && (
-          <Link href="/app/admin" className="flex min-h-[44px] items-center justify-center font-mono text-[11px] uppercase tracking-[0.16em] text-faint transition-colors hover:text-muted">
+          <Link href="/app/admin" className="raised-btn mx-auto flex min-h-11 w-fit items-center rounded-xl px-5 font-mono text-[11px] uppercase tracking-[0.16em] text-muted hover:text-ink">
             Admin panel &rarr;
           </Link>
         )}

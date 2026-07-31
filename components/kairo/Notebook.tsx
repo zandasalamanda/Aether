@@ -12,6 +12,8 @@ import { extractSteps } from "@/lib/ai/extract-steps";
 import { loadPersisted, savePersisted } from "@/lib/store/persist";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { Button } from "@/components/ui/Button";
+import { Chip, OptionChip } from "@/components/ui/Chip";
+import { IconButton } from "@/components/ui/IconButton";
 import { cn, newId } from "@/lib/utils";
 
 const NOTES_KEY = "kairo.notes.v1";
@@ -109,14 +111,10 @@ export function Notebook({ goals, remote, initialGoalId }: { goals: GoalWithNode
         {goals.map((g) => {
           const active = g.id === selected.id;
           return (
-            <button
-              key={g.id}
-              onClick={() => selectGoal(g.id)}
-              className={cn("inline-flex items-center gap-2 rounded-xl px-3.5 py-2 text-[13px]", active ? "raised-btn text-ink" : "text-muted hover:text-ink")}
-            >
+            <OptionChip key={g.id} active={active} onClick={() => selectGoal(g.id)} className="gap-2">
               {React.createElement(goalIcon(g.icon), { size: 15, style: { color: color(g.id) } })}
               <span className="max-w-[160px] truncate">{g.title}</span>
-            </button>
+            </OptionChip>
           );
         })}
       </div>
@@ -125,10 +123,10 @@ export function Notebook({ goals, remote, initialGoalId }: { goals: GoalWithNode
         <div className="flex items-center justify-between px-3.5 pt-2.5">
           <span className="font-mono text-[11px] uppercase tracking-[0.16em] text-faint">{saved ? "Saved" : "Saving…"}</span>
           <div className="flex items-center gap-3">
-            <button onClick={() => setPreview((p) => !p)} className="inline-flex items-center gap-1.5 text-[12px] text-muted transition-colors hover:text-ink">
-              {preview ? <><Pencil size={12} /> Edit</> : <><Eye size={12} /> Preview</>}
-            </button>
-            <Link href={`/app/map?goal=${selected.id}`} className="inline-flex items-center gap-1.5 text-[12px] text-muted transition-colors hover:text-ink">
+            <Chip onClick={() => setPreview((p) => !p)} icon={preview ? <Pencil size={12} /> : <Eye size={12} />} className="text-[13px]">
+              {preview ? "Edit" : "Preview"}
+            </Chip>
+            <Link href={`/app/map?goal=${selected.id}`} className="raised-btn inline-flex min-h-9 items-center gap-1.5 rounded-lg px-3 py-1.5 text-[13px] font-medium text-muted transition-colors hover:text-ink">
               <Waypoints size={13} /> Open in map
             </Link>
           </div>
@@ -154,7 +152,7 @@ export function Notebook({ goals, remote, initialGoalId }: { goals: GoalWithNode
           <div className="mb-2 flex items-center gap-2 px-0.5">
             <Sparkles size={13} className="text-accent" />
             <span className="flex-1 text-[13px] text-muted">Add these to <span className="text-ink">{selected.title}</span>?</span>
-            <button onClick={() => setPicks(null)} className="grid h-6 w-6 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Cancel"><X size={13} /></button>
+            <IconButton label="Cancel" onClick={() => setPicks(null)} className="h-9 w-9"><X size={13} /></IconButton>
           </div>
           {picks.length === 0 ? (
             <p className="px-0.5 pb-1 text-[13px] text-muted">No clear action steps in these notes yet. Add a few to-dos and try again.</p>
@@ -167,7 +165,7 @@ export function Notebook({ goals, remote, initialGoalId }: { goals: GoalWithNode
                       onClick={() => setPicks((cur) => (cur ? cur.map((x, j) => (j === i ? { ...x, on: !x.on } : x)) : cur))}
                       className="flex w-full items-center gap-2.5 text-left"
                     >
-                      <span className={cn("grid h-5 w-5 shrink-0 place-items-center rounded-lg border transition-colors", p.on ? "border-transparent bg-accent" : "border-line")}>
+                      <span className={cn("grid h-5 w-5 shrink-0 place-items-center rounded-lg transition-colors", p.on ? "bg-accent" : "inset-well")}>
                         {p.on && <Check size={13} className="text-canvas" />}
                       </span>
                       <span className={cn("text-[14px] leading-snug", p.on ? "text-ink" : "text-faint line-through")}>{p.step}</span>

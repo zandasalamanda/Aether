@@ -19,8 +19,8 @@ export function BottomNav({ nextMove, className }: { nextMove: NextMove | null; 
         {nextMove && !onMap && (
           <Link
             href={`/app/map?goal=${nextMove.goalId}`}
-            className="flex min-h-11 items-center gap-2 rounded-2xl border bg-canvas-2/85 px-4 py-2.5 backdrop-blur-xl"
-            style={{ borderColor: `${moveHex}40` }}
+            className="raised-btn flex min-h-11 items-center gap-2 rounded-2xl px-4 py-2.5 backdrop-blur-xl"
+            style={{ ["--btn-border" as string]: `${moveHex}40` }}
           >
             <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: moveHex, boxShadow: `0 0 8px ${moveHex}` }} />
             <span className="shrink-0 text-[10px] font-medium uppercase tracking-[0.14em]" style={{ color: moveHex }}>Next</span>
@@ -39,7 +39,7 @@ export function BottomNav({ nextMove, className }: { nextMove: NextMove | null; 
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "flex flex-1 flex-col items-center gap-1 rounded-xl px-2 py-2 text-[11px] font-medium transition-colors",
-                  active ? "text-ink" : "text-muted"
+                  active ? "raised-btn text-ink" : "text-muted"
                 )}
               >
                 <Icon size={19} strokeWidth={2} className={active ? "text-accent" : ""} />

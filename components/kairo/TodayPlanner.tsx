@@ -119,9 +119,10 @@ function StepSlider({ ariaLabel, labels, index, onIndex }: { ariaLabel: string; 
           <button
             key={k}
             onClick={() => onIndex(k)}
+            aria-pressed={k === index}
             className={cn(
-              "inline-flex min-h-11 min-w-11 items-center justify-center rounded px-1 font-mono text-[15px] tabular-nums transition-colors",
-              k === index ? "font-semibold text-accent" : "text-faint hover:text-muted",
+              "inline-flex min-h-11 min-w-11 items-center justify-center rounded-full border px-3 font-mono text-[14px] tabular-nums transition-colors",
+              k === index ? "border-accent/50 bg-accent/10 text-accent" : "border-line text-muted hover:border-accent/40 hover:text-ink",
             )}
           >
             {l}
@@ -481,7 +482,7 @@ export function TodayPlanner({
           if (b.kind === "break") {
             return (
               <li key={b.id} className="relative flex items-center py-1.5 pl-11 text-faint">
-                <span className="absolute left-[7px] top-1/2 grid h-4 w-4 -translate-y-1/2 place-items-center rounded-full bg-canvas ring-1 ring-line">
+                <span className="raised-btn absolute left-[7px] top-1/2 grid h-4 w-4 -translate-y-1/2 place-items-center rounded-full">
                   <Coffee size={9} />
                 </span>
                 <span className="font-mono text-[15px] uppercase tracking-[0.1em]">{b.title} · {b.durationMinutes}m</span>
@@ -529,7 +530,7 @@ export function TodayPlanner({
                 style={isNext ? { boxShadow: `inset 0 0 0 1px ${hex}55` } : undefined}
               >
                 {isNext && (
-                  <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-accent/10 px-2 py-0.5 font-mono text-[13px] uppercase tracking-[0.14em] text-accent">
+                  <div className="mb-2 inline-flex items-center gap-1.5 rounded-full border border-accent/25 bg-accent/12 px-2.5 py-0.5 font-mono text-[13px] uppercase tracking-[0.14em] text-accent">
                     Up next
                   </div>
                 )}
@@ -539,17 +540,24 @@ export function TodayPlanner({
                     <span className="truncate">{g?.title ?? "Step"}</span>
                   </span>
                   {pushed ? (
-                    <span className="shrink-0 rounded-full px-2 py-0.5 text-[15px] font-medium text-faint" style={{ background: "color-mix(in srgb, var(--color-ink) 7%, transparent)" }}>Pushed</span>
+                    <span className="shrink-0 rounded-full border border-line bg-white/[0.04] px-2.5 py-0.5 text-[13px] font-medium text-faint">Pushed</span>
                   ) : !completed ? (
                     <span className="inline-flex shrink-0 items-center gap-1.5" style={{ color: diff.hex }}>
                       <DiffMeter difficulty={b.difficulty} />
                       <span className="font-mono text-[15px]">{diff.label}</span>
                     </span>
                   ) : null}
-                  <span className="shrink-0 rounded-md px-1.5 py-0.5 font-mono text-[15px] tabular-nums text-muted" style={{ background: "color-mix(in srgb, var(--color-ink) 6%, transparent)" }}>{formatDuration(b.durationMinutes)}</span>
+                  <span className="raised-btn shrink-0 rounded-md px-1.5 py-0.5 font-mono text-[15px] tabular-nums text-muted">{formatDuration(b.durationMinutes)}</span>
                 </div>
 
                 <h3 className={cn("mt-2 font-display text-lg font-semibold leading-snug", completed ? "text-muted line-through" : "text-ink")}>{b.title}</h3>
+                {/* The step's exact opening move, so the day reads as actions
+                    rather than labels. Falls back to nothing on legacy nodes. */}
+                {!completed && !pushed && node?.firstAction ? (
+                  <p className="mt-1.5 text-[15px] leading-relaxed text-muted">
+                    <span className="font-medium text-accent">First move:</span> {node.firstAction}
+                  </p>
+                ) : null}
                 {practice ? (
                   // A practice reads as a practice: the cadence, not a one-off reason.
                   <p className="mt-1 flex items-center gap-1.5 text-[15px] text-faint">
@@ -571,11 +579,11 @@ export function TodayPlanner({
                     <button onClick={() => b.goalId && b.nodeId && finishStep(b.goalId, b.nodeId)} className="raised-btn inline-flex h-11 items-center gap-1.5 rounded-xl px-4 text-[15px] text-sage">
                       <Check size={16} /> Done
                     </button>
-                    <button onClick={() => shrinkBlock(b.id)} className="ml-auto grid h-11 w-11 place-items-center rounded-lg text-faint transition-colors hover:text-ink" aria-label="Make smaller" title="Make it smaller">
+                    <button onClick={() => shrinkBlock(b.id)} className="raised-btn ml-auto grid h-11 w-11 place-items-center rounded-lg text-muted transition-colors hover:text-ink" aria-label="Make smaller" title="Make it smaller">
                       <Scissors size={16} />
                     </button>
                     {/* Push sits apart from the rest: a mis-tap here moves work off today. */}
-                    <button onClick={() => pushBlock(b.id)} className="ml-2 grid h-11 w-11 place-items-center rounded-lg text-faint transition-colors hover:text-ink" aria-label="Push to later" title="Push to later">
+                    <button onClick={() => pushBlock(b.id)} className="raised-btn ml-2 grid h-11 w-11 place-items-center rounded-lg text-muted transition-colors hover:text-ink" aria-label="Push to later" title="Push to later">
                       <Clock3 size={17} />
                     </button>
                   </div>
@@ -583,7 +591,7 @@ export function TodayPlanner({
 
                 {pushed && (
                   <div className="mt-1 flex items-center gap-2">
-                    <button onClick={() => undoPush(b.id)} className="-ml-1 inline-flex h-11 items-center gap-1.5 rounded-lg px-1 text-[15px] text-muted transition-colors hover:text-ink">
+                    <button onClick={() => undoPush(b.id)} className="raised-btn inline-flex h-11 items-center gap-1.5 rounded-lg px-3.5 text-[15px] text-muted transition-colors hover:text-ink">
                       <Undo2 size={15} /> Bring back to today
                     </button>
                   </div>
@@ -595,7 +603,7 @@ export function TodayPlanner({
       </ol>
 
       <div className="mt-6 flex items-center justify-center">
-        <Link href="/app/map" className="inline-flex h-11 items-center gap-1.5 rounded-lg px-3 text-[15px] text-faint transition-colors hover:text-ink">
+        <Link href="/app/map" className="raised-btn inline-flex h-11 items-center gap-1.5 rounded-lg px-3.5 text-[15px] text-muted transition-colors hover:text-ink">
           <Waypoints size={15} /> Open the map
         </Link>
       </div>

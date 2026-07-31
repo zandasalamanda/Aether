@@ -2,6 +2,7 @@ import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { Logo } from "./Logo";
 import { Input } from "@/components/ui/Input";
+import { buttonVariants } from "@/components/ui/Button";
 import { isDemoMode } from "@/lib/config";
 
 export function AuthCard({ mode }: { mode: "sign-in" | "sign-up" }) {
@@ -21,10 +22,10 @@ export function AuthCard({ mode }: { mode: "sign-in" | "sign-up" }) {
         <p className="mt-1.5 text-center text-sm text-muted">{subtitle}</p>
 
         <div className="mt-6 space-y-2.5">
-          <Link href={dest} className="flex h-11 items-center justify-center gap-2 rounded-xl border border-line bg-white/[0.03] text-sm font-medium text-ink transition-colors hover:bg-white/[0.06]">
+          <Link href={dest} className={buttonVariants({ variant: "glass", className: "w-full" })}>
             Continue with Google
           </Link>
-          <Link href={dest} className="flex h-11 items-center justify-center gap-2 rounded-xl border border-line bg-white/[0.03] text-sm font-medium text-ink transition-colors hover:bg-white/[0.06]">
+          <Link href={dest} className={buttonVariants({ variant: "glass", className: "w-full" })}>
             Continue with Apple
           </Link>
         </div>
@@ -36,10 +37,7 @@ export function AuthCard({ mode }: { mode: "sign-in" | "sign-up" }) {
         <div className="space-y-2.5">
           <Input type="email" placeholder="you@email.com" autoComplete="email" />
           <Input type="password" placeholder="Password" autoComplete={signIn ? "current-password" : "new-password"} />
-          <Link
-            href={dest}
-            className="flex h-11 items-center justify-center gap-2 rounded-xl bg-accent text-sm font-semibold text-[#1b1206] transition-all hover:brightness-105"
-          >
+          <Link href={dest} className={buttonVariants({ variant: "primary", className: "w-full" })}>
             {signIn ? "Sign in" : "Create account"} <ArrowRight size={16} />
           </Link>
         </div>

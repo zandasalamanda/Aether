@@ -65,8 +65,8 @@ export default async function LandingPage() {
       <header className="absolute inset-x-0 top-0 z-30">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-5 py-6">
           <Logo />
-          <div className="flex items-center gap-1">
-            <Link href="/sign-in" className="inline-flex min-h-11 items-center rounded-full px-4 text-[15px] text-muted transition-colors hover:text-ink">
+          <div className="flex items-center gap-2">
+            <Link href="/sign-in" className="raised-btn inline-flex min-h-11 items-center rounded-full px-4 text-[15px] text-muted transition-colors hover:text-ink">
               Sign in
             </Link>
             <Link href="/onboarding" className="raised-btn inline-flex min-h-11 items-center rounded-full px-4 text-[15px] text-ink">
@@ -191,9 +191,9 @@ export default async function LandingPage() {
       <footer className="border-t border-line">
         <div className="mx-auto flex max-w-6xl flex-col gap-4 px-5 py-10 sm:flex-row sm:items-center sm:justify-between">
           <p className="text-[15px] text-muted">Map the way. Build the day.</p>
-          <div className="flex gap-1">
-            <Link href="/privacy" className="inline-flex min-h-11 items-center px-3 text-[15px] text-muted transition-colors hover:text-ink">Privacy</Link>
-            <Link href="/terms" className="inline-flex min-h-11 items-center px-3 text-[15px] text-muted transition-colors hover:text-ink">Terms</Link>
+          <div className="flex gap-2">
+            <Link href="/privacy" className="raised-btn inline-flex min-h-11 items-center rounded-full px-4 text-[15px] text-muted transition-colors hover:text-ink">Privacy</Link>
+            <Link href="/terms" className="raised-btn inline-flex min-h-11 items-center rounded-full px-4 text-[15px] text-muted transition-colors hover:text-ink">Terms</Link>
           </div>
         </div>
       </footer>

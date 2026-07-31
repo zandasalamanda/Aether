@@ -137,7 +137,7 @@ export function FocusOverlay({
     <div data-theme="dark" className="fixed inset-0 z-50 overflow-y-auto bg-canvas/95 backdrop-blur-xl">
       <button
         onClick={onClose}
-        className="fixed right-5 top-[calc(var(--sa-top)+16px)] z-10 grid h-11 w-11 place-items-center rounded-full text-faint transition-colors hover:text-ink"
+        className="raised-btn fixed right-5 top-[calc(var(--sa-top)+16px)] z-10 grid h-11 w-11 place-items-center rounded-full text-muted transition-colors hover:text-ink"
         aria-label="Close focus session"
       >
         <X size={18} />
@@ -218,7 +218,7 @@ export function FocusOverlay({
           </div>
 
           {!done && left < total && (
-            <button onClick={() => setDur(minutes)} className="mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-lg px-4 text-[15px] text-faint transition-colors hover:text-muted">
+            <button onClick={() => setDur(minutes)} className="raised-btn mt-3 inline-flex min-h-11 items-center gap-1.5 rounded-lg px-4 text-[15px] text-muted transition-colors hover:text-ink">
               <RotateCcw size={14} /> Reset
             </button>
           )}
@@ -229,13 +229,13 @@ export function FocusOverlay({
               <div className="panel rounded-2xl p-4 text-left">
                 <div className="flex items-center justify-between">
                   <div className="flex min-w-0 items-center gap-1.5">
-                    <button onClick={() => setDrafting(false)} className="-ml-2 grid h-11 w-11 shrink-0 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Back to session"><ArrowLeft size={17} /></button>
+                    <button onClick={() => setDrafting(false)} className="raised-btn grid h-11 w-11 shrink-0 place-items-center rounded-lg text-muted transition-colors hover:text-ink" aria-label="Back to session"><ArrowLeft size={17} /></button>
                     <span className="truncate font-display text-[15px] font-semibold text-ink">{draft?.title ?? "Drafting"}</span>
                   </div>
                   {!draftLoading && draft && (
-                    <div className="-mr-2 flex shrink-0 items-center gap-1">
-                      <button onClick={() => setEditingDraft((e) => !e)} className="inline-flex min-h-11 items-center rounded-lg px-3 text-[15px] text-faint transition-colors hover:text-muted">{editingDraft ? "Preview" : "Edit"}</button>
-                      <button onClick={() => void fetchDraft()} className="inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-[15px] text-faint transition-colors hover:text-muted"><RefreshCw size={14} /> Redo</button>
+                    <div className="flex shrink-0 items-center gap-1.5">
+                      <button onClick={() => setEditingDraft((e) => !e)} className="raised-btn inline-flex min-h-11 items-center rounded-lg px-3 text-[15px] text-muted transition-colors hover:text-ink">{editingDraft ? "Preview" : "Edit"}</button>
+                      <button onClick={() => void fetchDraft()} className="raised-btn inline-flex min-h-11 items-center gap-1.5 rounded-lg px-3 text-[15px] text-muted transition-colors hover:text-ink"><RefreshCw size={14} /> Redo</button>
                     </div>
                   )}
                 </div>

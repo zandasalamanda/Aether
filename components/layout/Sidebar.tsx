@@ -54,8 +54,12 @@ export function Sidebar({ user, nextMove, usage, className }: { user: SessionUse
         {nextMove && (
           <Link
             href={`/app/map?goal=${nextMove.goalId}`}
-            className="mt-7 block rounded-xl border px-3.5 py-3 transition-colors"
-            style={{ borderColor: `${moveHex}40`, background: `${moveHex}12` }}
+            className="raised-btn mt-7 block rounded-xl px-3.5 py-3"
+            style={{
+              ["--btn-border" as string]: `${moveHex}40`,
+              ["--btn-bg" as string]: `linear-gradient(180deg, rgba(255,255,255,0.08), rgba(255,255,255,0.02) 55%, rgba(0,0,0,0.06)), ${moveHex}12`,
+              ["--btn-bg-hover" as string]: `linear-gradient(180deg, rgba(255,255,255,0.12), rgba(255,255,255,0.03) 55%, rgba(0,0,0,0.05)), ${moveHex}1f`,
+            }}
           >
             <div className="flex items-center gap-1.5">
               <span className="h-1.5 w-1.5 rounded-full" style={{ background: moveHex, boxShadow: `0 0 8px ${moveHex}` }} />
@@ -85,7 +89,7 @@ export function Sidebar({ user, nextMove, usage, className }: { user: SessionUse
         {user.plan === "free" && !user.native && (
           <Link
             href="/app/billing"
-            className="group block rounded-xl border border-line bg-white/[0.02] p-4 transition-colors hover:border-line-strong"
+            className="raised-btn group block rounded-xl p-4"
           >
             <div className="flex items-center gap-1.5 text-sm font-semibold text-accent">
               Upgrade to Pro <ArrowUpRight size={14} className="opacity-70" />
@@ -105,7 +109,7 @@ export function Sidebar({ user, nextMove, usage, className }: { user: SessionUse
             <div className="truncate text-sm font-medium text-ink">{user.name}</div>
             <div className="text-[11px] capitalize text-faint">{user.plan} plan</div>
           </div>
-          <Link href="/app/settings" className="text-faint transition-colors hover:text-ink" aria-label="Settings">
+          <Link href="/app/settings" className="raised-btn grid h-9 w-9 shrink-0 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Settings">
             <Settings size={16} />
           </Link>
         </div>
