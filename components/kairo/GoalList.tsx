@@ -6,6 +6,7 @@ import type { GoalWithNodes, GoalNode } from "@/types";
 import { useGoalColors } from "@/lib/kairo/use-goal-colors";
 import { goalIcon } from "@/lib/kairo/goal-icon";
 import { nextNodeForGoal } from "@/lib/kairo/next-move";
+import { deriveChapters } from "@/lib/kairo/chapters";
 import { cn, formatDuration } from "@/lib/utils";
 import { Markdown } from "./Markdown";
 import { NodeResourceBlock } from "./GalaxyMap";
@@ -31,8 +32,10 @@ export function GoalList({ goals, onOpen }: { goals: GoalWithNodes[]; onOpen: (i
 function GoalRow({ goal, hex, onOpen }: { goal: GoalWithNodes; hex: string; onOpen: () => void }) {
   const [open, setOpen] = React.useState(true);
   const next = nextNodeForGoal(goal);
-  const milestones = goal.nodes.filter((n) => !n.parentId);
-  const kids = (id: string) => goal.nodes.filter((n) => n.parentId === id);
+  // Chapters, not roots. The AI emits milestones as a CHAIN (each one a child
+  // of the previous), so filtering parentId === null found only milestone 1 and
+  // silently dropped every later milestone and all their steps.
+  const { chapters, goalRhythms } = deriveChapters(goal.nodes);
 
   return (
     <div className="panel rounded-2xl p-1.5">
@@ -52,12 +55,19 @@ function GoalRow({ goal, hex, onOpen }: { goal: GoalWithNodes; hex: string; onOp
 
       {open && (
         <div className="px-1.5 pb-1.5">
-          {milestones.map((m) => (
-            <div key={m.id}>
-              <NodeRow node={m} hex={hex} isNext={next?.id === m.id} onOpen={onOpen} />
-              {kids(m.id).map((c) => <NodeRow key={c.id} node={c} hex={hex} isNext={next?.id === c.id} onOpen={onOpen} sub />)}
+          {chapters.map((c) => (
+            <div key={c.node.id}>
+              <NodeRow node={c.node} hex={hex} isNext={next?.id === c.node.id} onOpen={onOpen} />
+              {c.steps.map((st) => (
+                <React.Fragment key={st.node.id}>
+                  <NodeRow node={st.node} hex={hex} isNext={next?.id === st.node.id} onOpen={onOpen} sub />
+                  {st.subs.map((sub) => <NodeRow key={sub.node.id} node={sub.node} hex={hex} isNext={next?.id === sub.node.id} onOpen={onOpen} sub />)}
+                </React.Fragment>
+              ))}
+              {c.rhythms.map((r) => <NodeRow key={r.id} node={r} hex={hex} isNext={next?.id === r.id} onOpen={onOpen} sub />)}
             </div>
           ))}
+          {goalRhythms.map((r) => <NodeRow key={r.id} node={r} hex={hex} isNext={next?.id === r.id} onOpen={onOpen} />)}
           <Chip icon={<Waypoints size={13} />} onClick={onOpen} className="mt-1.5 ml-1 text-[12px]">
             Open in map
           </Chip>

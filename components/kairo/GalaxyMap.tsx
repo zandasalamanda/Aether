@@ -25,6 +25,7 @@ import { clarifyGoal } from "@/lib/ai/clarify";
 import { GOAL_PALETTE, goalColorHex, goalColorIndex, type GoalColorOverride } from "@/lib/kairo/goal-color";
 import { enrichStep } from "@/lib/ai/enrich-step";
 import { nodeIcon } from "@/lib/kairo/node-icon";
+import { nextNodeForGoal } from "@/lib/kairo/next-move";
 import type { StepBriefing } from "@/lib/ai/types";
 import { goalIcon } from "@/lib/kairo/goal-icon";
 import { pickCelebration, pickGoalCelebration, fireHaptic } from "@/lib/kairo/celebrate";
@@ -103,49 +104,6 @@ function defaultPos(i: number): { x: number; y: number } {
   const r = 250 + 150 * Math.sqrt(i);
   const a = i * GOLDEN - Math.PI / 2;
   return { x: Math.cos(a) * (i === 0 ? 0 : r), y: Math.sin(a) * (i === 0 ? 0 : r) };
-}
-
-function nextId(nodes: GoalNode[]): string | null {
-  const rank: Record<string, number> = { in_motion: 0, at_risk: 1, not_started: 2 };
-  const open = (n: GoalNode) =>
-    n.status !== "done" &&
-    n.status !== "blocked" &&
-    // A practice you have already kept today is done FOR TODAY; the beacon
-    // should point at something still open.
-    !(isRecurring(n) && (n.checkins ?? []).includes(dayKey(Date.now())));
-  const ids = new Set(nodes.map((n) => n.id));
-  const kids = new Map<string | null, GoalNode[]>();
-  for (const n of nodes) {
-    const parent = n.parentId && ids.has(n.parentId) ? n.parentId : null;
-    kids.set(parent, [...(kids.get(parent) ?? []), n]);
-  }
-
-  // Anything already underway is the next move, wherever it sits in the tree.
-  const live = nodes
-    .filter((n) => n.status === "in_motion" || n.status === "at_risk")
-    .sort((a, b) => (rank[a.status] ?? 3) - (rank[b.status] ?? 3) || a.priority - b.priority)[0];
-  if (live) return live.id;
-
-  // Otherwise walk the tree in its OWN order and take the first open step. We
-  // descend into a milestone's sub-steps (the milestone isn't the thing you do)
-  // but never skip ahead to a different branch's leaf — which is what ranking
-  // every leaf globally by priority used to do, so the beacon appeared to only
-  // ever point at sub-branches. A milestone whose sub-steps are all done can
-  // itself be the next move.
-  const walk = (list: GoalNode[]): string | null => {
-    for (const n of list) {
-      const children = kids.get(n.id) ?? [];
-      if (children.length) {
-        const hit = walk(children);
-        if (hit) return hit;
-        if (open(n)) return n.id;
-      } else if (open(n)) {
-        return n.id;
-      }
-    }
-    return null;
-  };
-  return walk(kids.get(null) ?? []);
 }
 
 interface Placed {
@@ -572,7 +530,7 @@ export function GalaxyMap({
     const i = goals.findIndex((g) => g.id === expanded.id);
     const p = positions[expanded.id] ?? defaultPos(i);
     const baseDir = Math.hypot(p.x, p.y) < 60 ? -Math.PI / 2 : Math.atan2(p.y, p.x);
-    const np = layoutTree(expanded.nodes, baseDir).find((pl) => pl.node.id === nextId(expanded.nodes));
+    const np = layoutTree(expanded.nodes, baseDir).find((pl) => pl.node.id === nextNodeForGoal(expanded)?.id);
     const scale = 1.05;
     setAnimating(true);
     setView({ tx: -(p.x + (np?.x ?? 0)) * scale, ty: -(p.y + (np?.y ?? 0)) * scale, scale });
@@ -1840,7 +1798,7 @@ function GoalCluster({
   }, [pos.x, pos.y]);
   const placed = React.useMemo(() => (expanded ? layoutTree(goal.nodes, baseDir) : []), [expanded, goal.nodes, baseDir]);
   const maxDist = React.useMemo(() => Math.max(1, ...placed.map((p) => Math.hypot(p.x, p.y))), [placed]);
-  const nId = nextId(goal.nodes);
+  const nId = nextNodeForGoal(goal)?.id ?? null;
   // Core "charge" ring — fills and brightens with overall goal progress.
   const corePct = Math.max(0, Math.min(100, goal.progress || 0)) / 100;
   const coreRingR = (expanded ? 92 : 80) / 2 + 6;
