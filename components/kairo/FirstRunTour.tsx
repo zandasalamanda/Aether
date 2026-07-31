@@ -1,9 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { Waypoints, Sparkles, Sunrise, MessageCircle, ArrowRight, X, MousePointer2 } from "lucide-react";
+import { ArrowRight, X, MousePointer2, Check } from "lucide-react";
 import { loadPersisted, savePersisted } from "@/lib/store/persist";
 import { cn } from "@/lib/utils";
+import { SolaMark } from "./SolaMark";
 import { useSvgId } from "@/lib/kairo/svg-id";
 
 // A calm, one-time welcome the first time someone opens the map. Big type, high
@@ -13,10 +14,10 @@ import { useSvgId } from "@/lib/kairo/svg-id";
 const KEY = "kairo.tutorial.v1";
 
 const STEPS = [
-  { icon: Waypoints, demo: true, title: "Welcome to Solaspace", body: "This is your map. Every goal you add lives here as its own glowing path." },
-  { icon: Sparkles, demo: true, title: "Just say what you want", body: "Tell Solaspace a goal in plain words. It maps out every step for you, in order." },
-  { icon: Sunrise, demo: false, title: "It builds your day", body: "Each morning, open Today. Tell it your time and energy, and it plans the day around your goals." },
-  { icon: MessageCircle, demo: false, title: "Meet Sola, your guide", body: "Sola is your assistant. Ask it to reshape your plan, break a step down, or help you get started." },
+  { demo: "map" as const, title: "Welcome to Solaspace", body: "This is your map. Every goal you add lives here as its own glowing path." },
+  { demo: "say" as const, title: "Just say what you want", body: "Tell Solaspace a goal in plain words. It maps out every step for you, in order." },
+  { demo: "day" as const, title: "It builds your day", body: "Each morning, open Today. Tell it your time and energy, and it plans the day around your goals." },
+  { demo: "sola" as const, title: "Meet Sola, your guide", body: "Sola is your assistant. Ask it to reshape your plan, break a step down, or help you get started." },
 ];
 
 /** Reset the flag so the tour shows again (used by a "Show me around" setting). */
@@ -91,6 +92,75 @@ function TourDemo() {
   );
 }
 
+/** Step 2: a goal is typed in plain words, and its steps drop in underneath. */
+function SayDemo() {
+  return (
+    <div className="relative mx-auto h-28 w-56" aria-hidden>
+      <div className="chrome flex h-9 items-center gap-1 rounded-xl px-3">
+        <span className="demo-type overflow-hidden whitespace-nowrap text-[12px] text-ink">Run a half marathon</span>
+        <span className="demo-caret h-4 w-px bg-accent" />
+      </div>
+      <div className="mt-2 space-y-1.5">
+        {[0, 1, 2].map((k) => (
+          <div
+            key={k}
+            className="demo-row raised-btn flex h-5 items-center gap-2 rounded-lg px-2"
+            style={{ animationDelay: `${k * 0.12}s` }}
+          >
+            <span className="h-1.5 w-1.5 rounded-full bg-accent" />
+            <span className="h-1 rounded-full bg-white/15" style={{ width: `${68 - k * 12}%` }} />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Step 3: you give it the time you have, and the day stacks itself. */
+function DayDemo() {
+  const H = [16, 26, 12, 22, 30];
+  return (
+    <div className="relative mx-auto flex h-28 w-56 flex-col justify-end" aria-hidden>
+      <div className="inset-well mb-3 h-2.5 overflow-hidden rounded-full">
+        <div className="demo-fill raised-gold h-full rounded-full" />
+      </div>
+      <div className="flex items-end justify-between gap-1.5">
+        {H.map((h, k) => (
+          <div
+            key={k}
+            className="demo-block raised-btn flex-1 rounded-md"
+            style={{ height: h * 2, animationDelay: `${k * 0.09}s` }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Step 4: you ask in your own words, Sola answers with a change you can take. */
+function SolaDemo() {
+  return (
+    <div className="relative mx-auto flex h-28 w-56 flex-col justify-center gap-1.5" aria-hidden>
+      <div className="demo-ask raised-btn ml-auto flex h-6 items-center rounded-full px-2.5">
+        <span className="h-1 w-16 rounded-full bg-white/20" />
+      </div>
+      <div className="demo-reply chrome mr-auto flex h-8 w-40 items-center gap-2 rounded-xl px-2.5">
+        <SolaMark size={14} />
+        <span className="flex-1 space-y-1">
+          <span className="block h-1 w-full rounded-full bg-white/15" />
+          <span className="block h-1 w-2/3 rounded-full bg-white/10" />
+        </span>
+      </div>
+      <div className="demo-accept raised-gold mr-auto flex h-6 items-center gap-1.5 rounded-full px-2.5">
+        <Check size={11} className="text-[#1b1206]" strokeWidth={2.6} />
+        <span className="h-1 w-10 rounded-full bg-[#1b1206]/40" />
+      </div>
+    </div>
+  );
+}
+
+const DEMOS = { map: TourDemo, say: SayDemo, day: DayDemo, sola: SolaDemo };
+
 export function FirstRunTour() {
   const [open, setOpen] = React.useState(false);
   const [i, setI] = React.useState(0);
@@ -107,7 +177,6 @@ export function FirstRunTour() {
 
   const step = STEPS[i];
   const last = i === STEPS.length - 1;
-  const Icon = step.icon;
 
   return (
     // Cover the app content area, not the raw viewport: on desktop the map sits
@@ -119,13 +188,9 @@ export function FirstRunTour() {
       </button>
 
       <div key={i} className="animate-fade-up flex w-full max-w-sm flex-col items-center text-center">
-        {step.demo ? (
-          <TourDemo />
-        ) : (
-          <span className="raised-btn grid h-20 w-20 place-items-center rounded-3xl">
-            <Icon size={34} className="text-accent" />
-          </span>
-        )}
+        {/* Four screens, four demos. It used to play the same map animation
+            twice and show a static icon for the other two. */}
+        {(() => { const D = DEMOS[step.demo]; return <D />; })()}
         <h2 className="mt-6 font-display text-[26px] font-semibold tracking-tight text-ink">{step.title}</h2>
         <p className="mt-3 text-[16px] leading-relaxed text-muted">{step.body}</p>
 

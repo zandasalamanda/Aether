@@ -410,6 +410,67 @@ select:focus-visible,
   .demo-bloom  { animation: none; transform: scale(1); opacity: 1; }
 }
 
+/* Tour demo 2: a goal is typed, then its steps drop in underneath.
+   Same 4.6s loop as the map demo so the four screens share a pulse. */
+@keyframes demo-type {
+  0%   { width: 0; }
+  34%  { width: 100%; }
+  100% { width: 100%; }
+}
+.demo-type { animation: demo-type 4.6s steps(24, end) infinite; }
+@keyframes demo-caret {
+  0%, 34%   { opacity: 1; }
+  38%, 100% { opacity: 0; }
+}
+.demo-caret { animation: demo-caret 4.6s steps(1, end) infinite; }
+@keyframes demo-row {
+  0%, 40%   { transform: translateY(7px); opacity: 0; }
+  58%, 100% { transform: translateY(0);   opacity: 1; }
+}
+.demo-row { animation: demo-row 4.6s cubic-bezier(0.22, 1, 0.36, 1) infinite; }
+
+/* Tour demo 3: a time bar fills, then the day stacks into blocks. */
+@keyframes demo-fill {
+  0%   { transform: scaleX(0.06); }
+  40%  { transform: scaleX(1); }
+  100% { transform: scaleX(1); }
+}
+.demo-fill { animation: demo-fill 4.6s cubic-bezier(0.22, 1, 0.36, 1) infinite; transform-origin: left center; }
+@keyframes demo-block {
+  0%, 44%   { transform: scaleY(0); opacity: 0; }
+  64%, 100% { transform: scaleY(1); opacity: 1; }
+}
+.demo-block { animation: demo-block 4.6s cubic-bezier(0.34, 1.56, 0.64, 1) infinite; transform-origin: bottom center; }
+
+/* Tour demo 4: you ask, Sola answers, a change is offered. */
+@keyframes demo-ask {
+  0%, 6%    { transform: translateY(6px); opacity: 0; }
+  20%, 100% { transform: translateY(0);   opacity: 1; }
+}
+.demo-ask { animation: demo-ask 4.6s cubic-bezier(0.22, 1, 0.36, 1) infinite; }
+@keyframes demo-reply {
+  0%, 34%   { transform: translateY(6px); opacity: 0; }
+  50%, 100% { transform: translateY(0);   opacity: 1; }
+}
+.demo-reply { animation: demo-reply 4.6s cubic-bezier(0.22, 1, 0.36, 1) infinite; }
+@keyframes demo-accept {
+  0%, 62%   { transform: scale(0.7); opacity: 0; }
+  78%       { transform: scale(1.06); opacity: 1; }
+  86%, 100% { transform: scale(1);   opacity: 1; }
+}
+.demo-accept { animation: demo-accept 4.6s cubic-bezier(0.34, 1.56, 0.64, 1) infinite; }
+
+@media (prefers-reduced-motion: reduce) {
+  .demo-type   { animation: none; width: 100%; }
+  .demo-caret  { animation: none; opacity: 0; }
+  .demo-row    { animation: none; transform: none; opacity: 1; }
+  .demo-fill   { animation: none; transform: scaleX(1); }
+  .demo-block  { animation: none; transform: scaleY(1); opacity: 1; }
+  .demo-ask    { animation: none; transform: none; opacity: 1; }
+  .demo-reply  { animation: none; transform: none; opacity: 1; }
+  .demo-accept { animation: none; transform: scale(1); opacity: 1; }
+}
+
 /* Scrollbar */
 ::-webkit-scrollbar { width: 9px; height: 9px; }
 ::-webkit-scrollbar-track { background: transparent; }
