@@ -6,6 +6,9 @@ import type {
   Goal,
   GoalNode,
   InboxItem,
+  Note,
+  NoteKind,
+  NoteSource,
   Plan,
   SubscriptionStatus,
   GoalStatus,
@@ -187,4 +190,39 @@ export interface EvidenceRow {
 
 export function rowToEvidence(r: EvidenceRow): NodeEvidence {
   return { id: r.id, kind: r.kind, value: r.value, label: r.label, createdAt: r.created_at };
+}
+
+export interface NoteRow {
+  id: string;
+  user_id: string;
+  goal_id: string | null;
+  node_id: string | null;
+  title: string;
+  body: string;
+  kind: NoteKind;
+  source: NoteSource;
+  day: string | null;
+  pinned: boolean;
+  sola_private: boolean;
+  created_at: string;
+  updated_at: string;
+  archived_at: string | null;
+}
+
+export function rowToNote(r: NoteRow): Note {
+  return {
+    id: r.id,
+    goalId: r.goal_id,
+    nodeId: r.node_id,
+    title: r.title ?? "",
+    body: r.body ?? "",
+    kind: r.kind ?? "note",
+    source: r.source ?? "user",
+    day: r.day,
+    pinned: !!r.pinned,
+    solaPrivate: !!r.sola_private,
+    createdAt: r.created_at,
+    updatedAt: r.updated_at,
+    archivedAt: r.archived_at,
+  };
 }

@@ -3,10 +3,10 @@ import { buildSeed } from "@/lib/mock/seed";
 import { features } from "@/lib/config";
 import { getScopedClient } from "@/lib/supabase/scoped";
 import { ensureProfile } from "./profile";
-import { rowToGoal, rowToNode, rowToInbox, rowToEvidence, type GoalRow, type NodeRow, type InboxRow, type EvidenceRow } from "./mappers";
+import { rowToGoal, rowToNode, rowToInbox, rowToEvidence, rowToNote, type GoalRow, type NodeRow, type InboxRow, type EvidenceRow, type NoteRow } from "./mappers";
 import { computeFocusStats, type FocusSessionRow } from "./focus-stats";
 import { computeReviewInsights, type ReviewInsights } from "@/lib/kairo/review-insights";
-import type { GoalWithNodes, GoalNode, NodeEvidence, InboxItem, UserProfile, DailyPlanWithBlocks, FocusStats } from "@/types";
+import type { GoalWithNodes, GoalNode, NodeEvidence, InboxItem, Note, UserProfile, DailyPlanWithBlocks, FocusStats } from "@/types";
 
 // Data-access seam. In demo mode (no Supabase + Clerk) these serve seeded data
 // so the app is fully explorable with zero keys. When both are configured,
@@ -135,4 +135,24 @@ export const getFocusStats = cache(async (): Promise<FocusStats> => {
     .order("created_at", { ascending: false })
     .limit(2000);
   return computeFocusStats((res.data ?? []) as FocusSessionRow[], Date.now());
+});
+
+/**
+ * Every live note for the signed-in user, newest first. Demo mode returns an
+ * empty list and the client falls back to its localStorage mirror, exactly like
+ * goals do.
+ */
+export const getNotes = cache(async (): Promise<Note[]> => {
+  if (!isRemote) return [];
+  const scoped = await getScopedClient();
+  const profile = await ensureProfile();
+  if (!scoped || !profile) return [];
+  const res = await scoped.supabase
+    .from("notes")
+    .select("*")
+    .eq("user_id", profile.id)
+    .is("archived_at", null)
+    .order("updated_at", { ascending: false });
+  if (res.error) throw new Error(`Failed to load notes: ${res.error.message}`);
+  return ((res.data ?? []) as NoteRow[]).map(rowToNote);
 });

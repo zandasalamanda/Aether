@@ -395,6 +395,83 @@ export async function setTestPlan(plan: "free" | "pro"): Promise<Result> {
  * Passing undefined leaves a field alone; passing "" or null deletes it, which
  * is what makes "Sola forgets it everywhere" a real promise in Settings.
  */
+/* ------------------------------- notebook -------------------------------- */
+
+/**
+ * Create a note. goalId/nodeId are optional: a note can belong to a goal, to a
+ * single step, or to nothing at all, which is the whole point of the rebuild.
+ */
+export async function createNote(input: {
+  title?: string;
+  body?: string;
+  goalId?: string | null;
+  nodeId?: string | null;
+  kind?: "note" | "daily";
+  day?: string | null;
+}): Promise<Result> {
+  if (!isRemote) return NO_OP;
+  const scoped = await getScopedClient();
+  const profile = await ensureProfile();
+  if (!scoped || !profile) return NO_OP;
+  const { data, error } = await scoped.supabase
+    .from("notes")
+    .insert({
+      user_id: profile.id,
+      title: (input.title ?? "").slice(0, 200),
+      body: (input.body ?? "").slice(0, 200_000),
+      goal_id: input.goalId ?? null,
+      node_id: input.nodeId ?? null,
+      kind: input.kind ?? "note",
+      day: input.day ?? null,
+    })
+    .select("id")
+    .single();
+  if (error || !data) return NO_OP;
+  revalidatePath("/app", "layout");
+  return { ok: true, id: data.id as string };
+}
+
+/** Patch a note. Every field optional; undefined leaves it alone. */
+export async function updateNote(input: {
+  id: string;
+  title?: string;
+  body?: string;
+  goalId?: string | null;
+  nodeId?: string | null;
+  pinned?: boolean;
+  solaPrivate?: boolean;
+}): Promise<Result> {
+  if (!isRemote) return NO_OP;
+  const scoped = await getScopedClient();
+  if (!scoped) return NO_OP;
+  const patch: Record<string, unknown> = { updated_at: new Date().toISOString() };
+  if (input.title !== undefined) patch.title = input.title.slice(0, 200);
+  if (input.body !== undefined) patch.body = input.body.slice(0, 200_000);
+  if (input.goalId !== undefined) patch.goal_id = input.goalId;
+  if (input.nodeId !== undefined) patch.node_id = input.nodeId;
+  if (input.pinned !== undefined) patch.pinned = input.pinned;
+  if (input.solaPrivate !== undefined) patch.sola_private = input.solaPrivate;
+  // RLS scopes this to the caller's own row: an id they do not own updates zero rows.
+  const { error } = await scoped.supabase.from("notes").update(patch).eq("id", input.id);
+  if (error) return NO_OP;
+  revalidatePath("/app", "layout");
+  return { ok: true, id: input.id };
+}
+
+/** Archive rather than destroy: notes are the one thing people fear losing. */
+export async function archiveNote(input: { id: string }): Promise<Result> {
+  if (!isRemote) return NO_OP;
+  const scoped = await getScopedClient();
+  if (!scoped) return NO_OP;
+  const { error } = await scoped.supabase
+    .from("notes")
+    .update({ archived_at: new Date().toISOString() })
+    .eq("id", input.id);
+  if (error) return NO_OP;
+  revalidatePath("/app", "layout");
+  return { ok: true, id: input.id };
+}
+
 export async function setUserContext(patch: Partial<import("@/lib/ai/types").UserContext>): Promise<Result> {
   if (!isRemote) return NO_OP;
   const scoped = await getScopedClient();

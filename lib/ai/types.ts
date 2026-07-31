@@ -313,9 +313,20 @@ export interface SolaPlanGoal {
   targetDate: string | null;
   nodes: SolaPlanNode[];
 }
+/** One note as Sola sees it. Selected and budgeted by lib/kairo/note-context. */
+export interface SolaNotebookEntry {
+  id: string;
+  title: string;
+  body: string;
+  goalId: string | null;
+}
 export interface AskSolaInput {
   message: string;
   plan: SolaPlanGoal[];
+  /** Notebook context, selected SERVER-SIDE. Never client-supplied. */
+  notes?: SolaNotebookEntry[];
+  /** ABOUT THE USER block, built SERVER-SIDE. Never client-supplied. */
+  contextBlock?: string;
 }
 export interface AskSolaResult {
   reply: string;

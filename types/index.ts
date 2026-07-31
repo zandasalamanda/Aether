@@ -88,7 +88,11 @@ export interface Goal {
   targetDate: string | null;
   /** AI-chosen icon key from GOAL_ICON_KEYS (null → default). */
   icon: string | null;
-  /** freeform notebook context the user writes on this goal. */
+  /**
+   * Derived AI-context digest of this goal's notes (pinned first, then recent,
+   * private excluded, capped). Written by deriveGoalContext, no longer typed
+   * into directly: the notebook is a real table now.
+   */
   notes: string;
   /** clarifier question -> answer pairs captured at creation (plus freeText) */
   intake?: Record<string, string> | null;
@@ -139,6 +143,31 @@ export interface GoalNode {
   research?: { answer: string; sources: { title: string; url: string }[]; fetchedAt: string } | null;
   createdAt: string;
   updatedAt: string;
+}
+
+
+// ---------- Notebook ----------
+export type NoteKind = "note" | "daily";
+export type NoteSource = "user" | "sola" | "focus" | "import";
+
+export interface Note {
+  id: string;
+  goalId: string | null;
+  nodeId: string | null;
+  title: string;
+  /** markdown, canonical */
+  body: string;
+  kind: NoteKind;
+  source: NoteSource;
+  /** "YYYY-MM-DD" when kind is "daily" */
+  day: string | null;
+  /** top of the library, and always in Sola's context */
+  pinned: boolean;
+  /** Sola never reads this note */
+  solaPrivate: boolean;
+  createdAt: string;
+  updatedAt: string;
+  archivedAt: string | null;
 }
 
 /** Proof a step was actually done — a link, a note, or a metric. */

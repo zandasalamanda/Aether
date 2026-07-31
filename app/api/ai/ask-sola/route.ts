@@ -3,6 +3,10 @@ import { askSola } from "@/lib/ai/ask-sola";
 import { guardAi, clampText } from "@/lib/ai/guard";
 import { isObj } from "@/lib/ai/provider";
 import type { NodeStatus } from "@/types";
+import { getNotes } from "@/lib/data";
+import { selectNotesForSola } from "@/lib/kairo/note-context";
+import { buildContextBlock } from "@/lib/ai/context";
+import { loadUserContext } from "@/lib/data/profile";
 
 export async function POST(req: Request) {
   // Free users get a small daily taste of Sola; Pro is uncapped. The per-feature
@@ -26,6 +30,12 @@ export async function POST(req: Request) {
           : [],
       })).filter((g) => g.id)
     : [];
-  const result = await askSola({ message, plan });
+  // Notebook and user facts are selected SERVER-SIDE from canonical rows: the
+  // client cannot smuggle in notes it does not own, and a note marked private
+  // is filtered by selectNotesForSola before any payload exists.
+  const todayIso = new Date().toISOString().slice(0, 10);
+  const notes = selectNotesForSola(await getNotes(), plan.map((g) => g.id), todayIso);
+  const contextBlock = buildContextBlock(await loadUserContext(), null, "ask-sola");
+  const result = await askSola({ message, plan, notes, contextBlock });
   return NextResponse.json(result);
 }
