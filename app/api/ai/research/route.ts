@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import { research } from "@/lib/ai/research";
 import { guardAi, clampText } from "@/lib/ai/guard";
 import { getScopedClient } from "@/lib/supabase/scoped";
+import { buildContextBlock } from "@/lib/ai/context";
+import { loadUserContext } from "@/lib/data/profile";
 import type { StepBriefing } from "@/lib/ai/types";
 
 export async function POST(req: Request) {
@@ -9,11 +11,15 @@ export async function POST(req: Request) {
   const denied = await guardAi({ weight: 4, feature: "research", featureFreeDaily: 1, featureLabel: "deep research" });
   if (denied) return denied;
   const body = (await req.json().catch(() => ({}))) as { goalTitle?: unknown; nodeTitle?: unknown; context?: unknown; question?: unknown; nodeId?: unknown };
+  // Server-built; region reaches research ONLY through this gate, never from
+  // the request body.
+  const contextBlock = buildContextBlock(await loadUserContext(), null, "research");
   const result = await research({
     goalTitle: clampText(body.goalTitle, 200),
     nodeTitle: clampText(body.nodeTitle, 200),
     context: body.context ? clampText(body.context, 2000) : undefined,
     question: body.question ? clampText(body.question, 500) : undefined,
+    contextBlock,
   });
 
   // Research used to die when the sheet closed. With a nodeId it persists on

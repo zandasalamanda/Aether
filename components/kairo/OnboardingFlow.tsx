@@ -10,6 +10,7 @@ import { persistGoalFromMap, deleteGoal } from "@/lib/data/actions";
 import type { GoalMapResult, Clarifier } from "@/lib/ai/types";
 import { GoalCore } from "./GoalCore";
 import { GoalCoreCycle } from "./GoalCoreCycle";
+import { LifeQuestions } from "./LifeQuestions";
 import { Logo } from "./Logo";
 import { Button, buttonVariants } from "@/components/ui/Button";
 import { Chip, OptionChip } from "@/components/ui/Chip";
@@ -302,6 +303,13 @@ export function OnboardingFlow({ remote = false, signedIn = false }: { remote?: 
                 );
               })}
             </ol>
+          </div>
+
+          {/* The interview: once, right when the map is live and the payoff of
+              answering is visible. Every question skippable, everything shown
+              in Settings afterward. */}
+          <div className="mt-5">
+            <LifeQuestions remote={remote} />
           </div>
 
           <div className="mt-4 rounded-2xl border border-accent/20 bg-accent/5 px-4 py-3">

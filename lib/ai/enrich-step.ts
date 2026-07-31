@@ -1,5 +1,6 @@
 import { generateJson, isObj, isClient, viaRouteResult, raiseIfBlocked } from "./provider";
 import { mockEnrichStep } from "./mock";
+import { readDemoContext } from "./context";
 import type { EnrichStepInput, StepBriefing, StepMistake } from "./types";
 
 // The briefing: open a step, get a plan FOR that step. One AI call per node,
@@ -86,13 +87,16 @@ export async function enrichStep(input: EnrichStepInput): Promise<StepBriefing> 
     const res = await viaRouteResult<StepBriefing>("/api/ai/enrich-step", input);
     if (res.data) {
       const cleaned = sanitizeBriefing(res.data);
-      if (cleaned) return { ...cleaned, level: res.data.level ?? cleaned.level };
+      // The route already fact-gated personalNote against the stored context;
+      // the client cannot re-run that gate (it has no facts), so it keeps the
+      // server's verdict rather than nulling every legitimate note.
+      if (cleaned) return { ...cleaned, personalNote: clamp(res.data.personalNote, 140) || null, level: res.data.level ?? cleaned.level };
     }
     // Rate-limit / upgrade responses surface to the caller instead of silently
     // degrading to a mock that pretends the call worked.
     raiseIfBlocked(res);
   }
-  return mockEnrichStep(input.nodeTitle ?? "", input.goalTitle ?? "");
+  return mockEnrichStep(input.nodeTitle ?? "", input.goalTitle ?? "", readDemoContext());
 }
 
 /** Server-side generation against canonical text (used by the route). */
@@ -100,18 +104,21 @@ export async function generateBriefing(args: {
   goalTitle: string;
   nodeTitle: string;
   nodeDescription: string;
-  intakeLines?: string;
+  /** ABOUT THE USER block (carries the goal intake too), built by the route. */
+  contextBlock?: string;
+  /** fact values the personalNote gate accepts (see sanitizeBriefing) */
+  providedFacts?: string[];
   notes?: string;
 }): Promise<StepBriefing | null> {
   const user = [
+    args.contextBlock ?? "",
     `Goal: ${args.goalTitle}`,
     `Step: ${args.nodeTitle}`,
     args.nodeDescription ? `Step notes: ${args.nodeDescription}` : "",
-    args.intakeLines ? `Goal answers: ${args.intakeLines}` : "",
     args.notes ? `Notebook: ${args.notes.slice(0, 600)}` : "",
   ]
     .filter(Boolean)
     .join("\n");
   const raw = await generateJson<StepBriefing>(SYSTEM, user, { maxTokens: 1600 });
-  return sanitizeBriefing(raw);
+  return sanitizeBriefing(raw, args.providedFacts ?? []);
 }

@@ -47,3 +47,16 @@ export const currentProfileId = cache(async (): Promise<string | null> => {
   const p = await ensureProfile();
   return p?.id ?? null;
 });
+
+/**
+ * What Sola knows, for server-side prompt injection. Cached per request like
+ * ensureProfile; returns null when signed out or in demo mode (the demo
+ * mirrors context in localStorage and injects client-side instead).
+ */
+export const loadUserContext = cache(async (): Promise<import("@/lib/ai/types").UserContext | null> => {
+  const scoped = await getScopedClient();
+  const profile = await ensureProfile();
+  if (!scoped || !profile) return null;
+  const res = await scoped.supabase.from("users_profile").select("context").eq("id", profile.id).maybeSingle();
+  return (res.data?.context as import("@/lib/ai/types").UserContext | null) ?? null;
+});

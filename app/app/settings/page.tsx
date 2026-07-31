@@ -8,6 +8,8 @@ import { clerkPublic } from "@/lib/config";
 import { PageContainer } from "@/components/layout/PageContainer";
 import { PageHeader, SectionLabel } from "@/components/kairo/PageHeader";
 import { SettingsForm } from "@/components/kairo/SettingsForm";
+import { WhatSolaKnows } from "@/components/kairo/WhatSolaKnows";
+import { loadUserContext } from "@/lib/data/profile";
 import { ThemeToggle } from "@/components/kairo/ThemeToggle";
 import { NotificationSettings } from "@/components/kairo/NotificationSettings";
 import { UsageMeter } from "@/components/kairo/UsageMeter";
@@ -25,11 +27,13 @@ export default async function SettingsPage() {
   const plan = clerkPublic ? await getPlan() : "free";
   const usage = clerkPublic ? await getAiUsage(user.id, plan) : null;
   const admin = clerkPublic ? await isAdmin() : false;
+  const context = clerkPublic ? await loadUserContext() : null;
   return (
     <PageContainer user={user}>
       <PageHeader eyebrow="You & Solaspace" title="Settings" description="Tune how Solaspace plans and speaks." />
       <div className="space-y-5">
         <SettingsForm user={user} />
+        <WhatSolaKnows remote={!!clerkPublic} initial={context} />
         <ThemeToggle />
         {usage && <UsageMeter {...usage} native={user.native} />}
         {profile && (

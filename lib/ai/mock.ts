@@ -15,6 +15,7 @@ import type {
   ReviewInput,
   ReviewResult,
   StepBriefing,
+  UserContext,
 } from "./types";
 import type { Difficulty, GoalNode, InboxCategory } from "@/types";
 import { parseDeadline } from "@/lib/kairo/deadline";
@@ -240,14 +241,21 @@ const DEFAULT_BRIEF: BriefTemplate = {
   need: [],
 };
 
-export function mockEnrichStep(nodeTitle: string, goalTitle: string): StepBriefing {
+const CUE_BY_SCHEDULE: Record<NonNullable<UserContext["scheduleShape"]>, string> = {
+  mornings: "with your morning coffee, before the day starts pulling",
+  evenings: "this evening, after dinner",
+  weekends: "Saturday morning, before the weekend fills up",
+  varies: "the next free half hour you notice",
+};
+
+export function mockEnrichStep(nodeTitle: string, goalTitle: string, ctx?: UserContext | null): StepBriefing {
   const key = `${goalTitle} ${nodeTitle}`;
   const t = BRIEFS.find((b) => b.match.test(key)) ?? DEFAULT_BRIEF;
   const title = nodeTitle.trim() || "this step";
   return {
     firstAction: `Open what "${title}" needs and do the first 10 minutes`,
     successCriterion: `"${title}" has a visible result you could show someone`,
-    whenWhereCue: t.cue,
+    whenWhereCue: ctx?.scheduleShape ? CUE_BY_SCHEDULE[ctx.scheduleShape] : t.cue,
     commonMistakes: t.mistakes,
     ifStuck: t.ifStuck,
     whatYoullNeed: t.need,
@@ -344,7 +352,8 @@ function isoDaysFromNow(days: number): string {
 
 // ---------- goal map ----------
 
-export function mockGoalMap(input: GoalMapInput): GoalMapResult {
+export function mockGoalMap(input: GoalMapInput, ctx?: UserContext | null): GoalMapResult {
+  const capEst = (est: number) => (ctx?.granularity === "very_small" ? Math.min(30, est) : est);
   const title = cleanTitle(input.prompt);
   const tpl = pickTemplate(input.prompt);
 
@@ -364,7 +373,7 @@ export function mockGoalMap(input: GoalMapInput): GoalMapResult {
     title: n.title,
     description: n.reason + ".",
     status: i === 0 ? "in_motion" : "not_started",
-    estimatedMinutes: n.est,
+    estimatedMinutes: capEst(n.est),
     priority: Math.min(5, i + 1),
     aiReason: n.reason,
     parentIndex: n.parentIndex,

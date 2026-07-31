@@ -11,7 +11,7 @@ Return JSON: {"clarifiers":[{"question":string,"options":string[]}]}.
 - Question 1 MUST be about the goal's TIMEFRAME/DEADLINE, personalized to THIS goal. Name the real target if one exists (a race day, launch, exam, season, trip). Options are a few sensible horizons and MUST end with "No deadline".
 - Question 2 MUST pin down WHAT exactly they're doing: the subject, type, or scope. E.g. "make a game" → what kind of game / genre; "get fit" → which sport or body goal; "learn Spanish" → for travel, work, or conversation; "start a business" → what does it sell. Never skip this for a generic level/budget question.
 - Question 3 pins down their starting point (current level / experience) OR the one key constraint (budget, hours per week), whichever shapes the plan most.
-Be concrete and specific to THIS goal, never vague filler. Question ≤7 words. Each option ≤5 words. 2-4 options for Q2-3; up to 6 for Q1.`;
+Be concrete and specific to THIS goal, never vague filler. Question ≤7 words. Each option ≤5 words. 2-4 options for Q2-3; up to 6 for Q1.\nNever ask about anything already listed under ABOUT THE USER; ask the next most valuable unknown instead.`;
 
 const DEADLINE_RE = /deadline|time ?frame|by when|due|timeline|how long|target date|finish by|\bwhen\b/i;
 const NO_DL_RE = /no deadline|no date|no rush|none|whenever|flexible|open-ended|someday/i;
@@ -33,7 +33,7 @@ function clean(cs: unknown): Clarifier[] {
 }
 
 /** A personalized deadline question (always first, always with "No deadline") + up to two more. */
-export async function clarifyGoal(prompt: string): Promise<Clarifier[]> {
+export async function clarifyGoal(prompt: string, contextBlock?: string): Promise<Clarifier[]> {
   const build = (ai: Clarifier[]): Clarifier[] => {
     if (!ai.length) return clarifiersFor(prompt);
     const i = ai.findIndex((c) => DEADLINE_RE.test(c.question));
@@ -45,6 +45,6 @@ export async function clarifyGoal(prompt: string): Promise<Clarifier[]> {
     const j = await viaRoute<{ clarifiers: Clarifier[] }>("/api/ai/clarify", { prompt });
     return build(j ? clean(j.clarifiers) : []);
   }
-  const r = await generateJson<{ clarifiers: Clarifier[] }>(SYSTEM, `Goal: ${prompt}`);
+  const r = await generateJson<{ clarifiers: Clarifier[] }>(SYSTEM, `${contextBlock ?? ""}Goal: ${prompt}`);
   return build(r ? clean(r.clarifiers) : []);
 }

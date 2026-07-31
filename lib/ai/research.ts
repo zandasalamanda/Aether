@@ -14,7 +14,7 @@ const SYSTEM = `You are Sola, doing focused research for the user. The user is w
 async function runResearch(input: ResearchInput): Promise<ResearchResult> {
   const key = apiKey();
   if (!key) return { answer: "Research is unavailable right now.", sources: [] };
-  const prompt = `Goal: ${input.goalTitle}\nStep: ${input.nodeTitle}${input.context ? `\nContext: ${input.context}` : ""}${
+  const prompt = `${input.contextBlock ?? ""}Goal: ${input.goalTitle}\nStep: ${input.nodeTitle}${input.context ? `\nContext: ${input.context}` : ""}${
     input.question ? `\nSpecifically: ${input.question}` : "\nResearch exactly what they need to know to do this step well, with current specifics."
   }`;
   try {

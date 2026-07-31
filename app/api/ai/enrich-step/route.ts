@@ -4,6 +4,8 @@ import { generateBriefing } from "@/lib/ai/enrich-step";
 import { getScopedClient } from "@/lib/supabase/scoped";
 import { ensureProfile } from "@/lib/data/profile";
 import type { StepBriefing } from "@/lib/ai/types";
+import { buildContextBlock, providedFactValues } from "@/lib/ai/context";
+import { loadUserContext } from "@/lib/data/profile";
 
 // One briefing per step, cached on the row. The prompt is built from CANONICAL
 // rows loaded with the scoped client (RLS proves ownership), never from the
@@ -42,16 +44,16 @@ export async function POST(req: Request) {
   const goal = goalRes.data as { id: string; title: string; notes: string | null; intake: Record<string, string> | null } | null;
   if (!goal) return NextResponse.json({ error: "Goal not found" }, { status: 404 });
 
-  // What the user answered at creation, rendered as labeled pairs: the whole
-  // point of persisting intake is that a briefing months later still knows it.
-  const intakeLines = Object.entries(goal.intake ?? {})
-    .map(([q, a]) => `${q.replace(/\?$/, "")}: ${a}`)
-    .join("; ");
+  // The block carries the user's stored context AND this goal's intake: the
+  // whole point of persisting both is that a briefing months later still
+  // knows them. providedFacts gates personalNote to facts actually given.
+  const ctx = await loadUserContext();
   const briefing = await generateBriefing({
     goalTitle: goal.title,
     nodeTitle: node.title,
     nodeDescription: node.description ?? "",
-    intakeLines,
+    contextBlock: buildContextBlock(ctx, goal.intake ?? null, "enrich"),
+    providedFacts: providedFactValues(ctx, goal.intake ?? null),
     notes: goal.notes ?? "",
   });
   if (!briefing) return NextResponse.json({ error: "Sola couldn't brief this step. Try again." }, { status: 502 });

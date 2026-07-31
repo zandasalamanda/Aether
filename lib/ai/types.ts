@@ -15,6 +15,8 @@ export interface GoalMapInput {
   answers?: { question: string; answer: string }[];
   /** The optional free-text "tell me more". */
   freeText?: string;
+  /** ABOUT THE USER block, built SERVER-SIDE by the route. Never client-supplied. */
+  contextBlock?: string;
 }
 
 export interface GeneratedNode {
@@ -84,12 +86,40 @@ export interface ResearchInput {
   /** When present (and owned), the server persists the result on the node. */
   goalId?: string;
   nodeId?: string;
+  /** ABOUT THE USER block, built SERVER-SIDE by the route. Never client-supplied. */
+  contextBlock?: string;
 }
 export interface ResearchResult {
   answer: string;
   sources: { title: string; url: string }[];
 }
 
+
+
+// ---------- User context (what Sola knows; all optional, user-editable) ----------
+export type AgeBand = "under_18" | "18_24" | "25_34" | "35_44" | "45_54" | "55_64" | "65_plus";
+export type ScheduleShape = "mornings" | "evenings" | "weekends" | "varies";
+export type StepGranularity = "big_moves" | "standard" | "very_small";
+export type BudgetComfort = "tight" | "some_room" | "flexible" | "private";
+
+export interface UserContext {
+  ageBand?: AgeBand;
+  scheduleShape?: ScheduleShape;
+  /** default behavior = "standard" */
+  granularity?: StepGranularity;
+  /** City or region as free text ("Leiden, NL"). Never GPS, never precise. */
+  region?: string;
+  budgetComfort?: BudgetComfort;
+  /** Life shape in the user's words: "full-time job, two kids under 5". */
+  busyWith?: string;
+  /** Question keys skipped; never re-asked. */
+  skipped?: string[];
+  updatedAt?: string;
+}
+
+export type AiFeature =
+  | "goal-map" | "clarify" | "enrich" | "research" | "expand" | "replan"
+  | "session" | "draft" | "ask-node" | "unblock" | "ask-sola";
 
 // ---------- Step briefing (per-step enrichment, cached on the node) ----------
 export interface StepMistake { mistake: string; fix: string } // each <= 120 chars

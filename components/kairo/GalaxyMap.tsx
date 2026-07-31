@@ -26,6 +26,7 @@ import { GOAL_PALETTE, goalColorHex, goalColorIndex, type GoalColorOverride } fr
 import { enrichStep } from "@/lib/ai/enrich-step";
 import { nodeIcon } from "@/lib/kairo/node-icon";
 import { nextNodeForGoal } from "@/lib/kairo/next-move";
+import { LifeQuestions } from "./LifeQuestions";
 import type { StepBriefing } from "@/lib/ai/types";
 import { goalIcon } from "@/lib/kairo/goal-icon";
 import { pickCelebration, pickGoalCelebration, fireHaptic } from "@/lib/kairo/celebrate";
@@ -1582,6 +1583,14 @@ export function GalaxyMap({
           )}
         </div>
       </div>
+
+      {/* Existing accounts meet the interview here, once, when a map exists to
+          fit. The card manages its own once-ever flag. */}
+      {!empty && !expanded && (
+        <div className="pointer-events-auto fixed inset-x-4 top-[calc(var(--sa-top)+64px)] z-40 mx-auto max-w-md">
+          <LifeQuestions remote={remote} />
+        </div>
+      )}
 
       {colorPick && (() => {
         const g = goals.find((x) => x.id === colorPick);

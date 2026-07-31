@@ -389,6 +389,31 @@ export async function setTestPlan(plan: "free" | "pro"): Promise<Result> {
 }
 
 /** Proof-of-Progress: attach evidence (a link, note, or metric) to a step. */
+/**
+ * Merge a patch into the user's stored context. The only writable profile
+ * column (0020's per-column grant); RLS scopes it to the caller's own row.
+ * Passing undefined leaves a field alone; passing "" or null deletes it, which
+ * is what makes "Sola forgets it everywhere" a real promise in Settings.
+ */
+export async function setUserContext(patch: Partial<import("@/lib/ai/types").UserContext>): Promise<Result> {
+  if (!isRemote) return NO_OP;
+  const scoped = await getScopedClient();
+  const profile = await ensureProfile();
+  if (!scoped || !profile) return NO_OP;
+  const cur = await scoped.supabase.from("users_profile").select("context").eq("id", profile.id).maybeSingle();
+  const merged: Record<string, unknown> = { ...((cur.data?.context as Record<string, unknown>) ?? {}) };
+  for (const [k, v] of Object.entries(patch)) {
+    if (v === undefined) continue;
+    if (v === null || v === "") delete merged[k];
+    else merged[k] = v;
+  }
+  merged.updatedAt = new Date().toISOString();
+  const { error } = await scoped.supabase.from("users_profile").update({ context: merged }).eq("id", profile.id);
+  if (error) return NO_OP;
+  revalidatePath("/app", "layout");
+  return { ok: true };
+}
+
 export async function addNodeEvidence(input: { nodeId: string; kind: "link" | "note" | "metric"; value: string; label?: string }): Promise<Result> {
   if (!isRemote) return NO_OP;
   const scoped = await getScopedClient();

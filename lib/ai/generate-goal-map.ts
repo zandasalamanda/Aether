@@ -1,5 +1,6 @@
 import { generateJson, isObj, isClient, viaRoute } from "./provider";
 import { mockGoalMap } from "./mock";
+import { readDemoContext } from "./context";
 import { parseDeadline } from "@/lib/kairo/deadline";
 import { GOAL_ICON_KEYS } from "@/lib/kairo/goal-icon-keys";
 import type { GoalMapInput, GoalMapResult, GeneratedNode } from "./types";
@@ -132,7 +133,7 @@ export function sanitizeGoalMap(r: GoalMapResult, prompt: string): GoalMapResult
 export async function generateGoalMap(input: GoalMapInput): Promise<GoalMapResult> {
   if (isClient()) {
     const j = await viaRoute<GoalMapResult>("/api/ai/goal-map", input);
-    return valid(j) ? sanitizeGoalMap(j, input.prompt) : { ...mockGoalMap(input), isMock: true };
+    return valid(j) ? sanitizeGoalMap(j, input.prompt) : { ...mockGoalMap(input, readDemoContext()), isMock: true };
   }
   const today = new Date().toISOString().slice(0, 10);
   // Answers arrive structured and render as labeled lines rather than being
@@ -142,7 +143,8 @@ export async function generateGoalMap(input: GoalMapInput): Promise<GoalMapResul
     .filter((a) => a.answer.trim())
     .map((a) => `- ${a.question.replace(/\?$/, "")}: ${a.answer}`);
   if (input.freeText?.trim()) answerLines.push(`- Also: ${input.freeText.trim()}`);
-  const user = [`Today's date: ${today}`, `Goal: ${input.prompt}`, answerLines.length ? `Answers:\n${answerLines.join("\n")}` : ""]
+  // The context block leads the message so provider prefix caching hits.
+  const user = [input.contextBlock ?? "", `Today's date: ${today}`, `Goal: ${input.prompt}`, answerLines.length ? `Answers:\n${answerLines.join("\n")}` : ""]
     .filter(Boolean)
     .join("\n");
   // 14-18 nodes each with a grounded description PLUS a first move and a done
