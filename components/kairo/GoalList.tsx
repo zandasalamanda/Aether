@@ -92,6 +92,15 @@ function NodeRow({ node, hex, isNext, onOpen, sub }: { node: GoalNode; hex: stri
         {hasDetail && <ChevronDown size={14} className={cn("shrink-0 text-faint transition-transform", open && "rotate-180")} />}
       </button>
 
+      {/* the next step names its exact opening move, the same spotlight the map
+          shows. Legacy rows with an empty firstAction render nothing. */}
+      {isNext && !done && node.firstAction ? (
+        <div className={cn("mb-1.5 rounded-lg border border-accent/20 px-2.5 py-1.5 text-[12.5px] leading-snug text-muted", sub ? "ml-9" : "ml-6")} style={{ background: "color-mix(in srgb, var(--color-accent) 6%, transparent)" }}>
+          <span className="mr-1.5 font-mono text-[9px] font-semibold uppercase tracking-[0.14em] text-accent">First move</span>
+          {node.firstAction}
+        </div>
+      ) : null}
+
       {open && hasDetail && (
         <div className={cn("mb-1.5 animate-sheet-up rounded-xl bg-white/[0.02] px-3 py-2.5", sub ? "ml-9" : "ml-2")}>
           {node.description?.trim() && (

@@ -24,6 +24,7 @@ import type { Clarifier, ReplanProposal, ReplanKind, GoalMapResult } from "@/lib
 import { clarifyGoal } from "@/lib/ai/clarify";
 import { GOAL_PALETTE, goalColorHex, goalColorIndex, type GoalColorOverride } from "@/lib/kairo/goal-color";
 import { enrichStep } from "@/lib/ai/enrich-step";
+import { nodeIcon } from "@/lib/kairo/node-icon";
 import type { StepBriefing } from "@/lib/ai/types";
 import { goalIcon } from "@/lib/kairo/goal-icon";
 import { pickCelebration, pickGoalCelebration, fireHaptic } from "@/lib/kairo/celebrate";
@@ -2050,7 +2051,9 @@ function NodeOrb({
         onClick={(e) => { e.stopPropagation(); onSelect(); }}
         onPointerDown={(e) => e.stopPropagation()}
         onContextMenu={onContext}
-        className="relative grid place-items-center"
+        // before:-inset-1 carries the 38px leaf to a 44px touch box, exactly
+        // the hit-area ring Chip uses; the visual stays the same size.
+        className="relative grid place-items-center before:absolute before:-inset-1 before:content-['']"
         style={{ width: size, height: size }}
       >
         {showRing && (
@@ -2079,14 +2082,17 @@ function NodeOrb({
         >
           {done ? (
             <Check size={spine ? 18 : 15} className="text-[#0d1a14]" strokeWidth={2.5} />
-          ) : isRecurring(node) ? (
-            <Repeat size={spine ? 14 : 12} strokeWidth={2.2} style={{ color: hex, filter: light ? "none" : `drop-shadow(0 0 5px ${hex})` }} />
-          ) : node.resource?.kind === "watch" ? (
-            <PlayCircle size={spine ? 14 : 12} strokeWidth={2} style={{ color: hex }} />
-          ) : node.resource?.kind === "read" ? (
-            <BookOpen size={spine ? 14 : 12} strokeWidth={2} style={{ color: hex }} />
           ) : (
-            <span className="rounded-full" style={{ width: spine ? 9 : 7, height: spine ? 9 : 7, background: hex, boxShadow: light ? "none" : `0 0 8px ${hex}` }} />
+            // Every step shows WHAT KIND of work it is. The old fallback was a
+            // bare dot, which made adjacent steps read as identical beads;
+            // nodeIcon always resolves to something semantic. Recurrence stays
+            // furniture (the cadence label below), so a workout practice reads
+            // Dumbbell, not a generic Repeat.
+            React.createElement(nodeIcon(node, { chapter: spine }), {
+              size: spine ? 15 : 13,
+              strokeWidth: 2,
+              style: { color: hex, filter: light ? "none" : `drop-shadow(0 0 4px ${hex}aa)` },
+            })
           )}
         </span>
         {/* Label floats below the orb (absolute) so the ORB stays centred on the node
@@ -2103,6 +2109,27 @@ function NodeOrb({
               {(node.targetPerWeek ?? 7) >= 7 ? "daily" : `${node.targetPerWeek ?? 3}x a week`}
             </span>
           )}
+          {/* The one spotlight on the map: the next step names its exact
+              opening move, so "what do I actually do" is answered without a
+              tap. Only the walker's next carries it; legacy rows with an empty
+              firstAction render nothing. */}
+          {isNext && node.firstAction ? (
+            <span
+              // The label column is capped at 128px for titles; the plaque
+              // escapes it with negative margins (200px centred in 128) and
+              // clamps to two lines, so it can never grow into the orb below.
+              className="-mx-9 mt-1.5 line-clamp-2 inline-block w-[200px] rounded-lg border px-2 py-1 text-left text-[10.5px] leading-snug"
+              style={{
+                borderColor: light ? `color-mix(in srgb, ${hex} 40%, transparent)` : `${hex}44`,
+                background: light ? `color-mix(in srgb, ${hex} 10%, #ffffff)` : "color-mix(in srgb, var(--color-accent) 8%, rgba(10,11,13,0.85))",
+                color: "var(--color-muted)",
+                textShadow: "none",
+              }}
+            >
+              <span className="mr-1 font-mono text-[8.5px] font-semibold uppercase tracking-[0.14em]" style={{ color: light ? `color-mix(in srgb, ${hex} 70%, #2a2f3a)` : hex }}>First move</span>
+              {node.firstAction}
+            </span>
+          ) : null}
         </span>
       </button>
     </div>
