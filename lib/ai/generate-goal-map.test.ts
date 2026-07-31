@@ -96,3 +96,37 @@ describe("sanitizeGoalMap practice fields", () => {
     expect(r.nodes[1].targetPerWeek).toBeNull();
   });
 });
+
+describe("sanitizeGoalMap step depth", () => {
+  it("keeps a real first move and done test, clamped to their limits", () => {
+    const r = sanitizeGoalMap(
+      result([node({
+        firstAction: "  Open your banking app and write down last month's total spending  ",
+        successCriterion: "x".repeat(300),
+      })]),
+      "save money"
+    );
+    expect(r.nodes[0].firstAction).toBe("Open your banking app and write down last month's total spending");
+    expect(r.nodes[0].successCriterion).toHaveLength(120);
+  });
+
+  it("fills deterministic fallbacks when the model omits the fields", () => {
+    const r = sanitizeGoalMap(result([node({ title: "Map current spending" })]), "save money");
+    expect(r.nodes[0].firstAction).toBe('Open what "Map current spending" needs and do the first 10 minutes');
+    expect(r.nodes[0].successCriterion).toBe('"Map current spending" has a visible result you could show someone');
+  });
+
+  it("treats whitespace-only values as missing", () => {
+    const r = sanitizeGoalMap(
+      result([node({ title: "Set a target", firstAction: "   ", successCriterion: "\n" })]),
+      "save money"
+    );
+    expect(r.nodes[0].firstAction).toContain("Set a target");
+    expect(r.nodes[0].successCriterion).toContain("Set a target");
+  });
+
+  it("clamps a runaway firstAction to 160 characters", () => {
+    const r = sanitizeGoalMap(result([node({ firstAction: "y".repeat(400) })]), "save money");
+    expect(r.nodes[0].firstAction).toHaveLength(160);
+  });
+});

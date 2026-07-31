@@ -1,4 +1,5 @@
 import { generateJson, isObj, isClient, viaRoute } from "./provider";
+import { clampStepDepth } from "./generate-goal-map";
 import type { ReplanInput, ReplanResult, ReplanKind } from "./types";
 
 // The living map: given where the user actually is (each step's status + their
@@ -14,7 +15,7 @@ Kinds:
 - "substep": an in_motion step needs a concrete next action. Set parentTitle to that step's exact title.
 - "milestone": the plan is missing a phase between where they are and the goal. ParentTitle null.
 - "stretch": most steps are done, so add something that pushes past the original goal; parentTitle null.
-Return JSON: {"proposals":[{"kind","parentTitle","title","estimatedMinutes","reason"}]}. parentTitle MUST exactly match one of the given step titles, or be null. title is imperative, <=10 words. estimatedMinutes 10-120. reason <=12 words and refers to their actual progress. Never duplicate an existing step. If the plan genuinely needs nothing, return {"proposals":[]}.`;
+Return JSON: {"proposals":[{"kind","parentTitle","title","estimatedMinutes","reason","firstAction","successCriterion"}]}. Every step also carries "firstAction" (the exact sub-10-minute opening move, verb-first, naming the real tool, app, or place) and "successCriterion" (the observable done-test: binary or a number, never a feeling). parentTitle MUST exactly match one of the given step titles, or be null. title is imperative, <=10 words. estimatedMinutes 10-120. reason <=12 words and refers to their actual progress. Never duplicate an existing step. If the plan genuinely needs nothing, return {"proposals":[]}.`;
 
 function valid(r: unknown): r is ReplanResult {
   return isObj(r) && Array.isArray(r.proposals);
@@ -31,6 +32,7 @@ function clean(r: ReplanResult): ReplanResult {
         title: String(p.title).trim().slice(0, 90),
         estimatedMinutes: Math.min(120, Math.max(10, Math.round(Number(p.estimatedMinutes) || 30))),
         reason: typeof p.reason === "string" ? p.reason.trim().slice(0, 80) : "",
+        ...clampStepDepth(p),
       })),
   };
 }

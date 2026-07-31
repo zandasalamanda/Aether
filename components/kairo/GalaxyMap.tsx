@@ -44,6 +44,7 @@ import {
 } from "@/lib/data/actions";
 import { MicButton } from "@/components/ui/MicButton";
 import { Chip, OptionChip } from "@/components/ui/Chip";
+import { IconButton } from "@/components/ui/IconButton";
 import { FocusOverlay } from "./FocusOverlay";
 import { MappingNarration } from "./MappingNarration";
 import { Markdown } from "./Markdown";
@@ -289,6 +290,8 @@ function toLocalGoal(goalId: string, res: Awaited<ReturnType<typeof generateGoal
     positionY: null,
     aiReason: n.aiReason ?? null,
     resource: n.resource ?? null,
+    firstAction: n.firstAction ?? "",
+    successCriterion: n.successCriterion ?? "",
     createdAt: nowISO(),
     updatedAt: nowISO(),
   }));
@@ -1096,7 +1099,10 @@ export function GalaxyMap({
     if (!p || mapping) return;
     const pos = beginForming();
     const res = await generateGoalMap({ prompt: p });
-    if (res.isMock) {
+    // Only a REAL account refuses a mock map (there it means the AI failed and
+    // a placeholder would burn a goal slot). In demo mode the mock IS the
+    // product; rejecting it made goal creation silently impossible without a key.
+    if (remote && res.isMock) {
       // AI was unavailable / rate-limited — don't persist a junk placeholder map.
       setMapping(false); setFormingPos(null);
       showToast(nativeClient
@@ -1108,17 +1114,18 @@ export function GalaxyMap({
   };
 
   // Add several AI-generated sub-steps as branches under a node.
-  const addSteps = (goalId: string, parentId: string, steps: { title: string; estimatedMinutes: number }[]) => {
+  const addSteps = (goalId: string, parentId: string, steps: { title: string; estimatedMinutes: number; firstAction?: string; successCriterion?: string }[]) => {
     const g = goals.find((x) => x.id === goalId);
     if (!g) return;
     let order = g.nodes.length;
     const created: GoalNode[] = steps.map((s) => {
       const id = newId();
-      if (remote) void addNode({ id, goalId, title: s.title, estimatedMinutes: s.estimatedMinutes, sortOrder: order++, parentId });
+      if (remote) void addNode({ id, goalId, title: s.title, estimatedMinutes: s.estimatedMinutes, sortOrder: order++, parentId, firstAction: s.firstAction, successCriterion: s.successCriterion });
       return {
         id, goalId, parentId, title: s.title, description: "", status: "not_started", progress: 0,
         priority: 3, estimatedMinutes: s.estimatedMinutes, dueDate: null, positionX: null, positionY: null,
-        aiReason: "Sola broke this down", resource: null, createdAt: nowISO(), updatedAt: nowISO(),
+        aiReason: "Sola broke this down", resource: null, firstAction: s.firstAction ?? "", successCriterion: s.successCriterion ?? "",
+        createdAt: nowISO(), updatedAt: nowISO(),
       };
     });
     setGoals((prev) => prev.map((x) => (x.id === goalId ? { ...x, nodes: [...x.nodes, ...created] } : x)));
@@ -1389,8 +1396,8 @@ export function GalaxyMap({
             <Plus size={18} />
           </button>
           <div className="chrome pointer-events-auto flex flex-col items-center gap-1.5 rounded-full p-1">
-            <button onClick={() => { setSearchOpen((s) => !s); setQuery(""); }} aria-pressed={searchOpen} className={cn("grid h-11 w-11 place-items-center rounded-full transition-colors", searchOpen ? "text-accent" : "text-muted hover:text-ink")} aria-label="Find on the map" title="Find on the map"><Search size={16} /></button>
-            <button onClick={() => setFocusLens((f) => !f)} aria-pressed={focusLens} className={cn("grid h-11 w-11 place-items-center rounded-full transition-colors", focusLens ? "text-accent" : "text-muted hover:text-ink")} aria-label="Focus mode" title="Focus mode. Dims all but your next steps."><Focus size={16} /></button>
+            <button onClick={() => { setSearchOpen((s) => !s); setQuery(""); }} aria-pressed={searchOpen} className={cn("grid h-11 w-11 place-items-center rounded-full transition-colors", searchOpen ? "raised-btn text-accent" : "text-muted hover:text-ink")} aria-label="Find on the map" title="Find on the map"><Search size={16} /></button>
+            <button onClick={() => setFocusLens((f) => !f)} aria-pressed={focusLens} className={cn("grid h-11 w-11 place-items-center rounded-full transition-colors", focusLens ? "raised-btn text-accent" : "text-muted hover:text-ink")} aria-label="Focus mode" title="Focus mode. Dims all but your next steps."><Focus size={16} /></button>
             {goals.length > 1 && (
               <button onClick={organize} className="grid h-11 w-11 place-items-center rounded-full text-muted transition-colors hover:text-ink" aria-label="Sort into groups" title="Sort into groups (Health, Work, Travel…)"><Boxes size={16} /></button>
             )}
@@ -1491,7 +1498,7 @@ export function GalaxyMap({
                 placeholder="Personalize the breakdown… (optional)"
                 className="h-10 flex-1 bg-transparent text-[15px] text-ink placeholder:text-faint focus:outline-none"
               />
-              <button type="button" onClick={() => { setBreakdownFor(null); setBreakdownText(""); }} className="grid h-11 w-11 place-items-center rounded-xl text-faint hover:text-ink" aria-label="Cancel"><X size={16} /></button>
+              <IconButton label="Cancel" onClick={() => { setBreakdownFor(null); setBreakdownText(""); }} className="rounded-xl"><X size={16} /></IconButton>
               <button type="submit" className="raised-gold inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl px-4 text-[13px] font-medium">Break down</button>
             </form>
           ) : replanForId && expanded ? (
@@ -1572,7 +1579,7 @@ export function GalaxyMap({
                   <div className="font-mono text-[11px] uppercase tracking-[0.18em] text-faint">Colour</div>
                   <div className="mt-0.5 truncate text-[15px] font-medium text-ink">{g.title}</div>
                 </div>
-                <button onClick={() => setColorPick(null)} className="grid h-11 w-11 shrink-0 place-items-center rounded-lg text-faint transition-colors hover:text-ink" aria-label="Close"><X size={16} /></button>
+                <IconButton label="Close" onClick={() => setColorPick(null)}><X size={16} /></IconButton>
               </div>
               <div className="mt-4 grid grid-cols-5 gap-2.5">
                 {GOAL_PALETTE.map((c, i) => (
@@ -1702,7 +1709,7 @@ export function GalaxyMap({
             <div className="chrome animate-sheet-up w-72 rounded-2xl p-2" onClick={(e) => e.stopPropagation()}>
               <div className="flex items-center gap-2 px-2.5 pb-1 pt-1.5">
                 <span className="min-w-0 flex-1 truncate font-mono text-[10px] uppercase tracking-[0.14em] text-faint">Groups · {truncate(g?.title ?? "Goal", 18)}</span>
-                <button onClick={() => setGroupPickerFor(null)} className="grid h-6 w-6 shrink-0 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Close"><X size={13} /></button>
+                <IconButton label="Close" onClick={() => setGroupPickerFor(null)}><X size={16} /></IconButton>
               </div>
               {groups.length > 0 && (
                 <div className="max-h-48 overflow-y-auto py-0.5">
@@ -2107,14 +2114,14 @@ function NewGoalBar({
           autoFocus
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder={speech.listening ? "Listening…" : "Launch my app by September…"}
+          placeholder={speech.listening ? "Listening…" : "Save $5,000 by June…"}
           className="h-10 flex-1 bg-transparent text-[15px] text-ink placeholder:text-faint focus:outline-none"
         />
         {speech.supported && <MicButton listening={speech.listening} onClick={() => speech.toggle(value)} />}
         {onCancel && (
-          <button type="button" onClick={onCancel} className="grid h-11 w-11 place-items-center rounded-xl text-faint hover:text-ink" aria-label="Cancel">
+          <IconButton label="Cancel" onClick={onCancel} className="rounded-xl">
             <X size={16} />
-          </button>
+          </IconButton>
         )}
         <button type="submit" disabled={!value.trim()} className="raised-gold grid h-9 shrink-0 place-items-center gap-1 rounded-xl px-3.5 disabled:opacity-30" aria-label="Map goal">
           <Sparkles size={16} />
@@ -2160,14 +2167,14 @@ function GoalBar({
             <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ background: hex, boxShadow: `0 0 8px ${hex}` }} />
             <span className="min-w-0 flex-1 truncate text-[13px] font-medium text-ink">{goal.title}</span>
             {goal.nodes.length > 0 && (
-              <button onClick={onAdapt} className="grid h-11 w-11 place-items-center rounded-lg text-faint hover:text-accent" aria-label="Adapt the plan" title="Adapt the plan to your progress"><Wand2 size={16} /></button>
+              <IconButton label="Adapt the plan" title="Adapt the plan to your progress" onClick={onAdapt} className="hover:text-accent"><Wand2 size={16} /></IconButton>
             )}
-            <button onClick={onGroup} className="grid h-11 w-11 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Add to a group" title="Add to a group (Health, Work…)"><Boxes size={16} /></button>
-            <button onClick={onShare} className="grid h-11 w-11 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Share this map" title="Copy a public link"><Share2 size={16} /></button>
-            <Link href={`/app/notebook?goal=${goal.id}`} className="grid h-11 w-11 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Notebook" title="Notebook"><NotebookPen size={16} /></Link>
-            <button onClick={onColor} className="grid h-11 w-11 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Change color" title="Change color"><Palette size={16} /></button>
-            <button onClick={() => setArmed(true)} className="grid h-11 w-11 place-items-center rounded-lg text-faint hover:text-warn" aria-label="Delete goal" title="Delete goal"><Trash2 size={16} /></button>
-            <button onClick={onClose} className="grid h-11 w-11 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Close" title="Close"><X size={16} /></button>
+            <IconButton label="Add to a group" title="Add to a group (Health, Work…)" onClick={onGroup}><Boxes size={16} /></IconButton>
+            <IconButton label="Share this map" title="Copy a public link" onClick={onShare}><Share2 size={16} /></IconButton>
+            <Link href={`/app/notebook?goal=${goal.id}`} className="raised-btn grid h-11 w-11 shrink-0 place-items-center rounded-lg text-muted hover:text-ink" aria-label="Notebook" title="Notebook"><NotebookPen size={16} /></Link>
+            <IconButton label="Change color" onClick={onColor}><Palette size={16} /></IconButton>
+            <IconButton label="Delete goal" onClick={() => setArmed(true)} className="hover:text-warn"><Trash2 size={16} /></IconButton>
+            <IconButton label="Close" onClick={onClose}><X size={16} /></IconButton>
           </div>
           <form onSubmit={(e) => { e.preventDefault(); onAddStep(); }} className="inset-well flex items-center gap-2 rounded-xl p-1 pl-3.5">
             <input
@@ -2205,7 +2212,7 @@ function ReplanSheet({ hex, loading, proposals, onAccept, onDismiss, onClose }: 
       <div className="mb-2.5 flex items-center gap-2 px-1">
         {loading ? <Loader2 size={14} className="animate-spin text-accent" /> : <Wand2 size={14} className="text-accent" />}
         <span className="flex-1 text-[13px] font-medium text-ink">Adapt the plan</span>
-        <button onClick={onClose} className="grid h-7 w-7 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Close"><X size={15} /></button>
+        <IconButton label="Close" onClick={onClose}><X size={16} /></IconButton>
       </div>
 
       {loading ? (
@@ -2251,7 +2258,7 @@ function MiniInput({
     <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }} className="chrome animate-sheet-up flex items-center gap-2 rounded-2xl p-1.5 pl-4">
       <span className="text-accent">{icon}</span>
       <input autoFocus value={value} onChange={(e) => onChange(e.target.value)} placeholder={placeholder} className="h-10 flex-1 bg-transparent text-[15px] text-ink placeholder:text-faint focus:outline-none" />
-      <button type="button" onClick={onClose} className="grid h-11 w-11 place-items-center rounded-xl text-faint hover:text-ink" aria-label="Cancel"><X size={16} /></button>
+      <IconButton label="Cancel" onClick={onClose} className="rounded-xl"><X size={16} /></IconButton>
       <button type="submit" disabled={!value.trim()} className="raised-gold grid h-9 w-9 shrink-0 place-items-center rounded-xl disabled:opacity-30" aria-label="Add"><ArrowUp size={17} /></button>
     </form>
   );
@@ -2270,7 +2277,7 @@ function PreGenClarifier({ clarifiers, loading, onCreate, onCancel }: { clarifie
       <div className="mb-2 flex items-center gap-2">
         {loading ? <Loader2 size={13} className="animate-spin text-accent" /> : <Sparkles size={13} className="text-accent" />}
         <span className="flex-1 text-[12px] text-muted">{loading ? "Thinking of a couple questions…" : <>A couple quick things <span className="text-faint">· optional</span></>}</span>
-        <button onClick={onCancel} className="grid h-6 w-6 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Cancel"><X size={13} /></button>
+        <IconButton label="Cancel" onClick={onCancel}><X size={16} /></IconButton>
       </div>
 
       {loading ? (
@@ -2304,9 +2311,7 @@ function PreGenClarifier({ clarifiers, loading, onCreate, onCancel }: { clarifie
             className="inset-well min-h-[62px] w-full resize-none rounded-xl px-3.5 py-2.5 text-[13px] text-ink placeholder:text-faint focus-visible:outline-none"
           />
         ) : (
-          <button onClick={() => setShowMore(true)} className="inline-flex items-center gap-1.5 text-[12px] text-muted transition-colors hover:text-ink">
-            <Plus size={13} /> Tell me more
-          </button>
+          <Chip icon={<Plus size={13} />} onClick={() => setShowMore(true)} className="text-[12px]">Tell me more</Chip>
         )}
       </div>
 
@@ -2543,8 +2548,8 @@ function NodeSheet({
           <h2 className="mt-1 font-display text-lg font-semibold leading-snug text-ink">{node.title}</h2>
         </div>
         <div className="flex shrink-0 items-center gap-1">
-          <button onClick={() => setArmedDel(true)} className="grid h-11 w-11 place-items-center rounded-lg text-faint transition-colors hover:text-warn" aria-label="Delete this step" title="Delete this step"><Trash2 size={16} /></button>
-          <button onClick={onClose} className="grid h-11 w-11 place-items-center rounded-lg text-faint hover:text-ink" aria-label="Close"><X size={17} /></button>
+          <IconButton label="Delete this step" onClick={() => setArmedDel(true)} className="hover:text-warn"><Trash2 size={16} /></IconButton>
+          <IconButton label="Close" onClick={onClose}><X size={17} /></IconButton>
         </div>
       </div>
       {armedDel && (
@@ -2554,7 +2559,22 @@ function NodeSheet({
           <Chip tone="warn" icon={<Trash2 size={13} />} onClick={onDelete}>Delete</Chip>
         </div>
       )}
-      {node.description && <div className="mt-1.5 text-[13px] leading-relaxed text-muted"><Markdown>{node.description}</Markdown></div>}
+      {/* The depth floor: the exact opening move and the observable done-test,
+          above everything else. A step opens as a briefing, not a label. Legacy
+          rows carry "" and render nothing. */}
+      {node.firstAction ? (
+        <div className="mt-2.5 rounded-xl border border-accent/20 px-3.5 py-2.5" style={{ background: "color-mix(in srgb, var(--color-accent) 6%, transparent)" }}>
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-accent/80">First move</div>
+          <p className="mt-0.5 text-[13.5px] leading-relaxed text-ink">{node.firstAction}</p>
+        </div>
+      ) : null}
+      {node.successCriterion ? (
+        <div className="mt-2 rounded-xl border border-line px-3.5 py-2.5" style={{ background: "color-mix(in srgb, var(--color-ink) 2.5%, transparent)" }}>
+          <div className="font-mono text-[10px] uppercase tracking-[0.18em] text-faint">Done when</div>
+          <p className="mt-0.5 text-[13.5px] leading-relaxed text-muted">{node.successCriterion}</p>
+        </div>
+      ) : null}
+      {node.description && <div className="mt-2 text-[13px] leading-relaxed text-muted"><Markdown>{node.description}</Markdown></div>}
 
       {node.resource && (
         <NodeResourceBlock node={node} onResolve={(r) => onResolveResource(node.id, r)} />
@@ -2605,8 +2625,8 @@ function NodeSheet({
           <div className="flex items-center justify-between">
             <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-faint">Researched · sourced</span>
             <div className="flex items-center gap-2">
-              {!researchLoading && researchResult && <button onClick={() => { setResearchResult(null); void runResearch(); }} className="text-[12px] text-faint transition-colors hover:text-muted">Redo</button>}
-              <button onClick={() => setResearching(false)} className="text-faint transition-colors hover:text-ink" aria-label="Close research"><X size={14} /></button>
+              {!researchLoading && researchResult && <Chip onClick={() => { setResearchResult(null); void runResearch(); }} className="text-[12px]">Redo</Chip>}
+              <IconButton label="Close research" onClick={() => setResearching(false)}><X size={16} /></IconButton>
             </div>
           </div>
           {researchLoading ? (
@@ -2640,8 +2660,8 @@ function NodeSheet({
           <div className="flex items-center justify-between">
             <span className="font-mono text-[11px] uppercase tracking-[0.14em] text-faint">{draft?.title ?? "Sola is on it"}</span>
             <div className="flex items-center gap-2">
-              {!draftLoading && draft && <button onClick={() => { setDraft(null); void runDraft(); }} className="text-[12px] text-faint transition-colors hover:text-muted">Redo</button>}
-              <button onClick={() => setDrafting(false)} className="text-faint transition-colors hover:text-ink" aria-label="Close draft"><X size={14} /></button>
+              {!draftLoading && draft && <Chip onClick={() => { setDraft(null); void runDraft(); }} className="text-[12px]">Redo</Chip>}
+              <IconButton label="Close draft" onClick={() => setDrafting(false)}><X size={16} /></IconButton>
             </div>
           </div>
           {draftLoading ? (
@@ -2653,9 +2673,9 @@ function NodeSheet({
           ) : (
             <>
               <div className="mt-1.5 flex justify-end">
-                <button onClick={() => setEditingDraft((e) => !e)} className="text-[11px] text-faint transition-colors hover:text-muted">
+                <Chip onClick={() => setEditingDraft((e) => !e)} className="text-[11px]">
                   {editingDraft ? "Preview" : "Edit"}
-                </button>
+                </Chip>
               </div>
               {editingDraft ? (
                 <textarea
@@ -2702,9 +2722,9 @@ function NodeSheet({
               {loading ? <Loader2 size={15} className="animate-spin" /> : <ArrowUp size={16} />}
             </button>
           </form>
-          <button onClick={() => void runStuck()} disabled={loading} className="mt-2 inline-flex items-center gap-1.5 text-[13px] text-muted transition-colors hover:text-ink disabled:opacity-40">
-            <HelpCircle size={13} /> I&apos;m stuck — just tell me how to start
-          </button>
+          <Chip icon={<HelpCircle size={13} />} onClick={() => void runStuck()} disabled={loading} className="mt-2 text-[13px] disabled:opacity-40">
+            I&apos;m stuck, just tell me how to start
+          </Chip>
           {answer && <div className="mt-2.5 text-[13px] leading-relaxed text-muted"><Markdown>{answer}</Markdown></div>}
         </div>
       )}

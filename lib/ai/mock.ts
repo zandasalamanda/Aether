@@ -32,6 +32,10 @@ type SubStep = {
   title: string;
   est: number;
   reason: string;
+  /** the exact sub-10-minute opening move */
+  first: string;
+  /** the observable done-test */
+  done: string;
   res?: { kind: "watch" | "read" | "practice"; label: string; query: string };
 };
 
@@ -39,6 +43,10 @@ interface TemplateNode {
   title: string;
   est: number;
   reason: string;
+  /** the exact sub-10-minute opening move */
+  first: string;
+  /** the observable done-test */
+  done: string;
   /** Concrete do-this-now sub-steps that branch off this phase. */
   sub?: SubStep[];
 }
@@ -61,24 +69,24 @@ const TEMPLATES: Template[] = [
     weeks: 9,
     icon: "rocket",
     nodes: [
-      { title: "Define the MVP", est: 60, reason: "Scope tightly so you can move", sub: [
-        { title: "List every feature you imagine", est: 20, reason: "Get it all out of your head" },
-        { title: "Circle the 3 that prove the idea", est: 20, reason: "Everything else is later" },
+      { title: "Define the MVP", est: 60, reason: "Scope tightly so you can move", first: "Open a blank note and write the one sentence your product must prove", done: "A one-line promise and three features are written down", sub: [
+        { title: "List every feature you imagine", est: 20, reason: "Get it all out of your head", first: "Set a 10-minute timer and brain-dump every feature into one list", done: "A list of 15+ features exists, nothing held back" },
+        { title: "Circle the 3 that prove the idea", est: 20, reason: "Everything else is later", first: "Read your list once and mark the 3 a stranger would pay for", done: "Exactly 3 features are circled; the rest are labeled later" },
       ] },
-      { title: "Design the core flows", est: 90, reason: "Know what you're building before you build it", sub: [
-        { title: "Sketch the 3 key screens", est: 45, reason: "Paper is faster than code", res: { kind: "watch", label: "App wireframing basics", query: "app wireframing tutorial for beginners" } },
-        { title: "Pick colors and type", est: 30, reason: "One look, decided once" },
+      { title: "Design the core flows", est: 90, reason: "Know what you're building before you build it", first: "Grab paper and draw the first screen a new user sees", done: "Every core screen exists as a sketch you could hand to someone", sub: [
+        { title: "Sketch the 3 key screens", est: 45, reason: "Paper is faster than code", first: "Draw three rectangles on paper and label what each screen does", done: "Three screen sketches with labeled buttons exist", res: { kind: "watch", label: "App wireframing basics", query: "app wireframing tutorial for beginners" } },
+        { title: "Pick colors and type", est: 30, reason: "One look, decided once", first: "Open coolors.co and lock a 3-colour palette you like", done: "One palette and one font pairing are written in your notes" },
       ] },
-      { title: "Build the foundation", est: 120, reason: "The load-bearing work everything sits on", sub: [
-        { title: "Set up auth + database", est: 90, reason: "Every feature leans on this", res: { kind: "watch", label: "Auth setup walkthrough", query: "next.js auth database setup tutorial" } },
-        { title: "Ship one flow end to end", est: 90, reason: "Prove the stack works" },
+      { title: "Build the foundation", est: 120, reason: "The load-bearing work everything sits on", first: "Create the project and make the first commit, empty is fine", done: "The app runs locally and a repository exists", sub: [
+        { title: "Set up auth + database", est: 90, reason: "Every feature leans on this", first: "Create the database project and paste its keys into your env file", done: "You can sign in and see a row written to the database", res: { kind: "watch", label: "Auth setup walkthrough", query: "next.js auth database setup tutorial" } },
+        { title: "Ship one flow end to end", est: 90, reason: "Prove the stack works", first: "Pick the smallest flow and build only its first screen", done: "One complete flow works from tap to saved result" },
       ] },
-      { title: "Test with real users", est: 60, reason: "Reality checks the plan early", sub: [
-        { title: "Watch 3 people use it", est: 45, reason: "You'll see what to fix instantly" },
+      { title: "Test with real users", est: 60, reason: "Reality checks the plan early", first: "Message three people you know and book 15 minutes with each", done: "Three sessions are on the calendar", sub: [
+        { title: "Watch 3 people use it", est: 45, reason: "You'll see what to fix instantly", first: "Hand the first person your phone and say nothing while they try it", done: "Three sessions done and the top 3 stumbles are written down" },
       ] },
-      { title: "Craft the landing page", est: 75, reason: "You need a front door before launch" },
-      { title: "Launch", est: 90, reason: "Ship it. Done beats perfect" },
-      { title: "Win first customers", est: 60, reason: "Proof the thing matters" },
+      { title: "Craft the landing page", est: 75, reason: "You need a front door before launch", first: "Write the headline as the promise your 3 features make", done: "A live page with a headline and a signup button exists" },
+      { title: "Launch", est: 90, reason: "Ship it. Done beats perfect", first: "Pick the launch day and write the announcement post now", done: "The product is public and the post is published" },
+      { title: "Win first customers", est: 60, reason: "Proof the thing matters", first: "Personally message the 10 most likely people with one honest line", done: "Someone you do not know has signed up or paid" },
     ],
   },
   {
@@ -89,17 +97,17 @@ const TEMPLATES: Template[] = [
     weeks: 6,
     icon: "school",
     nodes: [
-      { title: "Map the syllabus", est: 45, reason: "See the whole terrain first", sub: [
-        { title: "List every topic to cover", est: 25, reason: "Nothing hides until exam day" },
-        { title: "Mark the 5 you're shakiest on", est: 15, reason: "That's where the points are" },
+      { title: "Map the syllabus", est: 45, reason: "See the whole terrain first", first: "Open the course outline and copy every topic into one list", done: "Every examinable topic is on one page", sub: [
+        { title: "List every topic to cover", est: 25, reason: "Nothing hides until exam day", first: "Go through the syllabus line by line and write each topic down", done: "The topic list matches the syllabus end to end" },
+        { title: "Mark the 5 you're shakiest on", est: 15, reason: "That's where the points are", first: "Read your list and star everything you could not explain aloud", done: "Five topics carry a star and a one-line why" },
       ] },
-      { title: "Gather your materials", est: 30, reason: "Remove friction before it starts" },
-      { title: "Build a study rhythm", est: 45, reason: "Consistency beats cramming", sub: [
-        { title: "Block 5 study slots this week", est: 15, reason: "A time on the calendar is a promise" },
+      { title: "Gather your materials", est: 30, reason: "Remove friction before it starts", first: "Put every book, slide deck, and past paper into one folder", done: "Everything you need opens from one place" },
+      { title: "Build a study rhythm", est: 45, reason: "Consistency beats cramming", first: "Open your calendar and place the first study block tomorrow", done: "Five recurring blocks exist in the calendar", sub: [
+        { title: "Block 5 study slots this week", est: 15, reason: "A time on the calendar is a promise", first: "Open your calendar and add the first 45-minute slot", done: "Five slots this week, each with a topic attached" },
       ] },
-      { title: "Drill the weak spots", est: 60, reason: "Spend time where it moves the grade" },
-      { title: "Take a mock test", est: 90, reason: "Practice under real conditions" },
-      { title: "Final review pass", est: 60, reason: "Consolidate before the day" },
+      { title: "Drill the weak spots", est: 60, reason: "Spend time where it moves the grade", first: "Take the first starred topic and do 10 practice questions on it", done: "Each starred topic has a practice set scored above passing" },
+      { title: "Take a mock test", est: 90, reason: "Practice under real conditions", first: "Print a past paper, set a timer for exam length, phone in another room", done: "One full past paper completed under time and marked" },
+      { title: "Final review pass", est: 60, reason: "Consolidate before the day", first: "Rewrite your one-page summary from memory, then check it", done: "You can reproduce the summary sheet without looking" },
     ],
   },
   {
@@ -110,12 +118,12 @@ const TEMPLATES: Template[] = [
     weeks: 12,
     icon: "money",
     nodes: [
-      { title: "Map current spending", est: 45, reason: "You can't change what you can't see" },
-      { title: "Set a clear target", est: 30, reason: "A number gives the plan direction" },
-      { title: "Cut three leaks", est: 45, reason: "Quick wins fund the goal" },
-      { title: "Automate saving", est: 30, reason: "Make progress happen without willpower" },
-      { title: "Build a buffer", est: 60, reason: "Safety keeps the plan alive" },
-      { title: "Review monthly", est: 30, reason: "Small corrections keep you on track" },
+      { title: "Map current spending", est: 45, reason: "You can't change what you can't see", first: "Open your banking app and write down last month's total spending", done: "One number on paper: what last month actually cost" },
+      { title: "Set a clear target", est: 30, reason: "A number gives the plan direction", first: "Write the amount and the date: how much, by when", done: "A target amount and month are written where you will see them" },
+      { title: "Cut three leaks", est: 45, reason: "Quick wins fund the goal", first: "Open the subscriptions tab in your banking app and cancel the first unused one", done: "Three cancellations confirmed by email" },
+      { title: "Automate saving", est: 30, reason: "Make progress happen without willpower", first: "Open your bank's transfers tab and start a new recurring transfer", done: "An automatic monthly transfer exists and the first date is set" },
+      { title: "Build a buffer", est: 60, reason: "Safety keeps the plan alive", first: "Open a separate savings space and name it Buffer", done: "One month of essentials sits in an account you do not touch" },
+      { title: "Review monthly", est: 30, reason: "Small corrections keep you on track", first: "Put a 30-minute money check-in on the first Sunday of next month", done: "The check-in recurs monthly and the first one happened" },
     ],
   },
   {
@@ -126,12 +134,12 @@ const TEMPLATES: Template[] = [
     weeks: 8,
     icon: "habit",
     nodes: [
-      { title: "Define the routine", est: 30, reason: "Decide once, not every day" },
-      { title: "Prep the environment", est: 30, reason: "Make the right move the easy move" },
-      { title: "Start small, daily", est: 20, reason: "Tiny and repeated beats big and rare" },
-      { title: "Track for two weeks", est: 20, reason: "Data shows what's working" },
-      { title: "Adjust the plan", est: 30, reason: "Tune it to your real life" },
-      { title: "Lock it in", est: 20, reason: "Make it automatic" },
+      { title: "Define the routine", est: 30, reason: "Decide once, not every day", first: "Write one sentence: I will do X, at time Y, in place Z", done: "The sentence exists with a real time and place in it" },
+      { title: "Prep the environment", est: 30, reason: "Make the right move the easy move", first: "Put the thing you need where you will trip over it tonight", done: "Starting takes under a minute from where you usually are" },
+      { title: "Start small, daily", est: 20, reason: "Tiny and repeated beats big and rare", first: "Do the two-minute version right now, today counts", done: "Seven days in a row of any size at all" },
+      { title: "Track for two weeks", est: 20, reason: "Data shows what's working", first: "Put a tick on a calendar for today", done: "Fourteen days of ticks and misses, honestly recorded" },
+      { title: "Adjust the plan", est: 30, reason: "Tune it to your real life", first: "Look at your misses and move the routine to when they were not", done: "One concrete change made to time, place, or size" },
+      { title: "Lock it in", est: 20, reason: "Make it automatic", first: "Attach the routine to something you already do every day", done: "Four weeks running without needing the reminder" },
     ],
   },
 ];
@@ -144,17 +152,17 @@ const DEFAULT_TEMPLATE: Template = {
   weeks: 8,
   icon: "target",
   nodes: [
-    { title: "Clarify the outcome", est: 45, reason: "Define what done looks like", sub: [
-      { title: "Write the goal in one sentence", est: 20, reason: "If you can't, it's not clear yet" },
-      { title: "Name how you'll know it's done", est: 25, reason: "A finish line you can see" },
+    { title: "Clarify the outcome", est: 45, reason: "Define what done looks like", first: "Write one sentence describing the day this goal is finished", done: "The sentence names something you could photograph", sub: [
+      { title: "Write the goal in one sentence", est: 20, reason: "If you can't, it's not clear yet", first: "Open your notes and finish the line: this is done when...", done: "One sentence, no and, no or" },
+      { title: "Name how you'll know it's done", est: 25, reason: "A finish line you can see", first: "Write the number or artifact that proves it is finished", done: "A measurable finish line is written down" },
     ] },
-    { title: "Break it into parts", est: 45, reason: "Big goals move as small pieces", sub: [
-      { title: "List the 3-5 big chunks", est: 30, reason: "Each becomes its own branch" },
+    { title: "Break it into parts", est: 45, reason: "Big goals move as small pieces", first: "List the big chunks on paper, aim for five", done: "3-5 named parts cover the whole goal", sub: [
+      { title: "List the 3-5 big chunks", est: 30, reason: "Each becomes its own branch", first: "Write the first chunk that has to happen before anything else", done: "Each chunk has a name and a rough order" },
     ] },
-    { title: "Set the first milestone", est: 60, reason: "A near target creates momentum" },
-    { title: "Do the core work", est: 90, reason: "The part that actually matters" },
-    { title: "Review progress", est: 30, reason: "Catch drift before it compounds" },
-    { title: "Finish strong", est: 60, reason: "Close it out cleanly" },
+    { title: "Set the first milestone", est: 60, reason: "A near target creates momentum", first: "Pick a result you can reach within two weeks and write its date", done: "A dated two-week milestone exists" },
+    { title: "Do the core work", est: 90, reason: "The part that actually matters", first: "Open the first chunk and start its smallest piece for 25 minutes", done: "The first chunk is finished and visible" },
+    { title: "Review progress", est: 30, reason: "Catch drift before it compounds", first: "Compare where you are against the two-week milestone date", done: "You know if you are ahead or behind, in writing" },
+    { title: "Finish strong", est: 60, reason: "Close it out cleanly", first: "List everything between you and done, smallest first", done: "The finish-line artifact from step one exists" },
   ],
 };
 
@@ -172,6 +180,8 @@ interface PracticeSpec {
   est: number;
   perWeek: number;
   reason: string;
+  first: string;
+  done: string;
 }
 
 const PRACTICES: PracticeSpec[] = [
@@ -181,6 +191,8 @@ const PRACTICES: PracticeSpec[] = [
     est: 20,
     perWeek: 7,
     reason: "A short daily session beats a long weekly one for retention",
+    first: "Open your language app and start today's first lesson",
+    done: "Today's session is logged, streak intact",
   },
   {
     match: /\b(gym|workout|lift|lifting|strength|fitness|exercise|train|training)\b/i,
@@ -188,6 +200,8 @@ const PRACTICES: PracticeSpec[] = [
     est: 45,
     perWeek: 4,
     reason: "Four sessions a week builds strength without burning out",
+    first: "Put your gym clothes on and pack the bag, that is the real start",
+    done: "The session happened and is logged for today",
   },
   {
     // bare "run" only when not "run a business / run my startup" shaped
@@ -196,6 +210,8 @@ const PRACTICES: PracticeSpec[] = [
     est: 30,
     perWeek: 3,
     reason: "Three runs a week builds the base with room to recover",
+    first: "Put your running shoes on and step outside, distance decided later",
+    done: "The run happened and is logged for today",
   },
   {
     match: /\b(guitar|piano|violin|drums|bass|instrument|sing|singing)\b/i,
@@ -203,6 +219,8 @@ const PRACTICES: PracticeSpec[] = [
     est: 25,
     perWeek: 5,
     reason: "Frequent short practice is how the hands learn",
+    first: "Take the instrument out of its case and play one scale",
+    done: "Today's practice is logged, even five minutes counts",
   },
   {
     match: /\b(meditat\w*|mindful\w*|journal\w*|breathwork)\b/i,
@@ -210,6 +228,8 @@ const PRACTICES: PracticeSpec[] = [
     est: 10,
     perWeek: 7,
     reason: "The practice works through repetition, not duration",
+    first: "Sit down where you are and take three slow breaths",
+    done: "Today's sit is logged",
   },
   {
     match: /\b(read|reading|books?)\b/i,
@@ -217,6 +237,8 @@ const PRACTICES: PracticeSpec[] = [
     est: 20,
     perWeek: 6,
     reason: "Twenty minutes most days finishes more books than any sprint",
+    first: "Pick the book up and read one page, momentum does the rest",
+    done: "Today's reading is logged",
   },
 ];
 
@@ -241,12 +263,12 @@ export function mockGoalMap(input: GoalMapInput): GoalMapResult {
   // Flatten depth-first into a chronological SPINE: each milestone chains off
   // the previous one (parentIndex = previous milestone), and its sub-steps hang
   // off it. Depth = time, so nothing sequential ends up as a sibling at the root.
-  const flat: { title: string; est: number; reason: string; parentIndex: number | null; res?: SubStep["res"] }[] = [];
+  const flat: { title: string; est: number; reason: string; first: string; done: string; parentIndex: number | null; res?: SubStep["res"] }[] = [];
   let prevPhase: number | null = null;
   tpl.nodes.forEach((phase) => {
     const phaseIndex = flat.length;
-    flat.push({ title: phase.title, est: phase.est, reason: phase.reason, parentIndex: prevPhase });
-    (phase.sub ?? []).forEach((c) => flat.push({ title: c.title, est: c.est, reason: c.reason, parentIndex: phaseIndex, res: c.res }));
+    flat.push({ title: phase.title, est: phase.est, reason: phase.reason, first: phase.first, done: phase.done, parentIndex: prevPhase });
+    (phase.sub ?? []).forEach((c) => flat.push({ title: c.title, est: c.est, reason: c.reason, first: c.first, done: c.done, parentIndex: phaseIndex, res: c.res }));
     prevPhase = phaseIndex;
   });
 
@@ -259,6 +281,8 @@ export function mockGoalMap(input: GoalMapInput): GoalMapResult {
     aiReason: n.reason,
     parentIndex: n.parentIndex,
     resource: n.res ?? null,
+    firstAction: n.first,
+    successCriterion: n.done,
   }));
 
   // Practice-shaped goals also get recurring practice nodes: kept, not
@@ -277,6 +301,8 @@ export function mockGoalMap(input: GoalMapInput): GoalMapResult {
       resource: null,
       kind: "recurring",
       targetPerWeek: p.perWeek,
+      firstAction: p.first,
+      successCriterion: p.done,
     });
   });
   // Honor a deadline written in plain English ("by September", "in 6 weeks");

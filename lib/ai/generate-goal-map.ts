@@ -7,13 +7,17 @@ import type { NodeResource, ResourceKind } from "@/types";
 
 const SYSTEM = `You are Sola, an execution planner and coach. Turn the user's goal into a DETAILED, DIRECT, step-by-step plan they can start with ZERO further thinking. The goal may include the user's answers to a few quick questions (deadline, level, budget, etc.). Honor them.
 
-Return JSON: {"title":string,"description":string,"suggestedTargetDate":ISO8601,"nodes":[{"title":string,"description":string,"status":"in_motion"|"not_started","estimatedMinutes":number,"priority":number,"aiReason":string,"parentIndex":number|null,"resource":{"kind":"watch"|"read"|"practice","label":string,"query":string}|null,"kind":"once"|"recurring"(optional),"targetPerWeek":number(optional, recurring only)}],"firstNextAction":string,"weeklyRhythm":string,"icon":string}.
+Return JSON: {"title":string,"description":string,"suggestedTargetDate":ISO8601,"nodes":[{"title":string,"description":string,"status":"in_motion"|"not_started","estimatedMinutes":number,"priority":number,"aiReason":string,"parentIndex":number|null,"firstAction":string,"successCriterion":string,"resource":{"kind":"watch"|"read"|"practice","label":string,"query":string}|null,"kind":"once"|"recurring"(optional),"targetPerWeek":number(optional, recurring only)}],"firstNextAction":string,"weeklyRhythm":string,"icon":string}.
 
 FORMAT. Nodes form a TREE where DEPTH = TIME:
 - ONE chronological SPINE of 4-5 milestones. The first has "parentIndex": null; every later milestone's parentIndex is the milestone right before it in time (a chain: later work hangs off earlier work, never a sibling of it).
 - Each milestone MUST have 2-3 concrete sub-steps as children (parentIndex = that milestone's index). Total 14-18 nodes. Every parentIndex references an EARLIER index.
 
-STEP TITLES stay short (they label the map): a concrete first action like "Draft the 3 core screens in Figma", never a vague theme like "Design". The "description" is where you HOLD THEIR HAND: 2-4 sentences that are genuinely useful on their own: exactly what to do and how. ALWAYS ground it with 2-3 concrete specifics or REAL NAMED examples (actual tools, companies, people, techniques, places, communities, or numbers relevant to THIS goal), especially for steps with no attached resource. E.g. "Network in aerospace" → name real firms (SpaceX, Blue Origin, Relativity Space), where to reach them (LinkedIn, AIAA events, r/aerospace), and a first concrete outreach. Never vague filler like "quick wins fund the goal".
+STEP TITLES stay short (they label the map): a concrete first action like "Draft the 3 core screens in Figma", never a vague theme like "Design". The "description" is where you HOLD THEIR HAND: 2-4 sentences that are genuinely useful on their own: exactly what to do and how. ALWAYS ground it with 2-3 concrete specifics or REAL NAMED examples (actual tools, companies, people, techniques, places, communities, or numbers relevant to THIS goal), especially for steps with no attached resource. E.g. "Cut your three biggest money leaks" → name where to look (the subscriptions tab in their banking app, Rocket Money, last month's statement), the number that counts as a leak (anything unused over $10/mo), and the first cancellation to make today. Never vague filler like "quick wins fund the goal".
+
+FIRST MOVE + DONE TEST. Every node MUST also carry:
+- "firstAction": the exact physical opening move, startable in under a minute and finished in 5-10 minutes. Verb-first, names the real tool, app, or place. "Open your banking app and write down last month's total spending", never "Get started" or "Begin researching".
+- "successCriterion": the observable test that the step is DONE. Binary or a number, something you could show another person, never a feeling. "An automatic 150/month transfer exists and the first one is scheduled", never "Feel more in control of money".
 
 PRACTICES. Some goals are KEPT rather than finished: fitness, a language, an instrument, meditation, a reading habit. For a practice-shaped goal, keep the spine to a SMALL number of once-milestones (setup, first assessment, a mid-point check) and ALSO include one or two recurring practice nodes: "kind":"recurring" with "targetPerWeek" (integer 1 to 7, where 7 means daily). A recurring node's title names one repeatable session ("Practice Spanish 20 minutes", "Gym session"), estimatedMinutes is the length of ONE session, and it hangs off the milestone that unlocks it. Recurring nodes are logged day by day, never marked done, so do not restate them as sub-steps. Every other node is a once-step; omit "kind" for those. nodes[0] must always be a once-step so the first next action is something they can finish today. Pure projects get no recurring nodes.
 
@@ -72,6 +76,25 @@ function cleanPractice(
   return { kind, targetPerWeek };
 }
 
+/**
+ * The depth floor. Every step ships with an exact opening move and an
+ * observable done-test; a model that omits them gets deterministic fallbacks
+ * derived from the title, so no node is ever just a label again. Exported so
+ * the expand/replan cleaners apply the identical clamps.
+ */
+export function clampStepDepth(n: { title?: unknown; firstAction?: unknown; successCriterion?: unknown }): {
+  firstAction: string;
+  successCriterion: string;
+} {
+  const title = String(n.title ?? "").trim() || "this step";
+  const fa = String(n.firstAction ?? "").trim().slice(0, 160);
+  const sc = String(n.successCriterion ?? "").trim().slice(0, 120);
+  return {
+    firstAction: fa || `Open what "${title}" needs and do the first 10 minutes`,
+    successCriterion: sc || `"${title}" has a visible result you could show someone`,
+  };
+}
+
 /** Normalize parent links, statuses, practice fields, resources, and the icon. */
 function normalize(r: GoalMapResult): GoalMapResult {
   const nodes = r.nodes.map((n, i) => {
@@ -80,6 +103,7 @@ function normalize(r: GoalMapResult): GoalMapResult {
     return {
       ...n,
       ...cleanPractice(n, i),
+      ...clampStepDepth(n),
       parentIndex,
       status: i === 0 ? "in_motion" : n.status === "done" ? "done" : "not_started",
       resource: cleanResource(n.resource),
@@ -111,8 +135,9 @@ export async function generateGoalMap(input: GoalMapInput): Promise<GoalMapResul
     return valid(j) ? sanitizeGoalMap(j, input.prompt) : { ...mockGoalMap(input), isMock: true };
   }
   const today = new Date().toISOString().slice(0, 10);
-  // 14-18 nodes each with a grounded 2-4 sentence description need real headroom:
-  // the default 1600 truncated the JSON mid-string and dead-ended onboarding.
-  const r = await generateJson<GoalMapResult>(SYSTEM, `Today's date: ${today}\nGoal: ${input.prompt}`, { maxTokens: 4096 });
+  // 14-18 nodes each with a grounded description PLUS a first move and a done
+  // test need real headroom: 4096 already ran tight before the two new strings,
+  // and a truncated JSON dead-ends onboarding.
+  const r = await generateJson<GoalMapResult>(SYSTEM, `Today's date: ${today}\nGoal: ${input.prompt}`, { maxTokens: 6144 });
   return valid(r) ? sanitizeGoalMap(r, input.prompt) : { ...mockGoalMap(input), isMock: true };
 }

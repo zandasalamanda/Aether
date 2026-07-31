@@ -127,6 +127,10 @@ export interface GoalNode {
   aiReason: string | null;
   resource: NodeResource | null;
   evidence?: NodeEvidence[];
+  /** exact sub-10-minute opening move for this step ("" on legacy rows) */
+  firstAction?: string;
+  /** observable done-test ("" on legacy rows) */
+  successCriterion?: string;
   createdAt: string;
   updatedAt: string;
 }

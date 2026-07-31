@@ -1,14 +1,15 @@
 import { generateJson, isObj, isClient, viaRouteResult, raiseIfBlocked } from "./provider";
+import { clampStepDepth } from "./generate-goal-map";
 import type { ExpandNodeInput, ExpandNodeResult, AskNodeInput, AskNodeResult } from "./types";
 
 // Two small, user-initiated AI helpers on a single step of a plan:
 // "go deeper" (break a step into concrete sub-steps) and "ask a question".
 
-const EXPAND_SYSTEM = `You are Sola. Break ONE step of a plan into 2-4 concrete, do-this-now sub-steps the user can follow with zero further thinking. Return JSON: {"steps":[{"title":string,"estimatedMinutes":number,"aiReason":string}]}. Each title is imperative and specific: a single sitting of work, in the order it should be done. estimatedMinutes is realistic (10-90). "aiReason" is a short phrase. No fluff.`;
+const EXPAND_SYSTEM = `You are Sola. Break ONE step of a plan into 2-4 concrete, do-this-now sub-steps the user can follow with zero further thinking. Return JSON: {"steps":[{"title":string,"estimatedMinutes":number,"aiReason":string,"firstAction":string,"successCriterion":string}]}. Every step also carries "firstAction" (the exact sub-10-minute opening move, verb-first, naming the real tool, app, or place) and "successCriterion" (the observable done-test: binary or a number, never a feeling). Each title is imperative and specific: a single sitting of work, in the order it should be done. estimatedMinutes is realistic (10-90). "aiReason" is a short phrase. No fluff.`;
 
 // "Make it smaller" kills activation energy (Fogg / Goblin Tools): the FIRST step
 // should be so tiny it's almost silly, so an overwhelmed user can just start.
-const TINY_EXPAND_SYSTEM = `You are Sola helping someone who feels stuck START. Break ONE step into 5-6 TINY, sequential micro-steps, each so small it's almost silly (5-15 minutes), removing every excuse not to begin. The FIRST micro-step must be a 2-5 minute "just open it / just look" action. Return JSON: {"steps":[{"title":string,"estimatedMinutes":number,"aiReason":string}]}. Titles are imperative and concrete ("Open a blank doc and title it", not "Prepare"). estimatedMinutes 5-15. "aiReason" is a short phrase. No fluff.`;
+const TINY_EXPAND_SYSTEM = `You are Sola helping someone who feels stuck START. Break ONE step into 5-6 TINY, sequential micro-steps, each so small it's almost silly (5-15 minutes), removing every excuse not to begin. The FIRST micro-step must be a 2-5 minute "just open it / just look" action. Return JSON: {"steps":[{"title":string,"estimatedMinutes":number,"aiReason":string,"firstAction":string,"successCriterion":string}]}. Every step also carries "firstAction" (the exact sub-10-minute opening move, verb-first, naming the real tool, app, or place) and "successCriterion" (the observable done-test: binary or a number, never a feeling). Titles are imperative and concrete ("Open a blank doc and title it", not "Prepare"). estimatedMinutes 5-15. "aiReason" is a short phrase. No fluff.`;
 
 const ASK_SYSTEM = `You are Sola, a sharp, direct execution coach. Answer the user's question about a specific step thoroughly and practically, in clean markdown: a direct answer first, then the concrete how as short numbered steps or bullets, and end with the exact next action. Use a table when comparing options, and include a diagram in a fenced code block tagged mermaid ONLY when a process or structure genuinely makes it clearer. No fluff, no hedging, no disclaimers. Return JSON: {"answer":string} where "answer" is the markdown.`;
 
@@ -41,6 +42,8 @@ function cleanExpand(r: ExpandNodeResult, tiny = false): ExpandNodeResult {
       title: String(s.title).trim(),
       estimatedMinutes: Math.min(tiny ? 20 : 120, Math.max(tiny ? 5 : 10, Math.round(Number(s.estimatedMinutes) || (tiny ? 10 : 30)))),
       aiReason: typeof s.aiReason === "string" ? s.aiReason : "",
+      // the same depth clamps and fallbacks the map generator applies
+      ...clampStepDepth(s),
     }));
   return { steps };
 }

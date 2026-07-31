@@ -36,6 +36,20 @@ export interface GeneratedNode {
   kind?: "once" | "recurring";
   /** recurring only: sessions per week the plan calls for (7 = daily). */
   targetPerWeek?: number | null;
+  /**
+   * REQUIRED after sanitizing. The exact physical opening move: startable in
+   * under a minute, finished in 5-10 minutes, verb-first, names the real tool,
+   * app, or place. "Open your banking app and write down last month's total
+   * spending", never "Get started".
+   */
+  firstAction: string;
+  /**
+   * REQUIRED after sanitizing. The observable test that this step is done:
+   * binary or a number, something you could show another person, never a
+   * feeling. "An automatic 150/month transfer exists and the first one is
+   * scheduled", never "Feel more in control".
+   */
+  successCriterion: string;
 }
 
 /** A short question the AI can pose to sharpen the plan (answered with a tap). */
@@ -124,7 +138,7 @@ export interface ExpandNodeInput {
   tiny?: boolean;
 }
 export interface ExpandNodeResult {
-  steps: { title: string; estimatedMinutes: number; aiReason: string }[];
+  steps: { title: string; estimatedMinutes: number; aiReason: string; firstAction?: string; successCriterion?: string }[];
 }
 
 export interface AskNodeInput {
@@ -181,6 +195,8 @@ export interface ReplanProposal {
   title: string;
   estimatedMinutes: number;
   reason: string;
+  firstAction?: string;
+  successCriterion?: string;
 }
 export interface ReplanResult {
   proposals: ReplanProposal[];

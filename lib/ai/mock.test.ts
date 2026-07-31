@@ -154,3 +154,40 @@ describe("mockReview", () => {
     expect(typeof r.recoverability).toBe("string");
   });
 });
+
+describe("mock step depth", () => {
+  const PROMPTS = [
+    "save money for an emergency fund",
+    "study for my finals",
+    "launch a project",
+    "build a morning routine",
+    "get better at cooking", // default template
+  ];
+
+  it("gives every node a non-empty first move and done test", () => {
+    for (const prompt of PROMPTS) {
+      for (const n of mockGoalMap({ prompt }).nodes) {
+        expect(n.firstAction, `${prompt} :: ${n.title}`).toBeTruthy();
+        expect(n.successCriterion, `${prompt} :: ${n.title}`).toBeTruthy();
+      }
+    }
+  });
+
+  it("never ships the generic fallback and never repeats a first move within a map", () => {
+    for (const prompt of PROMPTS) {
+      const nodes = mockGoalMap({ prompt }).nodes;
+      const seen = new Set<string>();
+      for (const n of nodes) {
+        expect(n.firstAction, `${prompt} :: ${n.title}`).not.toMatch(/^Open what "/);
+        expect(seen.has(n.firstAction), `${prompt} :: duplicate "${n.firstAction}"`).toBe(false);
+        seen.add(n.firstAction);
+      }
+    }
+  });
+
+  it("practice nodes carry a session-sized first move", () => {
+    const map = mockGoalMap({ prompt: "learn spanish" });
+    const practice = map.nodes.find((n) => n.kind === "recurring");
+    expect(practice?.firstAction).toContain("lesson");
+  });
+});

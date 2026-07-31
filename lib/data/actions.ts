@@ -80,6 +80,8 @@ export async function persistGoalFromMap(input: { result: GoalMapResult }): Prom
     priority: n.priority ?? i + 1,
     estimated_minutes: n.estimatedMinutes ?? 60,
     ai_reason: n.aiReason ?? null,
+    first_action: n.firstAction ?? "",
+    success_criterion: n.successCriterion ?? "",
     resource_kind: n.resource?.kind ?? null,
     resource_label: n.resource?.label ?? null,
     resource_query: n.resource?.query ?? null,
@@ -115,6 +117,8 @@ export async function addNode(input: {
   estimatedMinutes: number;
   sortOrder: number;
   parentId?: string | null;
+  firstAction?: string;
+  successCriterion?: string;
 }): Promise<Result> {
   if (!isRemote) return NO_OP;
   const scoped = await getScopedClient();
@@ -128,6 +132,8 @@ export async function addNode(input: {
     priority: 3,
     estimated_minutes: input.estimatedMinutes,
     ai_reason: "Added from the map",
+    first_action: (input.firstAction ?? "").slice(0, 160),
+    success_criterion: (input.successCriterion ?? "").slice(0, 120),
     sort_order: input.sortOrder,
   });
   if (error) return NO_OP;
